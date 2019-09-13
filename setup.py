@@ -97,7 +97,8 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "parallel_bilby_generation=parallel_bilby.generation",
+            "parallel_bilby_generation=parallel_bilby.generation:main",
+            "parallel_bilby_analysis=parallel_bilby.analysis:main",
         ]
     },
     classifiers=[
