@@ -26,6 +26,7 @@ logger = bilby.core.utils.logger
 
 
 def main():
+    """ Do nothing function to play nicely with MPI """
     pass
 
 

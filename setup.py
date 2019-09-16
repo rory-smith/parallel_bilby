@@ -99,6 +99,7 @@ setup(
         "console_scripts": [
             "parallel_bilby_generation=parallel_bilby.generation:main",
             "parallel_bilby_analysis=parallel_bilby.analysis:main",
+            "parallel_bilby_postprocess=parallel_bilby.postprocess:main",
         ]
     },
     classifiers=[
