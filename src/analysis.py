@@ -158,7 +158,7 @@ with MPIPool() as pool:
     n_check_point = 10000
     sampler_kwargs = dict(
         print_progress=True, maxcall=n_check_point,
-        n_effective=args.n_effective, dlogz=args.dlogz)
+        n_effective=input_args.n_effective, dlogz=input_args.dlogz)
     filename = "{}/{}_checkpoint_trace.png".format(outdir, label)
     while True:
         sampler_kwargs['maxcall'] += n_check_point
