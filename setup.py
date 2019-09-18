@@ -94,6 +94,8 @@ setup(
         "tqdm",
         "corner",
         "dynesty>=0.9.7",
+        "schwimmbad",
+        "pandas",
     ],
     entry_points={
         "console_scripts": [
