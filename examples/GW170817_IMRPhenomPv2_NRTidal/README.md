@@ -77,7 +77,7 @@ conda activate <CONDA-ENVIRONME>
 export MKL_NUM_THREADS="1"
 export MKL_DYNAMIC="FALSE"
 export OMP_NUM_THREADS=1
-export MPI_PER_NODE=16
+export MPI_PER_NODE=8
 mpirun parallel_bilby_analysis outdir/GW170817_data_dump.pickle
 ```
 
