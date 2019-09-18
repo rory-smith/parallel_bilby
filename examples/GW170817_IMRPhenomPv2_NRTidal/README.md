@@ -15,9 +15,9 @@ $ wget https://dcc.ligo.org/public/0146/P1700349/001/V-V1_LOSC_CLN_16_V1-1187007
 
 ## Generation: preparing the data_dump
 
-The first step of the analysis is to preparea data_dump file, this is a python
-pickle file containing all the preprocessing before sampling. We use an ini
-file to specify the configuration, in this case the file GW170817.ini:
+The first step of the analysis is to prepare the data_dump file, this is a
+python pickle file containing all the preprocessing before sampling. We use an
+ini file to specify the configuration, in this case the file GW170817.ini:
 
 ```bash
 $ parallel_bilby_generation GW170817.ini
@@ -36,13 +36,8 @@ things work okay, on a head done you can run
 $ mpirun parallel_bilby_analysis outdir/GW170817_data_dump.pickle
 ```
 This will start sampling using the maximum number of cores available on a head
-node, typically 3 or 4. To deploy the analysis at scale, you'll need to use a
-submit script. Here we include an example submit script for slurm:
-
-```bash
-$ mkdir logs
-$ sbatch slurm_submit_analysis.sh
-```
+node, typically 3 or 4. To deploy the analysis at scale, you'll need to submit
+it to the scheduler. We give an example below for a slurm scheduler.
 
 On completion, this will generate a file `outdir/GW170817_result.json` which
 contains the posterior as sampled.
@@ -58,8 +53,44 @@ during sampling. This, like the analysis step, should be run under mpi, e.g.
 $ mpirun parallel_bilby_postprocess outdir/GW170817_result.json
 ```
 
-Or, using a script:
+## Slurm submit script
 
-```bash
-$ sbatch slurm_submit_postprocess.sh
+For either the analysis or post-processing steps, you should submit the job to
+run on a cluster, leveraging a number of parallel cores. As an example, here is
+a slurm submit script for running the analysis step above using 8 tasks over
+4 cores, giving a total of 32 cores abailable to MPI:
+
+```ini
+#!/bin/bash
+#
+#SBATCH --job-name=GW170817
+#
+#SBATCH --nodes=4
+#SBATCH --ntasks-per-node=8
+
+#SBATCH --time=24:00:00
+#SBATCH --mem-per-cpu=5000
+#SBATCH --output=logs/%A_%a.out
+
+source </PATH/TO/YOUR/BASHRC>
+conda activate <CONDA-ENVIRONME>
+export MKL_NUM_THREADS="1"
+export MKL_DYNAMIC="FALSE"
+export OMP_NUM_THREADS=1
+export MPI_PER_NODE=16
+mpirun parallel_bilby_analysis outdir/GW170817_data_dump.pickle
 ```
+
+Here, we have shown an example which first sources a conda environment, you
+should edit this to ensure the correct environment with parallel_bilby and its
+dependencies is available.
+
+Having written this file, you can submit it with
+```bash
+$ mkdir logs/
+$ sbatch slurm_submit_analysis.sh
+```
+
+## Configuration
+
+See `--help`, on any of the three exectubles above to see options.
