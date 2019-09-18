@@ -55,7 +55,7 @@ if args.nsamples is not False and len(posterior) > args.nsamples:
 else:
     pass
 
-result.label = result.label + "_post3"
+result.label = result.label + "_postprocessed"
 
 for key, val in priors.items():
     cond1 = key not in posterior

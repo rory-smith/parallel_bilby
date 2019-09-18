@@ -89,8 +89,7 @@ parser.add_argument(
 
 input_args = parser.parse_args()
 
-data_dump = input_args.data_dump
-with open(data_dump, "rb") as file:
+with open(input_args.data_dump, "rb") as file:
     data_dump = pickle.load(file)
 
 priors = data_dump["priors"]
@@ -188,8 +187,12 @@ result = bilby.core.result.Result(
 result.priors = priors
 result.samples = dynesty.utils.resample_equal(out.samples, weights)
 result.nested_samples = nested_samples
-result.meta_data["data_dump"] = data_dump
+result.meta_data = dict()
+result.meta_data["analysis_args"] = vars(input_args)
+result.meta_data["config_file"] = vars(args)
+result.meta_data["data_dump"] = input_args.data_dump
 result.meta_data["likelihood"] = likelihood.meta_data
+print(result.meta_data)
 
 result.log_likelihood_evaluations = reorder_loglikelihoods(
     unsorted_loglikelihoods=out.logl, unsorted_samples=out.samples,
