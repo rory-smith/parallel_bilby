@@ -49,6 +49,25 @@ def get_args():
         "--minimum-frequency", default=20, help="The minimum frequency")
     parser.add_argument(
         "--maximum-frequency", default=2048, help="The maxmimum frequency")
+    parser.add(
+        "--calibration-model",
+        type=str,
+        default=None,
+        choices=["CubicSpline"],
+        help="Choice of calibration model, if None, no calibration is used",
+    )
+    parser.add(
+        "--spline-calibration-envelope-dict",
+        type=convert_string_to_dict,
+        default=None,
+        help=("Dictionary pointing to the spline calibration envelope files"),
+    )
+    parser.add(
+        "--spline-calibration-nodes",
+        type=int,
+        default=5,
+        help=("Number of calibration nodes"),
+    )
 
     args = parser.parse_args()
 
@@ -61,6 +80,10 @@ def main():
     duration = args.duration
     label = args.label
     outdir = args.outdir
+
+    priors = bilby.gw.prior.PriorDict(filename=args.prior_file)
+    priors["geocent_time"] = bilby.core.prior.Uniform(
+        trigger_time - 0.1, trigger_time + 0.1, name="geocent_time")
 
     roll_off = 0.4  # Roll off duration of tukey window in seconds
     post_trigger_duration = 2  # Time between trigger time and end of segment
@@ -85,12 +108,26 @@ def main():
             psd_file=args.psd_dict[det])
         ifo_list.append(ifo)
 
+        if args.calibration_model == "CubicSpline":
+            ifo.calibration_model = bilby.gw.calibration.CubicSpline(
+                prefix="recalib_{}_".format(ifo.name),
+                minimum_frequency=ifo.minimum_frequency,
+                maximum_frequency=ifo.maximum_frequency,
+                n_points=args.spline_calibration_nodes,
+            )
+
+            priors.update(
+                bilby.gw.prior.CalibrationPriorDict.from_envelope_file(
+                    args.spline_calibration_envelope_dict[det],
+                    minimum_frequency=ifo.minimum_frequency,
+                    maximum_frequency=ifo.maximum_frequency,
+                    n_nodes=args.spline_calibration_nodes,
+                    label=det,
+                )
+            )
+
     bilby.core.utils.check_directory_exists_and_if_not_mkdir(outdir)
     ifo_list.plot_data(outdir=outdir, label=label)
-
-    priors = bilby.gw.prior.PriorDict(filename=args.prior_file)
-    priors["geocent_time"] = bilby.core.prior.Uniform(
-        trigger_time - 0.1, trigger_time + 0.1, name="geocent_time")
 
     if "tidal" in args.waveform_approximant.lower():
         conv = bilby.gw.conversion.convert_to_lal_binary_neutron_star_parameters
