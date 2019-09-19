@@ -86,6 +86,9 @@ parser.add_argument(
 parser.add_argument(
     "--n-effective", default=5000, type=float,
     help="Stopping criteria: effective number of samples, (default=5000)")
+parser.add_argument(
+    "--dynesty-sample", default="rwalk", type=str,
+    help="Dynesty sampling method (default=rwalk)")
 
 input_args = parser.parse_args()
 
@@ -144,7 +147,7 @@ with MPIPool() as pool:
     logger.info(priors)
     sampler = NestedSampler(
         likelihood_function, prior_transform_function, len(sampling_keys),
-        nlive=nlive, sample='unif', update_interval=4.1,
+        nlive=nlive, sample=args.dynesty_sample, update_interval=int(2*nlive),
         pool=pool, queue_size=POOL_SIZE,
         use_pool=dict(update_bound=True,
                       propose_point=True,
