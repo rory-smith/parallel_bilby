@@ -89,6 +89,9 @@ parser.add_argument(
 parser.add_argument(
     "--dynesty-sample", default="rwalk", type=str,
     help="Dynesty sampling method (default=rwalk)")
+parser.add_argument(
+    "--dynesty-walks", default=100, type=int,
+    help="Number of walks")
 
 input_args = parser.parse_args()
 
@@ -147,7 +150,8 @@ with MPIPool() as pool:
     logger.info(priors)
     sampler = NestedSampler(
         likelihood_function, prior_transform_function, len(sampling_keys),
-        nlive=nlive, sample=args.dynesty_sample, update_interval=int(2*nlive),
+        nlive=nlive, sample=input_args.dynesty_sample,
+        walks=input_args.dynesty_walks, update_interval=int(2*nlive),
         pool=pool, queue_size=POOL_SIZE,
         use_pool=dict(update_bound=True,
                       propose_point=True,
