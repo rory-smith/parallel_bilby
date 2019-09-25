@@ -165,7 +165,8 @@ with MPIPool() as pool:
     sampler_kwargs = dict(
         print_progress=True, maxcall=n_check_point,
         n_effective=input_args.n_effective, dlogz=input_args.dlogz)
-    filename = "{}/{}_checkpoint_trace.png".format(outdir, label)
+    filename_trace = "{}/{}_checkpoint_trace.png".format(outdir, label)
+    filename_sampler = "{}/{}_checkpoint_sampler.pkl".format(outdir, label)
     while True:
         sampler_kwargs['maxcall'] += n_check_point
         sampler.run_nested(**sampler_kwargs)
@@ -176,8 +177,9 @@ with MPIPool() as pool:
         try:
             fig = traceplot(sampler.results, labels=sampling_keys)[0]
             fig.tight_layout()
-            fig.savefig(filename)
+            fig.savefig(filename_trace)
             plt.close('all')
+            pickle.dump( sampler, open( filename_sampler, "wb" ) )
         except Exception:
             pass
 sampling_time = (datetime.datetime.now() - t0).total_seconds()
