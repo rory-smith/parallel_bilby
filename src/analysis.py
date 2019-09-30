@@ -179,7 +179,8 @@ with MPIPool() as pool:
             fig.tight_layout()
             fig.savefig(filename_trace)
             plt.close('all')
-            pickle.dump( sampler, open( filename_sampler, "wb" ) )
+            with open(filename_sampler, "wb") as f:
+                pickle.dump(sampler.results, f)
         except Exception:
             pass
 sampling_time = (datetime.datetime.now() - t0).total_seconds()
