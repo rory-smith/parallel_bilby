@@ -153,6 +153,7 @@ with MPIPool() as pool:
         nlive=nlive, sample=input_args.dynesty_sample,
         walks=input_args.dynesty_walks, update_interval=int(2*nlive),
         pool=pool, queue_size=POOL_SIZE,
+        print_func=dynesty.results.print_fn_fallback,
         use_pool=dict(update_bound=True,
                       propose_point=True,
                       prior_transform=True,
