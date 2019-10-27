@@ -7,6 +7,8 @@ import sys
 import argparse
 import datetime
 import pickle
+import warnings
+import math
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,9 +16,10 @@ import bilby
 import dynesty
 from dynesty.plotting import traceplot
 from dynesty import NestedSampler
-from dynesty.utils import resample_equal
+from dynesty.utils import resample_equal, unitcheck
 from schwimmbad import MPIPool
 from pandas import DataFrame
+from numpy import linalg
 
 import mpi4py
 mpi4py.rc.threads = False
@@ -29,6 +32,166 @@ logger = bilby.core.utils.logger
 def main():
     """ Do nothing function to play nicely with MPI """
     pass
+
+
+def sample_rwalk_parallel(args):
+    """
+    Return a new live point proposed by random walking away from an
+    existing live point. This method is based on sample_rwalk form dynesty, but
+    with additional optimisations for running parallel jobs.
+
+    Parameters
+    ----------
+    u : `~numpy.ndarray` with shape (npdim,)
+        Position of the initial sample. **This is a copy of an existing live
+        point.**
+
+    loglstar : float
+        Ln(likelihood) bound.
+
+    axes : `~numpy.ndarray` with shape (ndim, ndim)
+        Axes used to propose new points. For random walks new positions are
+        proposed using the :class:`~dynesty.bounding.Ellipsoid` whose
+        shape is defined by axes.
+
+    scale : float
+        Value used to scale the provided axes.
+
+    prior_transform : function
+        Function transforming a sample from the a unit cube to the parameter
+        space of interest according to the prior.
+
+    loglikelihood : function
+        Function returning ln(likelihood) given parameters as a 1-d `~numpy`
+        array of length `ndim`.
+
+    kwargs : dict
+        A dictionary of additional method-specific parameters.
+
+    Returns
+    -------
+    u : `~numpy.ndarray` with shape (npdim,)
+        Position of the final proposed point within the unit cube.
+
+    v : `~numpy.ndarray` with shape (ndim,)
+        Position of the final proposed point in the target parameter space.
+
+    logl : float
+        Ln(likelihood) of the final proposed point.
+
+    nc : int
+        Number of function calls used to generate the sample.
+
+    blob : dict
+        Collection of ancillary quantities used to tune :data:`scale`.
+
+    """
+
+    # Unzipping.
+    (u, loglstar, axes, scale,
+     prior_transform, loglikelihood, kwargs) = args
+    rstate = np.random
+
+    # Bounds
+    nonbounded = kwargs.get('nonbounded', None)
+    periodic = kwargs.get('periodic', None)
+    reflective = kwargs.get('reflective', None)
+
+    # Setup.
+    n = len(u)
+    walks = kwargs.get('walks', 25)  # number of steps
+    accept = 0
+    reject = 0
+    fail = 0
+    nfail = 0
+    nc = 0
+    ncall = 0
+
+    drhat, dr, du, u_prop, logl_prop = np.nan, np.nan, np.nan, np.nan, np.nan
+    while nc < walks: # or accept == 0:
+        while True:
+
+            # Check scale-factor.
+            if scale == 0.:
+                raise RuntimeError("The random walk sampling is stuck! "
+                                   "Some useful output quantities:\n"
+                                   "u: {0}\n"
+                                   "drhat: {1}\n"
+                                   "dr: {2}\n"
+                                   "du: {3}\n"
+                                   "u_prop: {4}\n"
+                                   "loglstar: {5}\n"
+                                   "logl_prop: {6}\n"
+                                   "axes: {7}\n"
+                                   "scale: {8}."
+                                   .format(u, drhat, dr, du, u_prop,
+                                           loglstar, logl_prop, axes, scale))
+
+            # Propose a direction on the unit n-sphere.
+            drhat = rstate.randn(n)
+            drhat /= linalg.norm(drhat)
+
+            # Scale based on dimensionality.
+            dr = drhat * rstate.rand()**(1./n)
+
+            # Transform to proposal distribution.
+            du = np.dot(axes, dr)
+            u_prop = u + scale * du
+
+            # Wrap periodic parameters
+            if periodic is not None:
+                u_prop[periodic] = np.mod(u_prop[periodic], 1)
+            # Reflect
+            if reflective is not None:
+                u_prop_ref = u_prop[reflective]
+                u_prop[reflective] = np.minimum(
+                    np.maximum(u_prop_ref, abs(u_prop_ref)),
+                    2 - u_prop_ref)
+
+            # Check unit cube constraints.
+            if unitcheck(u_prop, nonbounded):
+                break
+            else:
+                fail += 1
+                nfail += 1
+
+            # Check if we're stuck generating bad numbers.
+            if fail > 100 * walks:
+                warnings.warn("Random number generation appears to be "
+                              "extremely inefficient. Adjusting the "
+                              "scale-factor accordingly.")
+                fail = 0
+                scale *= math.exp(-1. / n)
+
+        # Check proposed point.
+        v_prop = prior_transform(np.array(u_prop))
+        logl_prop = loglikelihood(np.array(v_prop))
+        if logl_prop >= loglstar:
+            u = u_prop
+            v = v_prop
+            logl = logl_prop
+            accept += 1
+        else:
+            reject += 1
+        nc += 1
+        ncall += 1
+
+        # Check if we're stuck generating bad points.
+        if nc > 50 * walks:
+            scale *= math.exp(-1. / n)
+            warnings.warn("Random walk proposals appear to be "
+                          "extremely inefficient. Adjusting the "
+                          "scale-factor accordingly.")
+            nc, accept, reject = 0, 0, 0  # reset values
+
+    blob = {'accept': accept, 'reject': reject, 'fail': nfail, 'scale': scale}
+
+    if accept == 0:
+        u = u_prop
+        v = v_prop
+        logl = logl_prop
+
+    return u, v, logl, ncall, blob
 
 
 def reorder_loglikelihoods(unsorted_loglikelihoods, unsorted_samples,
@@ -227,7 +390,8 @@ parser.add_argument(
     help="Stopping criteria: effective number of samples, (default=5000)")
 parser.add_argument(
     "--dynesty-sample", default="rwalk", type=str,
-    help="Dynesty sampling method (default=rwalk)")
+    help="Dynesty sampling method (default=rwalk). Note, the dynesty rwalk "
+         "method is overwritten by parallel bilby for an optimised version ")
 parser.add_argument(
     "--dynesty-walks", default=100, type=int,
     help="Number of walks")
@@ -294,6 +458,10 @@ with MPIPool() as pool:
 
     filename_trace = "{}/{}_checkpoint_trace.png".format(outdir, label)
     resume_file = "{}/{}_checkpoint_resume.pickle".format(outdir, label)
+
+    # Overwrite the dynesty rwalk method with the optimised version
+    dynesty.dynesty._SAMPLING["rwalk"] = sample_rwalk_parallel
+    dynesty.nestedsamplers._SAMPLING["rwalk"] = sample_rwalk_parallel
 
     sampler = NestedSampler(
         likelihood_function, prior_transform_function, len(sampling_keys),
