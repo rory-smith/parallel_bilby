@@ -3,6 +3,7 @@
 Generate/prepare data, likelihood, and priors for parallel runs
 """
 import pickle
+import argparse
 
 import numpy as np
 import bilby
@@ -12,6 +13,24 @@ from gwpy.timeseries import TimeSeries
 
 
 logger = bilby.core.utils.logger
+
+
+class StoreBoolean(argparse.Action):
+    """ argparse class for robust handling of booleans with configargparse
+
+    When using configargparse, if the argument is setup with
+    action="store_true", but the default is set to True, then there is no way,
+    in the config file to switch the parameter off. To resolve this, this class
+    handles the boolean properly.
+
+    """
+
+    def __call__(self, parser, namespace, value, option_string=None):
+        value = str(value).lower()
+        if value in ["true"]:
+            setattr(namespace, self.dest, True)
+        else:
+            setattr(namespace, self.dest, False)
 
 
 def get_args():
@@ -29,7 +48,15 @@ def get_args():
         "-t", "--trigger-time", required=True, help="Trigger time", type=float)
     parser.add_argument(
         "-d", "--duration", required=True, help="Segment duration", type=float)
-
+    parser.add(
+        "--deltaT",
+        type=float,
+        default=0.2,
+        help=(
+            "The symmetric width (in s) around the trigger time to"
+            " search over the coalesence time"
+        ),
+    )
     parser.add_argument(
         "--data-dict", type=convert_string_to_dict, required=True)
     parser.add_argument(
@@ -68,6 +95,30 @@ def get_args():
         default=5,
         help=("Number of calibration nodes"),
     )
+    parser.add(
+        "--distance-marginalization",
+        action=StoreBoolean,
+        default=True,
+        help="Boolean. If true (default), use a distance-marginalized likelihood",
+    )
+    parser.add(
+        "--distance-marginalization-lookup-table",
+        default=None,
+        type=str,
+        help="Path to the distance-marginalization lookup table",
+    )
+    parser.add(
+        "--phase-marginalization",
+        action=StoreBoolean,
+        default=True,
+        help="Boolean. If true (default), use a phase-marginalized likelihood",
+    )
+    parser.add(
+        "--time-marginalization",
+        action=StoreBoolean,
+        default=True,
+        help="Boolean. If true (default), use a time-marginalized likelihood",
+    )
 
     args = parser.parse_args()
 
@@ -83,7 +134,9 @@ def main():
 
     priors = bilby.gw.prior.PriorDict(filename=args.prior_file)
     priors["geocent_time"] = bilby.core.prior.Uniform(
-        trigger_time - 0.1, trigger_time + 0.1, name="geocent_time")
+        trigger_time - args.deltaT / 2,
+        trigger_time + args.deltaT / 2,
+        name="geocent_time")
 
     roll_off = 0.4  # Roll off duration of tukey window in seconds
     post_trigger_duration = 2  # Time between trigger time and end of segment
@@ -140,9 +193,17 @@ def main():
         waveform_arguments={'waveform_approximant': args.waveform_approximant,
                             'reference_frequency': args.reference_frequency})
 
+    logger.info(
+        "Setting up likelihood with marginalizations: "
+        f"distance={args.distance_marginalization} "
+        f"time={args.time_marginalization} "
+        f"phase={args.phase_marginalization} ")
     likelihood = bilby.gw.likelihood.GravitationalWaveTransient(
-        ifo_list, waveform_generator, priors=priors, time_marginalization=False,
-        phase_marginalization=True, distance_marginalization=True)
+        ifo_list, waveform_generator, priors=priors,
+        time_marginalization=args.time_marginalization,
+        phase_marginalization=args.phase_marginalization,
+        distance_marginalization=args.distance_marginalization,
+        distance_marginalization_lookup_table=args.distance_marginalization_lookup_table)
 
     data_dump_file = f"{outdir}/{label}_data_dump.pickle"
     data_dump = dict(likelihood=likelihood, priors=priors, args=args,
