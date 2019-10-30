@@ -39,7 +39,13 @@ parser.add_argument("result", type=str)
 parser.add_argument(
     "-n", "--nsamples", type=int, default=5000,
     help="If enough samples available, resample to this number of samples")
+parser.add_argument(
+    "--rand-seed", type=int, default=1234,
+    help="Random seed: important for reproducible resampling")
+
 args = parser.parse_args()
+
+np.random.seed(args.rand_seed)
 
 result = bilby.gw.result.CBCResult.from_json(args.result)
 
@@ -78,7 +84,7 @@ with MPIPool() as pool:
     if not pool.is_master():
         pool.wait()
         sys.exit(0)
-    print(f"Starting to fill posterior with POOL={pool.size}")
+    print(f"Filling posterior of size {len(posterior)} with POOL={pool.size}")
     samples = np.array(pool.map(generate_sample, range(len(posterior))))
     posterior['geocent_time'] = samples[:, 0]
     posterior['luminosity_distance'] = samples[:, 1]
