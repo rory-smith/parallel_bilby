@@ -119,6 +119,12 @@ def get_args():
         default=True,
         help="Boolean. If true (default), use a time-marginalized likelihood",
     )
+    parser.add(
+        "--binary-neutron-star",
+        action=StoreBoolean,
+        default=False,
+        help="",
+    )
 
     args = parser.parse_args()
 
@@ -182,13 +188,15 @@ def main():
     bilby.core.utils.check_directory_exists_and_if_not_mkdir(outdir)
     ifo_list.plot_data(outdir=outdir, label=label)
 
-    if "tidal" in args.waveform_approximant.lower():
+    if args.binary_neutron_star or "tidal" in args.waveform_approximant.lower():
         conv = bilby.gw.conversion.convert_to_lal_binary_neutron_star_parameters
+        fdsm = bilby.gw.source.lal_binary_neutron_star
     else:
         conv = bilby.gw.conversion.convert_to_lal_binary_black_hole_parameters
+        fdsm = bilby.gw.source.lal_binary_black_hole
 
     waveform_generator = bilby.gw.WaveformGenerator(
-        frequency_domain_source_model=bilby.gw.source.lal_binary_neutron_star,
+        frequency_domain_source_model=fdsm,
         parameter_conversion=conv,
         waveform_arguments={'waveform_approximant': args.waveform_approximant,
                             'reference_frequency': args.reference_frequency})
