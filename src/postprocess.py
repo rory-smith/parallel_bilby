@@ -37,7 +37,7 @@ def generate_sample(ii):
 parser = argparse.ArgumentParser()
 parser.add_argument("result", type=str)
 parser.add_argument(
-    "-n", "--nsamples", type=int, default=5000,
+    "-n", "--nsamples", type=int, default=False,
     help="If enough samples available, resample to this number of samples")
 parser.add_argument(
     "--rand-seed", type=int, default=1234,
@@ -73,6 +73,7 @@ for key, val in priors.items():
 posterior, _ = conversion.convert_to_lal_binary_neutron_star_parameters(
     posterior)
 posterior = conversion.generate_mass_parameters(posterior)
+posterior = conversion.generate_spin_parameters(posterior)
 posterior = conversion.generate_tidal_parameters(posterior)
 
 

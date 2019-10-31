@@ -73,9 +73,9 @@ def get_args():
     parser.add_argument(
         "--sampling-frequency", default=4096, help="The sampling frequency")
     parser.add_argument(
-        "--minimum-frequency", default=20, help="The minimum frequency")
+        "--minimum-frequency", default=20, type=float, help="The minimum frequency")
     parser.add_argument(
-        "--maximum-frequency", default=2048, help="The maxmimum frequency")
+        "--maximum-frequency", default=2048, type=float, help="The maxmimum frequency")
     parser.add(
         "--calibration-model",
         type=str,
