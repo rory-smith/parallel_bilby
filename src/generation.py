@@ -71,7 +71,7 @@ def get_args():
     parser.add_argument(
         "--reference-frequency", default=20, help="The reference frequency")
     parser.add_argument(
-        "--sampling-frequency", default=4096, help="The sampling frequency")
+        "--sampling-frequency", default=4096, help="The sampling frequency", type=float)
     parser.add_argument(
         "--minimum-frequency", default=20, type=float, help="The minimum frequency")
     parser.add_argument(
