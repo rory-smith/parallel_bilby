@@ -147,7 +147,15 @@ def main():
     label = args.label
     outdir = args.outdir
 
-    priors = bilby.gw.prior.PriorDict(filename=args.prior_file)
+    if args.binary_neutron_star or "tidal" in args.waveform_approximant.lower():
+        conv = bilby.gw.conversion.convert_to_lal_binary_neutron_star_parameters
+        fdsm = bilby.gw.source.lal_binary_neutron_star
+    else:
+        conv = bilby.gw.conversion.convert_to_lal_binary_black_hole_parameters
+        fdsm = bilby.gw.source.lal_binary_black_hole
+
+    priors = bilby.gw.prior.PriorDict(
+        args.prior_file, conversion_function=conv)
     priors["geocent_time"] = bilby.core.prior.Uniform(
         trigger_time - args.deltaT / 2,
         trigger_time + args.deltaT / 2,
@@ -196,13 +204,6 @@ def main():
 
     bilby.core.utils.check_directory_exists_and_if_not_mkdir(outdir)
     ifo_list.plot_data(outdir=outdir, label=label)
-
-    if args.binary_neutron_star or "tidal" in args.waveform_approximant.lower():
-        conv = bilby.gw.conversion.convert_to_lal_binary_neutron_star_parameters
-        fdsm = bilby.gw.source.lal_binary_neutron_star
-    else:
-        conv = bilby.gw.conversion.convert_to_lal_binary_black_hole_parameters
-        fdsm = bilby.gw.source.lal_binary_black_hole
 
     waveform_generator = bilby.gw.WaveformGenerator(
         frequency_domain_source_model=fdsm,
