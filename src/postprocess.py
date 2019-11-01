@@ -12,6 +12,7 @@ import numpy as np
 import bilby
 from bilby.gw import conversion
 
+logger = bilby.core.utils.logger
 
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -57,11 +58,10 @@ priors = result.priors
 posterior = result.posterior
 
 if args.nsamples is not False and len(posterior) > args.nsamples:
+    logger.debug("Downsampling to {} samples".format(args.nsamples))
     posterior = posterior.sample(args.nsamples)
 else:
     pass
-
-result.label = result.label + "_postprocessed"
 
 for key, val in priors.items():
     cond1 = key not in posterior
@@ -70,28 +70,45 @@ for key, val in priors.items():
     if cond1 and cond2 and cond3:
         posterior[key] = val.peak
 
-posterior, _ = conversion.convert_to_lal_binary_neutron_star_parameters(
-    posterior)
-posterior = conversion.generate_mass_parameters(posterior)
-posterior = conversion.generate_spin_parameters(posterior)
-posterior = conversion.generate_tidal_parameters(posterior)
-
-
-new_time_samples = list()
-new_distance_samples = list()
-new_phase_samples = list()
-t0 = datetime.datetime.now()
 with MPIPool() as pool:
     if not pool.is_master():
         pool.wait()
         sys.exit(0)
-    print(f"Filling posterior of size {len(posterior)} with POOL={pool.size}")
+
+    result.label = result.label + "_postprocessed"
+
+    if data_dump["args"].binary_neutron_star:
+        logger.info("Using BNS source model")
+        posterior, _ = conversion.convert_to_lal_binary_neutron_star_parameters(
+            posterior)
+        posterior = conversion.generate_all_bns_parameters(posterior)
+    else:
+        logger.info("Using BBH source model")
+        posterior, _ = conversion.convert_to_lal_binary_black_hole_parameters(
+            posterior)
+        posterior = conversion.generate_all_bbh_parameters(posterior)
+
+    logger.info("Updating prior to the actual prior")
+    for par, name in zip(
+            ['distance', 'phase', 'time'],
+            ['luminosity_distance', 'phase', 'geocent_time']):
+        if getattr(likelihood, '{}_marginalization'.format(par), False):
+            priors[name] = likelihood.priors[name]
+    result.priors = priors
+
+    new_time_samples = list()
+    new_distance_samples = list()
+    new_phase_samples = list()
+    t0 = datetime.datetime.now()
+
+    logger.info("Generating posterior from marginalized parameters")
+    logger.info(f"Nsamples={len(posterior)}, POOL={pool.size}")
     samples = np.array(pool.map(generate_sample, range(len(posterior))))
     posterior['geocent_time'] = samples[:, 0]
     posterior['luminosity_distance'] = samples[:, 1]
     posterior['phase'] = samples[:, 2]
     dt = datetime.datetime.now() - t0
-    print(f"Finished, time taken = {dt}")
+    logger.info(f"Finished, time taken = {dt}")
 
     result.posterior = posterior
     result.save_to_file(extension="json")
