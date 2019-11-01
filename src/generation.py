@@ -150,12 +150,12 @@ def main():
     if args.binary_neutron_star or "tidal" in args.waveform_approximant.lower():
         conv = bilby.gw.conversion.convert_to_lal_binary_neutron_star_parameters
         fdsm = bilby.gw.source.lal_binary_neutron_star
+        priors = bilby.gw.prior.BNSPriorDict(args.prior_file)
     else:
         conv = bilby.gw.conversion.convert_to_lal_binary_black_hole_parameters
         fdsm = bilby.gw.source.lal_binary_black_hole
+        priors = bilby.gw.prior.BBHPriorDict(args.prior_file)
 
-    priors = bilby.gw.prior.PriorDict(
-        args.prior_file, conversion_function=conv)
     priors["geocent_time"] = bilby.core.prior.Uniform(
         trigger_time - args.deltaT / 2,
         trigger_time + args.deltaT / 2,
@@ -223,8 +223,11 @@ def main():
         distance_marginalization=args.distance_marginalization,
         distance_marginalization_lookup_table=args.distance_marginalization_lookup_table)
 
+    prior_file = f"{outdir}/{label}_prior.json"
+    priors.to_json(outdir=outdir, label=label)
+
     data_dump_file = f"{outdir}/{label}_data_dump.pickle"
-    data_dump = dict(likelihood=likelihood, priors=priors, args=args,
+    data_dump = dict(likelihood=likelihood, prior_file=prior_file, args=args,
                      data_dump_file=data_dump_file)
 
     with open(data_dump_file, "wb+") as file:
