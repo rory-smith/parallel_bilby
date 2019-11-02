@@ -381,7 +381,7 @@ parser.add_argument(
 parser.add_argument(
     "-l", "--label", default=None, nargs="*", help="Extra labels")
 parser.add_argument(
-    "-n", "--nlive", default=1000, type=int, help="Number of live points")
+    "-n", "--nlive", default=1024, type=int, help="Number of live points")
 parser.add_argument(
     "--dlogz", default=0.1, type=float,
     help="Stopping criteria: remaining evidence, (default=0.1)")
@@ -466,7 +466,7 @@ with MPIPool() as pool:
     sampler = NestedSampler(
         likelihood_function, prior_transform_function, len(sampling_keys),
         nlive=nlive, sample=input_args.dynesty_sample,
-        walks=input_args.dynesty_walks, update_interval=int(2*nlive),
+        walks=10*len(sampling_keys), 
         pool=pool, queue_size=POOL_SIZE,
         print_func=dynesty.results.print_fn_fallback,
         use_pool=dict(update_bound=True,
