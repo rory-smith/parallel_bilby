@@ -35,15 +35,16 @@ class StoreBoolean(argparse.Action):
 
 def get_args():
     parser = BilbyArgParser(
-        usage=__doc__, ignore_unknown_config_file_keys=False, allow_abbrev=False
+        usage=__doc__, ignore_unknown_config_file_keys=False,
+        allow_abbrev=False
     )
-    parser.add("ini", type=str, is_config_file=True, help="Configuration ini file")
-
+    parser.add(
+        "ini", type=str, is_config_file=True, help="Configuration ini file")
     parser.add_argument(
-        "-l", "--label", help="Label for the data", required=True)
+        "-l", "--label", help="Label for the data", required=True, type=str)
     parser.add_argument(
-        "-o", "--outdir", default="processed_data", help="Outdir for the processed data")
-
+        "-o", "--outdir", default="processed_data",
+        help="Outdir for the processed data", type=str)
     parser.add_argument(
         "-t", "--trigger-time", required=True, help="Trigger time", type=float)
     parser.add_argument(
@@ -58,48 +59,61 @@ def get_args():
         ),
     )
     parser.add_argument(
-        "--data-dict", type=convert_string_to_dict, required=True)
+        "--data-dict", type=convert_string_to_dict, required=True,
+        help="Dictionary of paths to the data to analyse, e.g. {H1:data.gwf}")
     parser.add_argument(
-        "--channel-dict", type=convert_string_to_dict, required=True)
+        "--channel-dict", type=convert_string_to_dict, required=True,
+        help="Dictionary of channel names for each data file")
     parser.add_argument(
-        "--psd-dict", type=convert_string_to_dict, required=True)
-
+        "--psd-dict", type=convert_string_to_dict, required=True,
+        help="Dictionary of paths to the relevant PSD files for each data file"
+        )
     parser.add_argument(
-        "--prior-file", type=str, required=True)
+        "--prior-file", type=str, required=True,
+        help="Path to the Bilby prior file")
     parser.add_argument(
-        "--waveform-approximant", type=str, required=True)
+        "--waveform-approximant", type=str, required=True,
+        help="Name of the waveform approximant")
     parser.add_argument(
-        "--reference-frequency", default=20, help="The reference frequency")
+        "--reference-frequency", default=20, help="The reference frequency",
+        type=float)
     parser.add_argument(
+<<<<<<< HEAD
         "--sampling-frequency", default=4096, help="The sampling frequency", type=float)
+=======
+        "--sampling-frequency", default=4096, help="The sampling frequency",
+        type=float)
+>>>>>>> 6adf42366225ed343eebd1730f30db2d32f28581
     parser.add_argument(
-        "--minimum-frequency", default=20, type=float, help="The minimum frequency")
+        "--minimum-frequency", default=20, help="The minimum frequency",
+        type=float)
     parser.add_argument(
-        "--maximum-frequency", default=2048, type=float, help="The maxmimum frequency")
+        "--maximum-frequency", default=2048, help="The maxmimum frequency",
+        type=float)
     parser.add(
         "--calibration-model",
-        type=str,
         default=None,
         choices=["CubicSpline"],
         help="Choice of calibration model, if None, no calibration is used",
+        type=str,
     )
     parser.add(
         "--spline-calibration-envelope-dict",
         type=convert_string_to_dict,
         default=None,
-        help=("Dictionary pointing to the spline calibration envelope files"),
+        help=("Dictionary of paths to the spline calibration envelope files"),
     )
     parser.add(
         "--spline-calibration-nodes",
         type=int,
-        default=5,
+        default=10,
         help=("Number of calibration nodes"),
     )
     parser.add(
         "--distance-marginalization",
         action=StoreBoolean,
         default=True,
-        help="Boolean. If true (default), use a distance-marginalized likelihood",
+        help="Bool. If true (default), use a distance-marginalized likelihood",
     )
     parser.add(
         "--distance-marginalization-lookup-table",
@@ -111,21 +125,20 @@ def get_args():
         "--phase-marginalization",
         action=StoreBoolean,
         default=True,
-        help="Boolean. If true (default), use a phase-marginalized likelihood",
+        help="Bool. If true (default), use a phase-marginalized likelihood",
     )
     parser.add(
         "--time-marginalization",
         action=StoreBoolean,
         default=True,
-        help="Boolean. If true (default), use a time-marginalized likelihood",
+        help="Bool. If true (default), use a time-marginalized likelihood",
     )
     parser.add(
         "--binary-neutron-star",
         action=StoreBoolean,
         default=False,
-        help="",
+        help="If true, use a BNS source model function (i.e. with tides)",
     )
-
     args = parser.parse_args()
 
     return args
@@ -138,7 +151,15 @@ def main():
     label = args.label
     outdir = args.outdir
 
-    priors = bilby.gw.prior.PriorDict(filename=args.prior_file)
+    if args.binary_neutron_star or "tidal" in args.waveform_approximant.lower():
+        conv = bilby.gw.conversion.convert_to_lal_binary_neutron_star_parameters
+        fdsm = bilby.gw.source.lal_binary_neutron_star
+        priors = bilby.gw.prior.BNSPriorDict(args.prior_file)
+    else:
+        conv = bilby.gw.conversion.convert_to_lal_binary_black_hole_parameters
+        fdsm = bilby.gw.source.lal_binary_black_hole
+        priors = bilby.gw.prior.BBHPriorDict(args.prior_file)
+
     priors["geocent_time"] = bilby.core.prior.Uniform(
         trigger_time - args.deltaT / 2,
         trigger_time + args.deltaT / 2,
@@ -188,13 +209,6 @@ def main():
     bilby.core.utils.check_directory_exists_and_if_not_mkdir(outdir)
     ifo_list.plot_data(outdir=outdir, label=label)
 
-    if args.binary_neutron_star or "tidal" in args.waveform_approximant.lower():
-        conv = bilby.gw.conversion.convert_to_lal_binary_neutron_star_parameters
-        fdsm = bilby.gw.source.lal_binary_neutron_star
-    else:
-        conv = bilby.gw.conversion.convert_to_lal_binary_black_hole_parameters
-        fdsm = bilby.gw.source.lal_binary_black_hole
-
     waveform_generator = bilby.gw.WaveformGenerator(
         frequency_domain_source_model=fdsm,
         parameter_conversion=conv,
@@ -213,8 +227,11 @@ def main():
         distance_marginalization=args.distance_marginalization,
         distance_marginalization_lookup_table=args.distance_marginalization_lookup_table)
 
+    prior_file = f"{outdir}/{label}_prior.json"
+    priors.to_json(outdir=outdir, label=label)
+
     data_dump_file = f"{outdir}/{label}_data_dump.pickle"
-    data_dump = dict(likelihood=likelihood, priors=priors, args=args,
+    data_dump = dict(likelihood=likelihood, prior_file=prior_file, args=args,
                      data_dump_file=data_dump_file)
 
     with open(data_dump_file, "wb+") as file:

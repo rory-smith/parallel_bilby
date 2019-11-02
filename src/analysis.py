@@ -404,7 +404,6 @@ input_args = parser.parse_args()
 with open(input_args.data_dump, "rb") as file:
     data_dump = pickle.load(file)
 
-priors = data_dump["priors"]
 likelihood = data_dump["likelihood"]
 args = data_dump["args"]
 outdir = args.outdir
@@ -413,6 +412,11 @@ if input_args.label is not None:
     label += "_" + "_".join(input_args.label)
 nlive = input_args.nlive
 
+if args.binary_neutron_star:
+    priors = bilby.gw.prior.BNSPriorDict.from_json(data_dump["prior_file"])
+else:
+    priors = bilby.gw.prior.BBHPriorDict.from_json(data_dump["prior_file"])
+
 
 def prior_transform_function(u_array):
     return priors.rescale(sampling_keys, u_array)
@@ -420,7 +424,7 @@ def prior_transform_function(u_array):
 
 def likelihood_function(v_array):
     parameters = {key: v for key, v in zip(sampling_keys, v_array)}
-    if priors.evaluate_constraints(parameters):
+    if priors.evaluate_constraints(parameters) > 0:
         likelihood.parameters.update(parameters)
         return likelihood.log_likelihood() - likelihood.noise_log_likelihood()
     else:
@@ -440,11 +444,11 @@ for p in priors:
 
 # Setting marginalized parameters to their reference values
 if likelihood.phase_marginalization:
-    likelihood.parameters["phase"] = priors["phase"]
+    likelihood.parameters["phase"] = priors["phase"].peak
 if likelihood.time_marginalization:
-    likelihood.parameters["geocent_time"] = priors["geocent_time"]
+    likelihood.parameters["geocent_time"] = priors["geocent_time"].peak
 if likelihood.distance_marginalization:
-    likelihood.parameters["luminosity_distance"] = priors["luminosity_distance"]
+    likelihood.parameters["luminosity_distance"] = priors["luminosity_distance"].peak
 
 t0 = datetime.datetime.now()
 sampling_time = 0
@@ -466,7 +470,7 @@ with MPIPool() as pool:
     sampler = NestedSampler(
         likelihood_function, prior_transform_function, len(sampling_keys),
         nlive=nlive, sample=input_args.dynesty_sample,
-        walks=10*len(sampling_keys), 
+        walks=10*len(sampling_keys),
         pool=pool, queue_size=POOL_SIZE,
         print_func=dynesty.results.print_fn_fallback,
         use_pool=dict(update_bound=True,
