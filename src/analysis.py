@@ -398,6 +398,8 @@ parser.add_argument(
 parser.add_argument(
     "--n-check-point", default=10000, type=int,
     help="Number of walks")
+parser.add_argument(
+    "--bilby-zero-likelihood-mode", default=False, action="store_true")
 
 input_args = parser.parse_args()
 
@@ -419,10 +421,13 @@ else:
 
 
 def prior_transform_function(u_array):
+    u_array[reflective] = bilby.core.utils.reflect(u_array[reflective])
     return priors.rescale(sampling_keys, u_array)
 
 
 def likelihood_function(v_array):
+    if input_args.bilby_zero_likelihood_mode:
+        return 0
     parameters = {key: v for key, v in zip(sampling_keys, v_array)}
     if priors.evaluate_constraints(parameters) > 0:
         likelihood.parameters.update(parameters)
@@ -442,6 +447,18 @@ for p in priors:
     else:
         sampling_keys.append(p)
 
+
+periodic = []
+reflective = []
+for ii, key in enumerate(sampling_keys):
+    if priors[key].boundary == 'periodic':
+        logger.debug("Setting periodic boundary for {}".format(key))
+        periodic.append(ii)
+    elif priors[key].boundary == 'reflective':
+        logger.debug("Setting reflective boundary for {}".format(key))
+        reflective.append(ii)
+
+
 # Setting marginalized parameters to their reference values
 if likelihood.phase_marginalization:
     likelihood.parameters["phase"] = priors["phase"].peak
@@ -458,6 +475,10 @@ with MPIPool() as pool:
         sys.exit(0)
     POOL_SIZE = pool.size
     logger.info(f"sampling_keys={sampling_keys}")
+    logger.info(
+        "Periodic keys: {}".format([sampling_keys[ii] for ii in periodic]))
+    logger.info(
+        "Reflective keys: {}".format([sampling_keys[ii] for ii in reflective]))
     logger.info(priors)
 
     filename_trace = "{}/{}_checkpoint_trace.png".format(outdir, label)
@@ -473,6 +494,7 @@ with MPIPool() as pool:
         walks=10*len(sampling_keys),
         pool=pool, queue_size=POOL_SIZE,
         print_func=dynesty.results.print_fn_fallback,
+        periodic=periodic, reflective=reflective,
         use_pool=dict(update_bound=True,
                       propose_point=True,
                       prior_transform=True,
