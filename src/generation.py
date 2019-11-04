@@ -7,6 +7,7 @@ import argparse
 
 import numpy as np
 import bilby
+from bilby.gw import conversion
 from bilby_pipe.parser import BilbyArgParser
 from bilby_pipe.utils import convert_string_to_dict
 from gwpy.timeseries import TimeSeries
@@ -108,8 +109,8 @@ def get_args():
     parser.add(
         "--distance-marginalization",
         action=StoreBoolean,
-        default=True,
-        help="Bool. If true (default), use a distance-marginalized likelihood",
+        required=True,
+        help="Bool. If true, use a distance-marginalized likelihood",
     )
     parser.add(
         "--distance-marginalization-lookup-table",
@@ -120,14 +121,14 @@ def get_args():
     parser.add(
         "--phase-marginalization",
         action=StoreBoolean,
-        default=True,
-        help="Bool. If true (default), use a phase-marginalized likelihood",
+        required=True,
+        help="Bool. If true, use a phase-marginalized likelihood",
     )
     parser.add(
         "--time-marginalization",
         action=StoreBoolean,
-        default=True,
-        help="Bool. If true (default), use a time-marginalized likelihood",
+        required=True,
+        help="Bool. If true, use a time-marginalized likelihood",
     )
     parser.add(
         "--binary-neutron-star",
@@ -148,11 +149,11 @@ def main():
     outdir = args.outdir
 
     if args.binary_neutron_star or "tidal" in args.waveform_approximant.lower():
-        conv = bilby.gw.conversion.convert_to_lal_binary_neutron_star_parameters
+        conv = conversion.convert_to_lal_binary_neutron_star_parameters
         fdsm = bilby.gw.source.lal_binary_neutron_star
         priors = bilby.gw.prior.BNSPriorDict(args.prior_file)
     else:
-        conv = bilby.gw.conversion.convert_to_lal_binary_black_hole_parameters
+        conv = conversion.convert_to_lal_binary_black_hole_parameters
         fdsm = bilby.gw.source.lal_binary_black_hole
         priors = bilby.gw.prior.BBHPriorDict(args.prior_file)
 
