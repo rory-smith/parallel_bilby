@@ -2,8 +2,9 @@
 """
 Generate/prepare data, likelihood, and priors for parallel runs
 """
-import pickle
 import argparse
+import pickle
+import os
 
 import numpy as np
 import bilby
@@ -63,12 +64,13 @@ def get_args():
         "--data-dict", type=convert_string_to_dict, required=True,
         help="Dictionary of paths to the data to analyse, e.g. {H1:data.gwf}")
     parser.add_argument(
-        "--channel-dict", type=convert_string_to_dict, required=True,
-        help="Dictionary of channel names for each data file")
+        "--channel-dict", type=convert_string_to_dict, required=False,
+        help=("Dictionary of channel names for each data file, used when data-"
+              "dict points to gwf files"))
     parser.add_argument(
         "--psd-dict", type=convert_string_to_dict, required=True,
         help="Dictionary of paths to the relevant PSD files for each data file"
-        )
+    )
     parser.add_argument(
         "--prior-file", type=str, required=True,
         help="Path to the Bilby prior file")
@@ -171,10 +173,18 @@ def main():
     for det in args.data_dict:
         logger.info(f"Reading in analysis data for ifo {det}")
         ifo = bilby.gw.detector.get_empty_interferometer(det)
-        channel = f"{det}:{args.channel_dict[det]}"
-        data = TimeSeries.read(
-            args.data_dict[det], channel=channel, start=start_time,
-            end=end_time, dtype=np.float64, format="gwf.lalframe")
+        if "gwf" in os.path.splitext(args.data_dict[det])[1]:
+            channel = f"{det}:{args.channel_dict[det]}"
+            data = TimeSeries.read(
+                args.data_dict[det], channel=channel, start=start_time,
+                end=end_time, dtype=np.float64, format="gwf.lalframe")
+        elif "hdf5" in os.path.splitext(args.data_dict[det])[1]:
+            data = TimeSeries.read(
+                args.data_dict[det], start=start_time,
+                end=end_time, format="hdf5")
+        else:
+            raise ValueError(f"Input file for detector {det} not understood")
+
         data = data.resample(args.sampling_frequency)
         print(f"Data for {det} from {data.times[0]} to {data.times[-1]}")
         ifo.strain_data.minimum_frequency = args.minimum_frequency
