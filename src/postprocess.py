@@ -75,7 +75,7 @@ with MPIPool() as pool:
         pool.wait()
         sys.exit(0)
 
-    result.label = result.label + "_postprocessed"
+    result.label = result.label.relabel("_pre", "_postprocessed")
 
     if data_dump["args"].binary_neutron_star:
         logger.info("Using BNS source model")

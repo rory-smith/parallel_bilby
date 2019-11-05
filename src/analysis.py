@@ -412,6 +412,7 @@ outdir = args.outdir
 label = args.label
 if input_args.label is not None:
     label += "_" + "_".join(input_args.label)
+label = label + "_pre"
 nlive = input_args.nlive
 
 if args.binary_neutron_star:
