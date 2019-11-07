@@ -9,10 +9,13 @@ import datetime
 import pickle
 import warnings
 import math
+import logging
 
+import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import bilby
+from bilby.gw import conversion
 import dynesty
 from dynesty.plotting import traceplot
 from dynesty import NestedSampler
@@ -25,13 +28,21 @@ import mpi4py
 mpi4py.rc.threads = False
 mpi4py.rc.recv_mprobe = False
 
-
 logger = bilby.core.utils.logger
 
 
 def main():
     """ Do nothing function to play nicely with MPI """
     pass
+
+
+def fill_sample(args):
+    ii, sample = args
+    sample = dict(sample).copy()
+    likelihood.parameters.update(sample)
+    sample = likelihood.generate_posterior_sample_from_marginalized_likelihood()
+    sample = conversion.generate_all_bbh_parameters(sample)
+    return sample
 
 
 def sample_rwalk_parallel(args):
@@ -393,32 +404,52 @@ parser.add_argument(
     help="Dynesty sampling method (default=rwalk). Note, the dynesty rwalk "
          "method is overwritten by parallel bilby for an optimised version ")
 parser.add_argument(
-    "--dynesty-walks", default=100, type=int,
-    help="Number of walks")
+    "--dynesty-walks", default=None, type=int,
+    help="Number of walks, defaults to 10xndim")
 parser.add_argument(
     "--n-check-point", default=10000, type=int,
     help="Number of walks")
 parser.add_argument(
     "--bilby-zero-likelihood-mode", default=False, action="store_true")
+parser.add_argument(
+    "-N", "--Nsamples", type=int, default=False,
+    help="If enough samples available, resample to this number of samples")
+parser.add_argument(
+    "--rand-seed", type=int, default=1234,
+    help="Random seed: important for reproducible resampling")
+parser.add_argument(
+    "-c", "--clean", action="store_true",
+    help="Run clean: ignore any resume files")
+
 
 input_args = parser.parse_args()
 
 with open(input_args.data_dump, "rb") as file:
     data_dump = pickle.load(file)
 
-likelihood = data_dump["likelihood"]
+ifo_list = data_dump["ifo_list"]
+waveform_generator = data_dump["waveform_generator"]
+waveform_generator.start_time = ifo_list[0].time_array[0]
 args = data_dump["args"]
+
 outdir = args.outdir
 label = args.label
 if input_args.label is not None:
     label += "_" + "_".join(input_args.label)
-label = label + "_pre"
-nlive = input_args.nlive
 
 if args.binary_neutron_star:
     priors = bilby.gw.prior.BNSPriorDict.from_json(data_dump["prior_file"])
 else:
     priors = bilby.gw.prior.BBHPriorDict.from_json(data_dump["prior_file"])
+
+logger.setLevel(logging.WARNING)
+likelihood = bilby.gw.likelihood.GravitationalWaveTransient(
+    ifo_list, waveform_generator, priors=priors,
+    time_marginalization=args.time_marginalization,
+    phase_marginalization=args.phase_marginalization,
+    distance_marginalization=args.distance_marginalization,
+    distance_marginalization_lookup_table=args.distance_marginalization_lookup_table)
+logger.setLevel(logging.INFO)
 
 
 def prior_transform_function(u_array):
@@ -448,7 +479,6 @@ for p in priors:
     else:
         sampling_keys.append(p)
 
-
 periodic = []
 reflective = []
 for ii, key in enumerate(sampling_keys):
@@ -459,14 +489,14 @@ for ii, key in enumerate(sampling_keys):
         logger.debug("Setting reflective boundary for {}".format(key))
         reflective.append(ii)
 
-
 # Setting marginalized parameters to their reference values
 if likelihood.phase_marginalization:
-    likelihood.parameters["phase"] = priors["phase"].peak
+    likelihood.parameters["phase"] = priors["phase"]
 if likelihood.time_marginalization:
-    likelihood.parameters["geocent_time"] = priors["geocent_time"].peak
+    likelihood.parameters["geocent_time"] = priors["geocent_time"]
 if likelihood.distance_marginalization:
-    likelihood.parameters["luminosity_distance"] = priors["luminosity_distance"].peak
+    likelihood.parameters["luminosity_distance"] = priors["luminosity_distance"]
+
 
 t0 = datetime.datetime.now()
 sampling_time = 0
@@ -489,10 +519,18 @@ with MPIPool() as pool:
     dynesty.dynesty._SAMPLING["rwalk"] = sample_rwalk_parallel
     dynesty.nestedsamplers._SAMPLING["rwalk"] = sample_rwalk_parallel
 
+    if input_args.dynesty_walks is None:
+        walks = 10 * len(sampling_keys),
+    else:
+        walks = input_args.dynesty_walks
+
+    logger.info(
+        f"Initialize sampler with sample={input_args.dynesty_sample},"
+        f" walks={walks}, nlive={input_args.nlive}")
     sampler = NestedSampler(
         likelihood_function, prior_transform_function, len(sampling_keys),
-        nlive=nlive, sample=input_args.dynesty_sample,
-        walks=10*len(sampling_keys),
+        nlive=input_args.nlive, sample=input_args.dynesty_sample,
+        walks=walks,
         pool=pool, queue_size=POOL_SIZE,
         print_func=dynesty.results.print_fn_fallback,
         periodic=periodic, reflective=reflective,
@@ -502,7 +540,7 @@ with MPIPool() as pool:
                       loglikelihood=True)
     )
 
-    if os.path.isfile(resume_file):
+    if os.path.isfile(resume_file) and input_args.clean is False:
         sampler, sampling_time = read_saved_state(resume_file, sampler)
 
     print(f"Starting sampling for job {label}, with pool size={POOL_SIZE}")
@@ -522,35 +560,64 @@ with MPIPool() as pool:
         t0 = datetime.datetime.now()
         write_checkpoint(sampler, resume_file, sampling_time, sampling_keys)
 
-sampling_time += (datetime.datetime.now() - t0).total_seconds()
+    sampling_time += (datetime.datetime.now() - t0).total_seconds()
 
-out = sampler.results
-weights = np.exp(out['logwt'] - out['logz'][-1])
-nested_samples = DataFrame(
-    out.samples, columns=sampling_keys)
-nested_samples['weights'] = weights
-nested_samples['log_likelihood'] = out.logl
+    out = sampler.results
+    weights = np.exp(out['logwt'] - out['logz'][-1])
+    nested_samples = DataFrame(
+        out.samples, columns=sampling_keys)
+    nested_samples['weights'] = weights
+    nested_samples['log_likelihood'] = out.logl
 
-result = bilby.core.result.Result(
-    label=label, outdir=outdir, search_parameter_keys=sampling_keys)
-result.priors = priors
-result.samples = dynesty.utils.resample_equal(out.samples, weights)
-result.nested_samples = nested_samples
-result.meta_data = dict()
-result.meta_data["analysis_args"] = vars(input_args)
-result.meta_data["config_file"] = vars(args)
-result.meta_data["data_dump"] = input_args.data_dump
-result.meta_data["likelihood"] = likelihood.meta_data
-print(result.meta_data)
+    result = bilby.core.result.Result(
+        label=label, outdir=outdir, search_parameter_keys=sampling_keys)
+    result.priors = priors
+    result.samples = dynesty.utils.resample_equal(out.samples, weights)
+    result.nested_samples = nested_samples
+    result.meta_data = dict()
+    result.meta_data["analysis_args"] = vars(input_args)
+    result.meta_data["config_file"] = vars(args)
+    result.meta_data["data_dump"] = input_args.data_dump
+    result.meta_data["likelihood"] = likelihood.meta_data
 
-result.log_likelihood_evaluations = reorder_loglikelihoods(
-    unsorted_loglikelihoods=out.logl, unsorted_samples=out.samples,
-    sorted_samples=result.samples)
+    result.log_likelihood_evaluations = reorder_loglikelihoods(
+        unsorted_loglikelihoods=out.logl, unsorted_samples=out.samples,
+        sorted_samples=result.samples)
 
-result.log_evidence = out.logz[-1]
-result.log_evidence_err = out.logzerr[-1]
-result.log_noise_evidence = likelihood.noise_log_likelihood()
-result.sampling_time = sampling_time
+    result.log_evidence = out.logz[-1] + likelihood.noise_log_likelihood()
+    result.log_evidence_err = out.logzerr[-1]
+    result.log_noise_evidence = likelihood.noise_log_likelihood()
+    result.log_bayes_factor = result.log_evidence - result.log_noise_evidence
+    result.sampling_time = sampling_time
 
-result.samples_to_posterior()
-result.save_to_file(extension="json")
+    result.samples_to_posterior()
+
+    np.random.seed(input_args.rand_seed)
+    posterior = result.posterior
+
+    nsamples = input_args.Nsamples
+    if nsamples is not False and len(posterior) > nsamples:
+        logger.info("Downsampling to {} samples".format(nsamples))
+        posterior = posterior.sample(nsamples)
+    else:
+        nsamples = len(posterior)
+        logger.info("Using {} samples".format(nsamples))
+
+    posterior = conversion.fill_from_fixed_priors(posterior, priors)
+
+    logger.info("Generating posterior from marginalized parameters for"
+                f"Nsamples={len(posterior)}, POOL={pool.size}")
+    samples = pool.map(fill_sample, posterior.iterrows())
+    result.posterior = pd.DataFrame(samples)
+
+    logger.debug("Updating prior to the actual prior")
+    for par, name in zip(
+            ['distance', 'phase', 'time'],
+            ['luminosity_distance', 'phase', 'geocent_time']):
+        if getattr(likelihood, '{}_marginalization'.format(par), False):
+            priors[name] = likelihood.priors[name]
+    result.priors = priors
+
+    logger.info(f"Saving result to {outdir}/{label}_result.json")
+    print(result)
+    result.save_to_file(extension="json")

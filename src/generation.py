@@ -182,11 +182,16 @@ def main():
             data = TimeSeries.read(
                 args.data_dict[det], start=start_time,
                 end=end_time, format="hdf5")
+        elif "txt" in os.path.splitext(args.data_dict[det])[1]:
+            data = TimeSeries.read(args.data_dict[det])
+            data = data[data.times.value >= start_time]
+            data = data[data.times.value < end_time]
+
         else:
             raise ValueError(f"Input file for detector {det} not understood")
 
         data = data.resample(args.sampling_frequency)
-        print(f"Data for {det} from {data.times[0]} to {data.times[-1]}")
+        logger.info(f"Data for {det} from {data.times[0]} to {data.times[-1]}")
         ifo.strain_data.minimum_frequency = args.minimum_frequency
         ifo.strain_data.maximum_frequency = args.maximum_frequency
         ifo.strain_data.roll_off = roll_off
@@ -219,6 +224,7 @@ def main():
     waveform_generator = bilby.gw.WaveformGenerator(
         frequency_domain_source_model=fdsm,
         parameter_conversion=conv,
+        start_time=start_time,
         waveform_arguments={'waveform_approximant': args.waveform_approximant,
                             'reference_frequency': args.reference_frequency})
 
@@ -227,19 +233,27 @@ def main():
         f"distance={args.distance_marginalization} "
         f"time={args.time_marginalization} "
         f"phase={args.phase_marginalization} ")
-    likelihood = bilby.gw.likelihood.GravitationalWaveTransient(
+
+    # This is done before instantiating the likelihood so that it is the full prior
+    prior_file = f"{outdir}/{label}_prior.json"
+    priors.to_json(outdir=outdir, label=label)
+
+    # We build the likelihood here to ensure the distance marginalization exist
+    # before sampling
+    bilby.gw.likelihood.GravitationalWaveTransient(
         ifo_list, waveform_generator, priors=priors,
         time_marginalization=args.time_marginalization,
         phase_marginalization=args.phase_marginalization,
         distance_marginalization=args.distance_marginalization,
         distance_marginalization_lookup_table=args.distance_marginalization_lookup_table)
 
-    prior_file = f"{outdir}/{label}_prior.json"
-    priors.to_json(outdir=outdir, label=label)
-
     data_dump_file = f"{outdir}/{label}_data_dump.pickle"
-    data_dump = dict(likelihood=likelihood, prior_file=prior_file, args=args,
-                     data_dump_file=data_dump_file)
+    data_dump = dict(
+        waveform_generator=waveform_generator, ifo_list=ifo_list,
+        prior_file=prior_file, args=args, data_dump_file=data_dump_file)
 
     with open(data_dump_file, "wb+") as file:
         pickle.dump(data_dump, file)
+
+    logger.info("Generation done: now run:\nmpirun parallel_bilby_analysis {}"
+                .format(data_dump_file))
