@@ -2,11 +2,13 @@
 """
 Generate/prepare data, likelihood, and priors for parallel runs
 """
-import pickle
 import argparse
+import pickle
+import os
 
 import numpy as np
 import bilby
+from bilby.gw import conversion
 from bilby_pipe.parser import BilbyArgParser
 from bilby_pipe.utils import convert_string_to_dict
 from gwpy.timeseries import TimeSeries
@@ -62,12 +64,13 @@ def get_args():
         "--data-dict", type=convert_string_to_dict, required=True,
         help="Dictionary of paths to the data to analyse, e.g. {H1:data.gwf}")
     parser.add_argument(
-        "--channel-dict", type=convert_string_to_dict, required=True,
-        help="Dictionary of channel names for each data file")
+        "--channel-dict", type=convert_string_to_dict, required=False,
+        help=("Dictionary of channel names for each data file, used when data-"
+              "dict points to gwf files"))
     parser.add_argument(
         "--psd-dict", type=convert_string_to_dict, required=True,
         help="Dictionary of paths to the relevant PSD files for each data file"
-        )
+    )
     parser.add_argument(
         "--prior-file", type=str, required=True,
         help="Path to the Bilby prior file")
@@ -112,8 +115,8 @@ def get_args():
     parser.add(
         "--distance-marginalization",
         action=StoreBoolean,
-        default=True,
-        help="Bool. If true (default), use a distance-marginalized likelihood",
+        required=True,
+        help="Bool. If true, use a distance-marginalized likelihood",
     )
     parser.add(
         "--distance-marginalization-lookup-table",
@@ -124,14 +127,14 @@ def get_args():
     parser.add(
         "--phase-marginalization",
         action=StoreBoolean,
-        default=True,
-        help="Bool. If true (default), use a phase-marginalized likelihood",
+        required=True,
+        help="Bool. If true, use a phase-marginalized likelihood",
     )
     parser.add(
         "--time-marginalization",
         action=StoreBoolean,
-        default=True,
-        help="Bool. If true (default), use a time-marginalized likelihood",
+        required=True,
+        help="Bool. If true, use a time-marginalized likelihood",
     )
     parser.add(
         "--binary-neutron-star",
@@ -152,11 +155,11 @@ def main():
     outdir = args.outdir
 
     if args.binary_neutron_star or "tidal" in args.waveform_approximant.lower():
-        conv = bilby.gw.conversion.convert_to_lal_binary_neutron_star_parameters
+        conv = conversion.convert_to_lal_binary_neutron_star_parameters
         fdsm = bilby.gw.source.lal_binary_neutron_star
         priors = bilby.gw.prior.BNSPriorDict(args.prior_file)
     else:
-        conv = bilby.gw.conversion.convert_to_lal_binary_black_hole_parameters
+        conv = conversion.convert_to_lal_binary_black_hole_parameters
         fdsm = bilby.gw.source.lal_binary_black_hole
         priors = bilby.gw.prior.BBHPriorDict(args.prior_file)
 
@@ -174,12 +177,25 @@ def main():
     for det in args.data_dict:
         logger.info(f"Reading in analysis data for ifo {det}")
         ifo = bilby.gw.detector.get_empty_interferometer(det)
-        channel = f"{det}:{args.channel_dict[det]}"
-        data = TimeSeries.read(
-            args.data_dict[det], channel=channel, start=start_time,
-            end=end_time, dtype=np.float64, format="gwf.lalframe")
+        if "gwf" in os.path.splitext(args.data_dict[det])[1]:
+            channel = f"{det}:{args.channel_dict[det]}"
+            data = TimeSeries.read(
+                args.data_dict[det], channel=channel, start=start_time,
+                end=end_time, dtype=np.float64, format="gwf.lalframe")
+        elif "hdf5" in os.path.splitext(args.data_dict[det])[1]:
+            data = TimeSeries.read(
+                args.data_dict[det], start=start_time,
+                end=end_time, format="hdf5")
+        elif "txt" in os.path.splitext(args.data_dict[det])[1]:
+            data = TimeSeries.read(args.data_dict[det])
+            data = data[data.times.value >= start_time]
+            data = data[data.times.value < end_time]
+
+        else:
+            raise ValueError(f"Input file for detector {det} not understood")
+
         data = data.resample(args.sampling_frequency)
-        print(f"Data for {det} from {data.times[0]} to {data.times[-1]}")
+        logger.info(f"Data for {det} from {data.times[0]} to {data.times[-1]}")
         ifo.strain_data.minimum_frequency = args.minimum_frequency
         ifo.strain_data.maximum_frequency = args.maximum_frequency
         ifo.strain_data.roll_off = roll_off
@@ -212,6 +228,7 @@ def main():
     waveform_generator = bilby.gw.WaveformGenerator(
         frequency_domain_source_model=fdsm,
         parameter_conversion=conv,
+        start_time=start_time,
         waveform_arguments={'waveform_approximant': args.waveform_approximant,
                             'reference_frequency': args.reference_frequency})
 
@@ -220,19 +237,27 @@ def main():
         f"distance={args.distance_marginalization} "
         f"time={args.time_marginalization} "
         f"phase={args.phase_marginalization} ")
-    likelihood = bilby.gw.likelihood.GravitationalWaveTransient(
+
+    # This is done before instantiating the likelihood so that it is the full prior
+    prior_file = f"{outdir}/{label}_prior.json"
+    priors.to_json(outdir=outdir, label=label)
+
+    # We build the likelihood here to ensure the distance marginalization exist
+    # before sampling
+    bilby.gw.likelihood.GravitationalWaveTransient(
         ifo_list, waveform_generator, priors=priors,
         time_marginalization=args.time_marginalization,
         phase_marginalization=args.phase_marginalization,
         distance_marginalization=args.distance_marginalization,
         distance_marginalization_lookup_table=args.distance_marginalization_lookup_table)
 
-    prior_file = f"{outdir}/{label}_prior.json"
-    priors.to_json(outdir=outdir, label=label)
-
     data_dump_file = f"{outdir}/{label}_data_dump.pickle"
-    data_dump = dict(likelihood=likelihood, prior_file=prior_file, args=args,
-                     data_dump_file=data_dump_file)
+    data_dump = dict(
+        waveform_generator=waveform_generator, ifo_list=ifo_list,
+        prior_file=prior_file, args=args, data_dump_file=data_dump_file)
 
     with open(data_dump_file, "wb+") as file:
         pickle.dump(data_dump, file)
+
+    logger.info("Generation done: now run:\nmpirun parallel_bilby_analysis {}"
+                .format(data_dump_file))
