@@ -24,6 +24,8 @@ from schwimmbad import MPIPool
 from pandas import DataFrame
 from numpy import linalg
 
+from bilby.core.utils import reflect
+
 import mpi4py
 mpi4py.rc.threads = False
 mpi4py.rc.recv_mprobe = False
@@ -119,7 +121,7 @@ def sample_rwalk_parallel(args):
     ncall = 0
 
     drhat, dr, du, u_prop, logl_prop = np.nan, np.nan, np.nan, np.nan, np.nan
-    while nc < walks: # or accept == 0:
+    while nc + nfail < walks: # or accept == 0:
         while True:
 
             # Check scale-factor.
@@ -154,10 +156,7 @@ def sample_rwalk_parallel(args):
                 u_prop[periodic] = np.mod(u_prop[periodic], 1)
             # Reflect
             if reflective is not None:
-                u_prop_ref = u_prop[reflective]
-                u_prop[reflective] = np.minimum(
-                    np.maximum(u_prop_ref, abs(u_prop_ref)),
-                    2 - u_prop_ref)
+                u_prop[reflective] = reflect(u_prop[reflective])
 
             # Check unit cube constraints.
             if unitcheck(u_prop, nonbounded):
@@ -461,7 +460,6 @@ logger.setLevel(logging.INFO)
 
 
 def prior_transform_function(u_array):
-    u_array[reflective] = bilby.core.utils.reflect(u_array[reflective])
     return priors.rescale(sampling_keys, u_array)
 
 
