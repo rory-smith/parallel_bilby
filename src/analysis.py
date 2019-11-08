@@ -243,7 +243,8 @@ def reorder_loglikelihoods(unsorted_loglikelihoods, unsorted_samples,
 
 
 def write_checkpoint(
-        sampler, resume_file, sampling_time, search_parameter_keys):
+        sampler, resume_file, sampling_time, search_parameter_keys,
+        no_plot=False):
     """ Writes a checkpoint file
 
     Parameters
@@ -257,6 +258,9 @@ def write_checkpoint(
     search_parameter_keys: list
         A list of the search parameter keys used in sampling (used for
         constructing checkpoint plots and pre-results)
+    no_plot: bool
+        If true, don't create a check point plot
+
     """
     print("")
     logger.info("Writing checkpoint file {}".format(resume_file))
@@ -302,13 +306,14 @@ def write_checkpoint(
         pickle.dump(current_state, file)
 
     # Try to create a checkpoint traceplot
-    try:
-        fig = traceplot(sampler.results, labels=sampling_keys)[0]
-        fig.tight_layout()
-        fig.savefig(filename_trace)
-        plt.close('all')
-    except Exception:
-        pass
+    if no_plot is False:
+        try:
+            fig = traceplot(sampler.results, labels=sampling_keys)[0]
+            fig.tight_layout()
+            fig.savefig(filename_trace)
+            plt.close('all')
+        except Exception:
+            pass
 
 
 def read_saved_state(resume_file, sampler):
@@ -420,6 +425,9 @@ parser.add_argument(
 parser.add_argument(
     "-c", "--clean", action="store_true",
     help="Run clean: ignore any resume files")
+parser.add_argument(
+    "--no-plot", action="store_true",
+    help="If true, don't generate check-point plots")
 
 
 input_args = parser.parse_args()
@@ -558,7 +566,8 @@ with MPIPool() as pool:
 
         sampling_time += (datetime.datetime.now() - t0).total_seconds()
         t0 = datetime.datetime.now()
-        write_checkpoint(sampler, resume_file, sampling_time, sampling_keys)
+        write_checkpoint(sampler, resume_file, sampling_time, sampling_keys,
+                         no_plot=input_args.no_plot)
 
     sampling_time += (datetime.datetime.now() - t0).total_seconds()
 
