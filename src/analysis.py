@@ -24,6 +24,8 @@ from schwimmbad import MPIPool
 from pandas import DataFrame
 from numpy import linalg
 
+from bilby.core.utils import reflect
+
 import mpi4py
 mpi4py.rc.threads = False
 mpi4py.rc.recv_mprobe = False
@@ -119,7 +121,7 @@ def sample_rwalk_parallel(args):
     ncall = 0
 
     drhat, dr, du, u_prop, logl_prop = np.nan, np.nan, np.nan, np.nan, np.nan
-    while nc < walks: # or accept == 0:
+    while nc + nfail < walks: # or accept == 0:
         while True:
 
             # Check scale-factor.
@@ -154,10 +156,7 @@ def sample_rwalk_parallel(args):
                 u_prop[periodic] = np.mod(u_prop[periodic], 1)
             # Reflect
             if reflective is not None:
-                u_prop_ref = u_prop[reflective]
-                u_prop[reflective] = np.minimum(
-                    np.maximum(u_prop_ref, abs(u_prop_ref)),
-                    2 - u_prop_ref)
+                u_prop[reflective] = reflect(u_prop[reflective])
 
             # Check unit cube constraints.
             if unitcheck(u_prop, nonbounded):
@@ -243,7 +242,8 @@ def reorder_loglikelihoods(unsorted_loglikelihoods, unsorted_samples,
 
 
 def write_checkpoint(
-        sampler, resume_file, sampling_time, search_parameter_keys):
+        sampler, resume_file, sampling_time, search_parameter_keys,
+        no_plot=False):
     """ Writes a checkpoint file
 
     Parameters
@@ -257,6 +257,9 @@ def write_checkpoint(
     search_parameter_keys: list
         A list of the search parameter keys used in sampling (used for
         constructing checkpoint plots and pre-results)
+    no_plot: bool
+        If true, don't create a check point plot
+
     """
     print("")
     logger.info("Writing checkpoint file {}".format(resume_file))
@@ -302,13 +305,14 @@ def write_checkpoint(
         pickle.dump(current_state, file)
 
     # Try to create a checkpoint traceplot
-    try:
-        fig = traceplot(sampler.results, labels=sampling_keys)[0]
-        fig.tight_layout()
-        fig.savefig(filename_trace)
-        plt.close('all')
-    except Exception:
-        pass
+    if no_plot is False:
+        try:
+            fig = traceplot(sampler.results, labels=sampling_keys)[0]
+            fig.tight_layout()
+            fig.savefig(filename_trace)
+            plt.close('all')
+        except Exception:
+            pass
 
 
 def read_saved_state(resume_file, sampler):
@@ -420,6 +424,9 @@ parser.add_argument(
 parser.add_argument(
     "-c", "--clean", action="store_true",
     help="Run clean: ignore any resume files")
+parser.add_argument(
+    "--no-plot", action="store_true",
+    help="If true, don't generate check-point plots")
 
 
 input_args = parser.parse_args()
@@ -453,7 +460,6 @@ logger.setLevel(logging.INFO)
 
 
 def prior_transform_function(u_array):
-    u_array[reflective] = bilby.core.utils.reflect(u_array[reflective])
     return priors.rescale(sampling_keys, u_array)
 
 
@@ -558,7 +564,8 @@ with MPIPool() as pool:
 
         sampling_time += (datetime.datetime.now() - t0).total_seconds()
         t0 = datetime.datetime.now()
-        write_checkpoint(sampler, resume_file, sampling_time, sampling_keys)
+        write_checkpoint(sampler, resume_file, sampling_time, sampling_keys,
+                         no_plot=input_args.no_plot)
 
     sampling_time += (datetime.datetime.now() - t0).total_seconds()
 
