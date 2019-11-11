@@ -43,7 +43,7 @@ def fill_sample(args):
     sample = dict(sample).copy()
     likelihood.parameters.update(sample)
     sample = likelihood.generate_posterior_sample_from_marginalized_likelihood()
-    sample = conversion.generate_all_bbh_parameters(sample)
+    sample = conversion.generate_all_bbh_parameters(sample, likelihood, priors)
     return sample
 
 
