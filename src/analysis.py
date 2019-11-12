@@ -416,9 +416,6 @@ parser.add_argument(
 parser.add_argument(
     "--bilby-zero-likelihood-mode", default=False, action="store_true")
 parser.add_argument(
-    "-N", "--Nsamples", type=int, default=False,
-    help="If enough samples available, resample to this number of samples")
-parser.add_argument(
     "--rand-seed", type=int, default=1234,
     help="Random seed: important for reproducible resampling")
 parser.add_argument(
@@ -602,18 +599,13 @@ with MPIPool() as pool:
     np.random.seed(input_args.rand_seed)
     posterior = result.posterior
 
-    nsamples = input_args.Nsamples
-    if nsamples is not False and len(posterior) > nsamples:
-        logger.info("Downsampling to {} samples".format(nsamples))
-        posterior = posterior.sample(nsamples)
-    else:
-        nsamples = len(posterior)
-        logger.info("Using {} samples".format(nsamples))
+    nsamples = len(posterior)
+    logger.info("Using {} samples".format(nsamples))
 
     posterior = conversion.fill_from_fixed_priors(posterior, priors)
 
     logger.info("Generating posterior from marginalized parameters for"
-                f"Nsamples={len(posterior)}, POOL={pool.size}")
+                f"n-samples={len(posterior)}, POOL={pool.size}")
     samples = pool.map(fill_sample, posterior.iterrows())
     result.posterior = pd.DataFrame(samples)
 
