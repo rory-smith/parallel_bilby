@@ -526,7 +526,7 @@ with MPIPool() as pool:
     dynesty.nestedsamplers._SAMPLING["rwalk"] = sample_rwalk_parallel
 
     if input_args.dynesty_walks is None:
-        walks = 10 * len(sampling_keys),
+        walks = 10 * len(sampling_keys)
     else:
         walks = input_args.dynesty_walks
 
