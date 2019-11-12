@@ -617,6 +617,12 @@ with MPIPool() as pool:
             priors[name] = likelihood.priors[name]
     result.priors = priors
 
+    if args.lalinference_prior:
+        try:
+            result = bilby.gw.prior.convert_to_flat_in_component_mass_prior(result)
+        except Exception:
+            logger.warning("Unable to convert to the LALInference prior")
+
     logger.info(f"Saving result to {outdir}/{label}_result.json")
     print(result)
     result.save_to_file(extension="json")
