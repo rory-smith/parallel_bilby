@@ -13,6 +13,9 @@ from bilby_pipe.parser import BilbyArgParser
 from bilby_pipe.utils import convert_string_to_dict
 from gwpy.timeseries import TimeSeries
 
+from .utils import get_cli_args
+
+from .data_retrieval import retrieve_data
 
 logger = bilby.core.utils.logger
 
@@ -61,7 +64,7 @@ def get_args():
         ),
     )
     parser.add_argument(
-        "--data-dict", type=convert_string_to_dict, required=True,
+        "--data-dict", type=convert_string_to_dict, required=False, default=None,
         help="Dictionary of paths to the data to analyse, e.g. {H1:data.gwf}")
     parser.add_argument(
         "--channel-dict", type=convert_string_to_dict, required=False,
@@ -158,6 +161,9 @@ def main():
         conv = conversion.convert_to_lal_binary_black_hole_parameters
         fdsm = bilby.gw.source.lal_binary_black_hole
         priors = bilby.gw.prior.BBHPriorDict(args.prior_file)
+
+    if args.data_dict is None:
+        args.data_dict = retrieve_data(get_cli_args())
 
     priors["geocent_time"] = bilby.core.prior.Uniform(
         trigger_time - args.deltaT / 2,
