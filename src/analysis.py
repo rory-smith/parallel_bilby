@@ -43,7 +43,8 @@ def fill_sample(args):
     sample = dict(sample).copy()
     likelihood.parameters.update(sample)
     sample = likelihood.generate_posterior_sample_from_marginalized_likelihood()
-    sample = conversion.generate_all_bbh_parameters(sample, likelihood, priors)
+    sample = conversion.generate_all_bbh_parameters(sample)
+    bilby.gw.conversion.compute_snrs(sample, likelihood)
     return sample
 
 
@@ -620,8 +621,8 @@ with MPIPool() as pool:
     if args.lalinference_prior:
         try:
             result = bilby.gw.prior.convert_to_flat_in_component_mass_prior(result)
-        except Exception:
-            logger.warning("Unable to convert to the LALInference prior")
+        except Exception as e:
+            logger.warning(f"Unable to convert to the LALInference prior: {e}")
 
     logger.info(f"Saving result to {outdir}/{label}_result.json")
     print(result)
