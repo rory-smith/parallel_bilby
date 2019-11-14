@@ -1,6 +1,7 @@
 """Module to retrieve data given a trigger time."""
 
 import os
+import shutil
 
 import bilby
 from bilby_pipe.data_generation import (DataGenerationInput,
@@ -25,7 +26,7 @@ def retrieve_data(cli_args_list):
     data = DataGenerationInput(args, [])
 
     # save data
-    data.save_data_dump()
+    # data.save_data_dump()
     data_dict = __save_ifo_strain(data.interferometers, args.outdir)
 
     logger.info("Completed data retrieval.")
@@ -36,10 +37,16 @@ def __save_ifo_strain(interferometers, outdir):
     """Save ifo strain and return dict with paths to IFO's strain file."""
     data_dict = {}
     for ifo in interferometers:
+        save_dir = os.path.join(outdir, "data")
+        # # save psd data
+        # ifo.save_data(outdir=save_dir)
         # get strain data
         strain = ifo.strain_data.to_gwpy_timeseries()
         strain.name = 'Strain'
-        save_path = os.path.join(outdir, f"data/{ifo.name}_strain.hdf5")
+        save_path = os.path.join(save_dir, f"{ifo.name}_strain.hdf5")
+        if os.path.isfile(save_path):
+            logger.info(f"Removing cached {save_path}")
+            os.remove(save_path)
         strain.write(save_path)
         data_dict.update({ifo.name: save_path})
     logger.info(f"Strain data stored in {data_dict}")

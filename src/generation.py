@@ -64,6 +64,15 @@ def get_args():
         ),
     )
     parser.add_argument(
+        "--detectors",
+        action="append",
+        help=(
+            "The names of detectors to use. If given in the ini file, "
+            "detectors are specified by `detectors=[H1, L1]`. If given "
+            "at the command line, as `--detectors H1 --detectors L1`"
+        ),
+    )
+    parser.add_argument(
         "--data-dict", type=convert_string_to_dict, required=False, default=None,
         help="Dictionary of paths to the data to analyse, e.g. {H1:data.gwf}")
     parser.add_argument(
