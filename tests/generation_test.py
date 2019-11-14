@@ -21,6 +21,10 @@ class TestGeneration(TestCase):
         if os.path.isdir('outdir'):
             shutil.rmtree('outdir')
 
+    def test_arg_parser(self):
+        with self.assertRaises(SystemExit):
+            generation.get_args()
+
     @mock.patch("src.generation.get_args")
     @mock.patch("src.generation.get_cli_args")
     @mock.patch("bilby_pipe.data_generation.DataGenerationInput._gwpy_get")
@@ -52,3 +56,5 @@ class TestGeneration(TestCase):
         )
         cli_args.return_value = ["tests/test_files/test.ini"]
         generation.main()
+        self.assertTrue(os.path.isfile('outdir/data/H1_strain.hdf5'))
+        generation.main()  # testing the removal of cached strain data
