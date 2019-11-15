@@ -211,6 +211,7 @@ def main():
 
         data = data.resample(args.sampling_frequency)
         logger.info(f"Data for {det} from {data.times[0]} to {data.times[-1]}")
+        logger.info(f"Using frequency {args.minimum_frequency} to {args.maximum_frequency}")
         ifo.strain_data.minimum_frequency = args.minimum_frequency
         ifo.strain_data.maximum_frequency = args.maximum_frequency
         ifo.strain_data.roll_off = roll_off

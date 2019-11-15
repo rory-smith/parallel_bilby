@@ -501,6 +501,11 @@ if likelihood.time_marginalization:
 if likelihood.distance_marginalization:
     likelihood.parameters["luminosity_distance"] = priors["luminosity_distance"]
 
+if input_args.dynesty_sample == "rwalk":
+    logger.debug(
+        "Using the bilby-implemented rwalk sample method with fixed walks")
+    dynesty.dynesty._SAMPLING["rwalk"] = sample_rwalk_parallel
+    dynesty.nestedsamplers._SAMPLING["rwalk"] = sample_rwalk_parallel
 
 t0 = datetime.datetime.now()
 sampling_time = 0
@@ -625,5 +630,6 @@ with MPIPool() as pool:
             logger.warning(f"Unable to convert to the LALInference prior: {e}")
 
     logger.info(f"Saving result to {outdir}/{label}_result.json")
-    print(result)
     result.save_to_file(extension="json")
+    print("Sampling time = {}s".format(datetime.timedelta(seconds=result.sampling_time)))
+    print(result)
