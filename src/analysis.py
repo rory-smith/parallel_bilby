@@ -585,7 +585,8 @@ with MPIPool() as pool:
     result.samples = dynesty.utils.resample_equal(out.samples, weights)
     result.nested_samples = nested_samples
     result.meta_data = dict()
-    result.meta_data["analysis_args"] = vars(input_args)
+    result.meta_data["command_line_args"] = vars(input_args)
+    result.meta_data["command_line_args"]["sampler"] = "parallel_bilby"
     result.meta_data["config_file"] = vars(args)
     result.meta_data["data_dump"] = input_args.data_dump
     result.meta_data["likelihood"] = likelihood.meta_data
