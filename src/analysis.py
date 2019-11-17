@@ -409,8 +409,11 @@ parser.add_argument(
     help="Dynesty sampling method (default=rwalk). Note, the dynesty rwalk "
          "method is overwritten by parallel bilby for an optimised version ")
 parser.add_argument(
-    "--dynesty-walks", default=None, type=int,
+    "--walks", default=None, type=int,
     help="Number of walks, defaults to 10xndim")
+parser.add_argument(
+    "--facc", default=0.5, type=float,
+    help="Target acceptance fraction of accept/reject")
 parser.add_argument(
     "--n-check-point", default=10000, type=int,
     help="Number of walks")
@@ -528,10 +531,12 @@ with MPIPool() as pool:
     dynesty.dynesty._SAMPLING["rwalk"] = sample_rwalk_parallel
     dynesty.nestedsamplers._SAMPLING["rwalk"] = sample_rwalk_parallel
 
-    if input_args.dynesty_walks is None:
+    if input_args.walks is None:
         walks = 10 * len(sampling_keys)
     else:
-        walks = input_args.dynesty_walks
+        walks = input_args.walks
+
+    facc = input_args.facc
 
     logger.info(
         f"Initialize sampler with sample={input_args.dynesty_sample},"
@@ -539,7 +544,7 @@ with MPIPool() as pool:
     sampler = NestedSampler(
         likelihood_function, prior_transform_function, len(sampling_keys),
         nlive=input_args.nlive, sample=input_args.dynesty_sample,
-        walks=walks,
+        walks=walks, facc=facc,
         pool=pool, queue_size=POOL_SIZE,
         print_func=dynesty.results.print_fn_fallback,
         periodic=periodic, reflective=reflective,
@@ -590,6 +595,8 @@ with MPIPool() as pool:
     result.meta_data["config_file"] = vars(args)
     result.meta_data["data_dump"] = input_args.data_dump
     result.meta_data["likelihood"] = likelihood.meta_data
+    result.meta_data["sampler_kwargs"] = dict(
+        walks=input_args.walks, facc=input_args.facc, nlive=input_args.nlive)
 
     result.log_likelihood_evaluations = reorder_loglikelihoods(
         unsorted_loglikelihoods=out.logl, unsorted_samples=out.samples,
