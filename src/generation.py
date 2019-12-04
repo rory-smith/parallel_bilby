@@ -87,7 +87,7 @@ def get_args():
         "--prior-file", type=str, required=True,
         help="Path to the Bilby prior file")
     parser.add_argument(
-        "--lalinference-prior", action="store_true",
+        "--convert-to-flat-in-component-mass", action="store_true",
         help=("If true (default, False) resample to the LALInference "
               "flat-in-component mass prior"))
     parser.add_argument(
