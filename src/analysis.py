@@ -661,7 +661,7 @@ with MPIPool() as pool:
             priors[name] = likelihood.priors[name]
     result.priors = priors
 
-    if input_args.convert_to_flat_in_component_mass:
+    if args.convert_to_flat_in_component_mass:
         try:
             result = bilby.gw.prior.convert_to_flat_in_component_mass_prior(result)
         except Exception as e:
