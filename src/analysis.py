@@ -577,10 +577,10 @@ with MPIPool() as pool:
         pool=pool, queue_size=POOL_SIZE,
         print_func=dynesty.results.print_fn_fallback,
         periodic=periodic, reflective=reflective,
-        use_pool=dict(update_bound=False,
+        use_pool=dict(update_bound=True,
                       propose_point=True,
-                      prior_transform=False,
-                      loglikelihood=False),
+                      prior_transform=True,
+                      loglikelihood=True),
         **init_sampler_kwargs
     )
 
