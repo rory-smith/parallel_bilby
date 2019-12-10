@@ -103,11 +103,9 @@ def sample_rwalk_parallel_with_act(args):
             pass
         else:
             nfail += 1
-            # Only start appending to the chain once a single jump is made
-            if accept > 0:
-                u_list.append(u_list[-1])
-                v_list.append(v_list[-1])
-                logl_list.append(logl_list[-1])
+            u_list.append(u_list[-1])
+            v_list.append(v_list[-1])
+            logl_list.append(logl_list[-1])
             continue
 
         # Check proposed point.
@@ -123,11 +121,9 @@ def sample_rwalk_parallel_with_act(args):
             logl_list.append(logl)
         else:
             reject += 1
-            # Only start appending to the chain once a single jump is made
-            if accept > 0:
-                u_list.append(u_list[-1])
-                v_list.append(v_list[-1])
-                logl_list.append(logl_list[-1])
+            u_list.append(u_list[-1])
+            v_list.append(v_list[-1])
+            logl_list.append(logl_list[-1])
 
         # If we've taken the minimum number of steps, calculate the ACT
         if accept + reject > walks:
@@ -135,7 +131,7 @@ def sample_rwalk_parallel_with_act(args):
                 accept / (accept + reject + nfail), walks, maxmcmc)
 
         # If we've taken too many likelihood evaluations then break
-        if accept + reject > maxmcmc and accept > 0:
+        if accept + reject > maxmcmc:
             logger.warning(
                 "Hit maximum number of walks {} with accept={}, reject={}, "
                 "nfail={}, and act={}. Try increasing maxmcmc"
