@@ -40,10 +40,13 @@ def main():
 def fill_sample(args):
     ii, sample = args
     sample = dict(sample).copy()
+    marg_params = likelihood.parameters.copy()
     likelihood.parameters.update(sample)
     sample = likelihood.generate_posterior_sample_from_marginalized_likelihood()
-    sample = conversion.generate_all_bbh_parameters(sample)
+    # Likelihood needs to have marg params to calcuate correct SNR
+    likelihood.parameters.update(marg_params)
     bilby.gw.conversion.compute_snrs(sample, likelihood)
+    sample = conversion.generate_all_bbh_parameters(sample)
     return sample
 
 
@@ -581,7 +584,9 @@ with MPIPool() as pool:
     )
 
     if os.path.isfile(resume_file) and input_args.clean is False:
-        sampler, sampling_time = read_saved_state(resume_file, sampler)
+        resume_sampler, sampling_time = read_saved_state(resume_file, sampler)
+        if resume_sampler is not False:
+            sampler = resume_sampler
 
     print(f"Starting sampling for job {label}, with pool size={POOL_SIZE}")
     old_ncall = sampler.ncall
