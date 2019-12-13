@@ -69,7 +69,7 @@ def get_long_description():
     return long_description
 
 
-VERSION = "0.0.1"
+VERSION = "0.1.0"
 version_file = write_version_file(VERSION)
 long_description = get_long_description()
 
@@ -78,7 +78,7 @@ setup(
     description="Running bilby at scale",
     long_description=long_description,
     url="https://git.ligo.org/gregory.ashton/parallel_bilby",
-    author="Gregory Ashton, Rory Smith",
+    author="Gregory Ashton, Rory Smith, Avi Vajpeyi",
     author_email="gregory.ashton@ligo.org",
     license="MIT",
     version=VERSION,
@@ -86,14 +86,14 @@ setup(
     package_dir={'parallel_bilby': 'src'},
     install_requires=[
         "future",
-        "bilby>=0.5.4",
+        "bilby>=0.6.1",
         "scipy>=1.2.0",
         "gwpy",
         "matplotlib",
         "numpy",
         "tqdm",
         "corner",
-        "dynesty>=0.9.7",
+        "dynesty>=1.0.0",
         "schwimmbad",
         "pandas",
     ],
