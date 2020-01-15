@@ -130,7 +130,7 @@ def sample_rwalk_parallel_with_act(args):
 
         # If we've taken the minimum number of steps, calculate the ACT
         if accept + reject > walks:
-            act = estimate_nmcmc(
+            act = bilby.core.sampler.dynesty.estimate_nmcmc(
                 accept / (accept + reject + nfail), walks, maxmcmc)
 
         # If we've taken too many likelihood evaluations then break
@@ -165,45 +165,6 @@ def sample_rwalk_parallel_with_act(args):
     if logl <= logl_list[0]:
         logl = -np.inf
     return u, v, logl, ncall, blob
-
-
-def estimate_nmcmc(accept_ratio, minmcmc, maxmcmc, safety=5, tau=None):
-    """ Estimate autocorrelation length of chain using acceptance fraction
-
-    Using ACL = (2/acc) - 1 multiplied by a safety margin. Code adapated from
-    CPNest:
-        - https://github.com/johnveitch/cpnest/blob/master/cpnest/sampler.py
-        - http://github.com/farr/Ensemble.jl
-
-    Parameters
-    ----------
-    accept_ratio: float [0, 1]
-        Ratio of the number of accepted points to the total number of points
-    minmcmc: int
-        The minimum length of the MCMC chain to use
-    maxmcmc: int
-        The maximum length of the MCMC chain to use
-    safety: int
-        A safety factor applied in the calculation
-    tau: int (optional)
-        The ACT, if given, otherwise estimated.
-
-    """
-    if tau is None:
-        tau = maxmcmc / safety
-
-    if accept_ratio == 0.0:
-        Nmcmc_exact = (1. + 1. / tau) * minmcmc
-    else:
-        Nmcmc_exact = (
-            (1. - 1. / tau) * minmcmc +
-            (safety / tau) * (2. / accept_ratio - 1.)
-        )
-
-    Nmcmc_exact = float(min(Nmcmc_exact, maxmcmc))
-    Nmcmc = max(safety, int(Nmcmc_exact))
-
-    return Nmcmc
 
 
 def reorder_loglikelihoods(unsorted_loglikelihoods, unsorted_samples,
