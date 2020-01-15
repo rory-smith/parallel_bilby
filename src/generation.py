@@ -4,18 +4,14 @@ Generate/prepare data, likelihood, and priors for parallel runs
 """
 import argparse
 import pickle
-import os
 
-import numpy as np
 import bilby
-from bilby.gw import conversion
+from bilby_pipe.data_generation import (DataGenerationInput,
+                                        create_generation_parser, parse_args)
 from bilby_pipe.parser import BilbyArgParser
 from bilby_pipe.utils import convert_string_to_dict
-from gwpy.timeseries import TimeSeries
 
 from .utils import get_cli_args
-
-from .data_retrieval import retrieve_data
 
 logger = bilby.core.utils.logger
 
@@ -149,6 +145,12 @@ def get_args():
         help="Bool. If true, use a time-marginalized likelihood",
     )
     parser.add(
+        "--jitter-time",
+        action=StoreBoolean,
+        default=True,
+        help="Bool. If true, use a the jitter-time option",
+    )
+    parser.add(
         "--binary-neutron-star",
         action=StoreBoolean,
         default=False,
@@ -159,94 +161,24 @@ def get_args():
     return args
 
 
+def add_extra_args_from_bilby_pipe_namespace(args):
+    pipe_args, _ = parse_args(
+        get_cli_args(), create_generation_parser())
+    for key, val in vars(pipe_args).items():
+        if key not in args:
+            setattr(args, key, val)
+    return args
+
+
 def main():
     args = get_args()
-    trigger_time = args.trigger_time
-    duration = args.duration
-    label = args.label
-    outdir = args.outdir
+    args = add_extra_args_from_bilby_pipe_namespace(args)
+    inputs = DataGenerationInput(args, [])
 
-    if args.binary_neutron_star or "tidal" in args.waveform_approximant.lower():
-        conv = conversion.convert_to_lal_binary_neutron_star_parameters
-        fdsm = bilby.gw.source.lal_binary_neutron_star
-        priors = bilby.gw.prior.BNSPriorDict(args.prior_file)
-    else:
-        conv = conversion.convert_to_lal_binary_black_hole_parameters
-        fdsm = bilby.gw.source.lal_binary_black_hole
-        priors = bilby.gw.prior.BBHPriorDict(args.prior_file)
-
-    if args.data_dict is None:
-        args.data_dict = retrieve_data(get_cli_args())
-
-    priors["geocent_time"] = bilby.core.prior.Uniform(
-        trigger_time - args.deltaT / 2,
-        trigger_time + args.deltaT / 2,
-        name="geocent_time")
-
-    roll_off = 0.4  # Roll off duration of tukey window in seconds
-    post_trigger_duration = 2  # Time between trigger time and end of segment
-    end_time = trigger_time + post_trigger_duration
-    start_time = end_time - duration
-
-    ifo_list = bilby.gw.detector.InterferometerList([])
-    for det in args.data_dict:
-        logger.info(f"Reading in analysis data for ifo {det}")
-        ifo = bilby.gw.detector.get_empty_interferometer(det)
-        if "gwf" in os.path.splitext(args.data_dict[det])[1]:
-            channel = f"{det}:{args.channel_dict[det]}"
-            data = TimeSeries.read(
-                args.data_dict[det], channel=channel, start=start_time,
-                end=end_time, dtype=np.float64, format="gwf.lalframe")
-        elif "hdf5" in os.path.splitext(args.data_dict[det])[1]:
-            data = TimeSeries.read(
-                args.data_dict[det], start=start_time,
-                end=end_time, format="hdf5")
-        elif "txt" in os.path.splitext(args.data_dict[det])[1]:
-            data = TimeSeries.read(args.data_dict[det])
-            data = data[data.times.value >= start_time]
-            data = data[data.times.value < end_time]
-
-        else:
-            raise ValueError(f"Input file for detector {det} not understood")
-
-        data = data.resample(args.sampling_frequency)
-        logger.info(f"Data for {det} from {data.times[0]} to {data.times[-1]}")
-        logger.info(f"Using frequency {args.minimum_frequency} to {args.maximum_frequency}")
-        ifo.strain_data.minimum_frequency = args.minimum_frequency
-        ifo.strain_data.maximum_frequency = args.maximum_frequency
-        ifo.strain_data.roll_off = roll_off
-        ifo.strain_data.set_from_gwpy_timeseries(data)
-        ifo.power_spectral_density = bilby.gw.detector.PowerSpectralDensity(
-            psd_file=args.psd_dict[det])
-        ifo_list.append(ifo)
-
-        if args.calibration_model == "CubicSpline":
-            ifo.calibration_model = bilby.gw.calibration.CubicSpline(
-                prefix="recalib_{}_".format(ifo.name),
-                minimum_frequency=ifo.minimum_frequency,
-                maximum_frequency=ifo.maximum_frequency,
-                n_points=args.spline_calibration_nodes,
-            )
-
-            priors.update(
-                bilby.gw.prior.CalibrationPriorDict.from_envelope_file(
-                    args.spline_calibration_envelope_dict[det],
-                    minimum_frequency=ifo.minimum_frequency,
-                    maximum_frequency=ifo.maximum_frequency,
-                    n_nodes=args.spline_calibration_nodes,
-                    label=det,
-                )
-            )
-
-    bilby.core.utils.check_directory_exists_and_if_not_mkdir(outdir)
-    ifo_list.plot_data(outdir=outdir, label=label)
-
-    waveform_generator = bilby.gw.WaveformGenerator(
-        frequency_domain_source_model=fdsm,
-        parameter_conversion=conv,
-        start_time=start_time,
-        waveform_arguments={'waveform_approximant': args.waveform_approximant,
-                            'reference_frequency': args.reference_frequency})
+    ifo_list = inputs.interferometers
+    data_dir = inputs.data_directory
+    label = inputs.label
+    ifo_list.plot_data(outdir=data_dir, label=label)
 
     logger.info(
         "Setting up likelihood with marginalizations: "
@@ -255,21 +187,16 @@ def main():
         f"phase={args.phase_marginalization} ")
 
     # This is done before instantiating the likelihood so that it is the full prior
-    prior_file = f"{outdir}/{label}_prior.json"
-    priors.to_json(outdir=outdir, label=label)
+    prior_file = f"{data_dir}/{label}_prior.json"
+    inputs.priors.to_json(outdir=data_dir, label=label)
 
     # We build the likelihood here to ensure the distance marginalization exist
     # before sampling
-    bilby.gw.likelihood.GravitationalWaveTransient(
-        ifo_list, waveform_generator, priors=priors,
-        time_marginalization=args.time_marginalization,
-        phase_marginalization=args.phase_marginalization,
-        distance_marginalization=args.distance_marginalization,
-        distance_marginalization_lookup_table=args.distance_marginalization_lookup_table)
+    inputs.likelihood
 
-    data_dump_file = f"{outdir}/{label}_data_dump.pickle"
+    data_dump_file = f"{data_dir}/{label}_data_dump.pickle"
     data_dump = dict(
-        waveform_generator=waveform_generator, ifo_list=ifo_list,
+        waveform_generator=inputs.waveform_generator, ifo_list=ifo_list,
         prior_file=prior_file, args=args, data_dump_file=data_dump_file)
 
     with open(data_dump_file, "wb+") as file:

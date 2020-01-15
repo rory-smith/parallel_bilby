@@ -59,7 +59,6 @@ def sample_rwalk_parallel_with_act(args):
     (u, loglstar, axes, scale,
      prior_transform, loglikelihood, kwargs) = args
     rstate = np.random
-    #rstate.seed = np.random.rand() + mpi4py.MPI.COMM_WORLD.Get_rank()
     # Bounds
     nonbounded = kwargs.get('nonbounded', None)
     periodic = kwargs.get('periodic', None)
@@ -128,7 +127,7 @@ def sample_rwalk_parallel_with_act(args):
             v_list.append(v_list[-1])
             logl_list.append(logl_list[-1])
 
-       # If we've taken the minimum number of steps, calculate the ACT
+        # If we've taken the minimum number of steps, calculate the ACT
         if accept + reject > walks:
             act = estimate_nmcmc(
                 accept / (accept + reject + nfail), walks, maxmcmc)
@@ -163,7 +162,7 @@ def sample_rwalk_parallel_with_act(args):
 
     ncall = accept + reject
     if logl <= logl_list[0]:
-     	logl = -np.inf
+        logl = -np.inf
     return u, v, logl, ncall, blob
 
 
@@ -472,7 +471,7 @@ likelihood = bilby.gw.likelihood.GravitationalWaveTransient(
     phase_marginalization=args.phase_marginalization,
     distance_marginalization=args.distance_marginalization,
     distance_marginalization_lookup_table=args.distance_marginalization_lookup_table,
-    jitter_time=False)
+    jitter_time=args.jitter_time)
 logger.setLevel(logging.INFO)
 
 
