@@ -1,13 +1,19 @@
 import argparse
 
+import bilby
 import bilby_pipe
+
+logger = bilby.core.utils.logger
 
 
 def remove_argument_from_parser(parser, arg):
     for action in parser._actions:
-        if action.dest == arg:
+        if action.dest == arg.replace("-", "_"):
             parser._handle_conflict_resolve(None, [("--" + arg, action)])
-            break
+            return
+    logger.warning(
+        "Request to remove arg {} from bilby_pipe args, but arg not found"
+        .format(arg))
 
 
 class StoreBoolean(argparse.Action):
@@ -83,7 +89,16 @@ misc_settings_parser.add_argument(
     help="If true, don't generate check-point plots")
 
 bilby_pipe_parser = bilby_pipe.parser.create_parser()
-remove_argument_from_parser(bilby_pipe_parser, "accounting")
+bilby_pipe_arguments_to_ignore = [
+    "accounting", "local", "local-generation", "local-plot", "request-memory",
+    "request-memory-generation", "request-cpus", "singularity-image",
+    "scheduler", "scheduler-args", "scheduler-module", "scheduler-env",
+    "submit", "transfer-files", "online-pe", "osg", "email",
+    "postprocessing-executable", "postprocessing-arguments", "sampler",
+    "sampling-seed", "sampler-kwargs"]
+for arg in bilby_pipe_arguments_to_ignore:
+    remove_argument_from_parser(bilby_pipe_parser, arg)
+
 generation_parser = bilby_pipe.parser.BilbyArgParser(
     usage=__doc__, ignore_unknown_config_file_keys=False,
     allow_abbrev=False, parents=[base_parser, bilby_pipe_parser],
@@ -98,7 +113,10 @@ slurm_settings.add_argument(
 slurm_settings.add_argument(
     "--time", type=str, required=True, help="Maximum wall time")
 slurm_settings.add_argument(
-    "--mem-per-cpu", type=str, default="4GB", help="Memory per CPU")
+    "--mem-per-cpu", type=str, default="4000", help="Memory per CPU")
+slurm_settings.add_argument(
+    "--extra-lines", type=str, default=None,
+    help="Additional lines, separated by ';', use for setting up conda env ")
 
 
 analysis_parser = argparse.ArgumentParser("base", parents=[base_parser])

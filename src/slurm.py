@@ -35,7 +35,12 @@ class BaseNode(object):
             lines.append("#SBATCH --ntasks-per-node={}".format(self.ntasks_per_node))
         lines.append("#SBATCH --time={}".format(self.time))
         lines.append("#SBATCH --mem-per-cpu={}".format(self.mem_per_cpu))
-        lines.append("#SBATCH --logs={}/{}.log".format(self.logs, self.job_name))
+        lines.append("#SBATCH --output={}/{}.log".format(self.logs, self.job_name))
+        lines.append("")
+        if self.args.extra_lines:
+            for line in self.args.extra_lines.split(";"):
+                lines.append(line.strip())
+        lines.append("")
         return lines
 
     def get_contents(self):
@@ -82,6 +87,7 @@ class AnalysisNode(BaseNode):
         lines.append('export MKL_DYNAMIC="FALSE"')
         lines.append('export OMP_NUM_THREADS=1')
         lines.append('export MPI_PER_NODE=16')
+        lines.append("")
 
         run_string = self.get_run_string()
         lines.append('mpirun parallel_bilby_analysis {}'.format(run_string))
