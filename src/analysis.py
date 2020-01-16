@@ -131,7 +131,8 @@ def sample_rwalk_parallel_with_act(args):
         # If we've taken the minimum number of steps, calculate the ACT
         if accept + reject > walks:
             act = bilby.core.sampler.dynesty.estimate_nmcmc(
-                accept / (accept + reject + nfail), walks, maxmcmc)
+                accept_ratio=accept / (accept + reject + nfail),
+                maxmcmc=maxmcmc)
 
         # If we've taken too many likelihood evaluations then break
         if accept + reject > maxmcmc:
