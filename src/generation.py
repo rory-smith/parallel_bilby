@@ -6,12 +6,14 @@ import pickle
 import shutil
 
 import bilby
+import bilby_pipe
 from bilby_pipe.data_generation import (DataGenerationInput,
                                         create_generation_parser, parse_args)
+import dynesty
 
 from .utils import get_cli_args
 from .parser import generation_parser
-from . import slurm
+from . import slurm, __version__
 
 logger = bilby.core.utils.logger
 
@@ -51,9 +53,21 @@ def main():
     inputs.likelihood
 
     data_dump_file = f"{data_dir}/{label}_data_dump.pickle"
+
+    meta_data = dict(
+        config_file=args.ini,
+        data_dump_file=data_dump_file,
+        bilby_version=bilby.__version__,
+        bilby_pipe_version=bilby_pipe.__version__,
+        parallel_bilby_version=__version__,
+        dynesty_version=dynesty.__version__,
+    )
+    logger.info("Initial meta_data = {}".format(meta_data))
+
     data_dump = dict(
         waveform_generator=inputs.waveform_generator, ifo_list=ifo_list,
-        prior_file=prior_file, args=args, data_dump_file=data_dump_file)
+        prior_file=prior_file, args=args, data_dump_file=data_dump_file,
+        meta_data=meta_data)
 
     with open(data_dump_file, "wb+") as file:
         pickle.dump(data_dump, file)
