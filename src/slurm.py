@@ -13,7 +13,7 @@ def setup_submit(data_dump_file, inputs, args):
         analysis_nodes.append(node)
 
     if len(analysis_nodes) > 1:
-        final_analysis_node = MergeNodes(analysis_nodes, inputs)
+        final_analysis_node = MergeNodes(analysis_nodes, inputs, args)
         final_analysis_node.write()
     else:
         final_analysis_node = analysis_nodes[0]
@@ -109,10 +109,11 @@ class AnalysisNode(BaseNode):
 
 
 class MergeNodes(BaseNode):
-    def __init__(self, analysis_nodes, inputs):
+    def __init__(self, analysis_nodes, inputs, args):
         self.analysis_nodes = analysis_nodes
 
         self.inputs = inputs
+        self.args = args
         self.job_name = "merge_{}".format(self.inputs.label)
         self.nodes = 1
         self.ntasks_per_node = 1
