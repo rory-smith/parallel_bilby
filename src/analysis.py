@@ -530,7 +530,7 @@ with MPIPool() as pool:
     result.priors = priors
     result.samples = dynesty.utils.resample_equal(out.samples, weights)
     result.nested_samples = nested_samples
-    result.meta_data = dict()
+    result.meta_data = data_dump["meta_data"]
     result.meta_data["command_line_args"] = vars(input_args)
     result.meta_data["command_line_args"]["sampler"] = "parallel_bilby"
     result.meta_data["config_file"] = vars(args)
