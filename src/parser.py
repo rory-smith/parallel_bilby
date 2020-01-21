@@ -109,11 +109,14 @@ slurm_settings = generation_parser.add_argument_group(
 slurm_settings.add_argument(
     "--nodes", type=int, required=True, help="Number of nodes to use")
 slurm_settings.add_argument(
-    "--ntasks-per-node", type=int, required=True, help="Number of tasts per node")
+    "--ntasks-per-node", type=int, required=True,
+    help="Number of tasks per node")
 slurm_settings.add_argument(
-    "--time", type=str, required=True, help="Maximum wall time")
+        "--time", type=str, default="24:00:00", required=True,
+        help="Maximum wall time (defaults to 24:00:00)")
 slurm_settings.add_argument(
-    "--mem-per-cpu", type=str, default="4000", help="Memory per CPU")
+    "--mem-per-cpu", type=str, default="4000",
+    help="Memory per CPU (defaults to 4000)")
 slurm_settings.add_argument(
     "--extra-lines", type=str, default=None,
     help="Additional lines, separated by ';', use for setting up conda env ")
