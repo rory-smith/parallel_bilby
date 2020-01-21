@@ -72,6 +72,5 @@ def main():
     with open(data_dump_file, "wb+") as file:
         pickle.dump(data_dump, file)
 
-    slurm.setup_submit(data_dump_file, inputs, args)
-    logger.info("Generation done: submit files stored in {}"
-                .format(inputs.submit_directory))
+    bash_file = slurm.setup_submit(data_dump_file, inputs, args)
+    logger.info("Setup complete, now run:\n $ bash {}".format(bash_file))

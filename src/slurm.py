@@ -18,10 +18,19 @@ def setup_submit(data_dump_file, inputs, args):
     else:
         final_analysis_node = analysis_nodes[0]
 
-    bash_script = "{}/bash_{}".format(inputs.submit_directory, inputs.label)
+    bash_script = "{}/bash_{}.sh".format(inputs.submit_directory, inputs.label)
     with open(bash_script, "w+") as ff:
-        for node in analysis_nodes:
-            print("sbatch {}".format(node.filename), file=ff)
+        dependent_job_ids = []
+        for ii, node in enumerate(analysis_nodes):
+            print("jid{}=$(sbatch {})".format(ii, node.filename), file=ff)
+            dependent_job_ids.append("${{jid{}##* }}".format(ii))
+        if len(analysis_nodes) > 1:
+            print("sbatch --dependency=afterok:{} {}".format(
+                ":".join(dependent_job_ids), final_analysis_node.filename),
+                  file=ff)
+        print('squeue -u $USER -o "%u %.10j %.8A %.4C %.40E %R"', file=ff)
+
+    return bash_script
 
 
 class BaseNode(object):
