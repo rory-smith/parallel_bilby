@@ -87,7 +87,7 @@ class AnalysisNode(BaseNode):
 
     @property
     def output_filename(self):
-        return "{}/{}_result.json".format(
+        return "{}/{}_{}_result.json".format(
             self.inputs.result_directory, self.inputs.label, self.idx)
 
     def get_contents(self):
