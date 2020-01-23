@@ -79,7 +79,7 @@ class AnalysisNode(BaseNode):
         self.logs = self.inputs.data_analysis_log_directory
 
         # This are the defaults: used only to figure out which arguments to use
-        self.analysis_args = analysis_parser.parse_args()
+        self.analysis_args, _ = analysis_parser.parse_known_args()
 
     @property
     def label(self):
