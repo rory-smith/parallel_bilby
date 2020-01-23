@@ -39,7 +39,7 @@ base_parser = argparse.ArgumentParser("base", add_help=False)
 dynesty_settings_parser = base_parser.add_argument_group(
     title="Dynesty Settings")
 dynesty_settings_parser.add_argument(
-    "-n", "--nlive", default=1024, type=int, help="Number of live points")
+    "-n", "--nlive", default=1000, type=int, help="Number of live points")
 dynesty_settings_parser.add_argument(
     "--dlogz", default=0.1, type=float,
     help="Stopping criteria: remaining evidence, (default=0.1)")
@@ -71,8 +71,8 @@ dynesty_settings_parser.add_argument(
 dynesty_settings_parser.add_argument(
     "--enlarge", default=1.5, type=float, help="See dynesty.NestedSampler")
 dynesty_settings_parser.add_argument(
-    "--n-check-point", default=10000, type=int,
-    help="Number of walks")
+    "--n-check-point", default=100000, type=int,
+    help="Steps to take before checkpoint")
 
 misc_settings_parser = base_parser.add_argument_group(
     title="Misc. Settings")
@@ -93,7 +93,7 @@ bilby_pipe_arguments_to_ignore = [
     "accounting", "local", "local-generation", "local-plot", "request-memory",
     "request-memory-generation", "request-cpus", "singularity-image",
     "scheduler", "scheduler-args", "scheduler-module", "scheduler-env",
-    "submit", "transfer-files", "online-pe", "osg", "email",
+    "transfer-files", "online-pe", "osg", "email",
     "postprocessing-executable", "postprocessing-arguments", "sampler",
     "sampling-seed", "sampler-kwargs"]
 for arg in bilby_pipe_arguments_to_ignore:

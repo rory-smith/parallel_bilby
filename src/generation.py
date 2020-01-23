@@ -4,6 +4,7 @@ Generate/prepare data, likelihood, and priors for parallel runs
 """
 import pickle
 import shutil
+import subprocess
 
 import bilby
 import bilby_pipe
@@ -73,4 +74,7 @@ def main():
         pickle.dump(data_dump, file)
 
     bash_file = slurm.setup_submit(data_dump_file, inputs, args)
-    logger.info("Setup complete, now run:\n $ bash {}".format(bash_file))
+    if args.submit:
+        subprocess.run(["bash {}".format(bash_file)], shell=True)
+    else:
+        logger.info("Setup complete, now run:\n $ bash {}".format(bash_file))

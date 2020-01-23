@@ -430,7 +430,7 @@ if likelihood.distance_marginalization:
 
 if input_args.dynesty_sample == "rwalk":
     logger.debug(
-        "Using the bilby-implemented rwalk sample method with estimated walks")
+        "Using the parallel-bilby-implemented rwalk sample method with estimated walks")
     dynesty.dynesty._SAMPLING["rwalk"] = sample_rwalk_parallel_with_act
     dynesty.nestedsamplers._SAMPLING["rwalk"] = sample_rwalk_parallel_with_act
 elif input_args.dynesty_sample == "rwalk_dynesty":
@@ -498,7 +498,9 @@ with MPIPool() as pool:
         if resume_sampler is not False:
             sampler = resume_sampler
 
-    print(f"Starting sampling for job {label}, with pool size={POOL_SIZE}")
+    logger.info(
+        f"Starting sampling for job {label}, with pool size={POOL_SIZE} "
+        f"and n_check_point={input_args.n_check_point}")
     old_ncall = sampler.ncall
     sampler_kwargs = dict(
         print_progress=True, maxcall=input_args.n_check_point,
