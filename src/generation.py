@@ -32,6 +32,7 @@ def main():
     args = generation_parser.parse_args()
     args = add_extra_args_from_bilby_pipe_namespace(args)
     inputs = DataGenerationInput(args, [])
+    inputs.log_directory = None
     shutil.rmtree(inputs.data_generation_log_directory)  # Hack to remove unused dir
 
     ifo_list = inputs.interferometers
