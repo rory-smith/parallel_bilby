@@ -87,8 +87,7 @@ def sample_rwalk_parallel_with_act(args):
         drhat /= linalg.norm(drhat)
 
         # Scale based on dimensionality.
-        # dr = drhat * rstate.rand()**(1./n)  # REMOVE
-        dr = drhat * rstate.rand(n)
+        dr = drhat * rstate.rand()**(1./n)
 
         # Transform to proposal distribution.
         du = np.dot(axes, dr)
@@ -132,7 +131,9 @@ def sample_rwalk_parallel_with_act(args):
         if accept + reject > walks:
             act = bilby.core.sampler.dynesty.estimate_nmcmc(
                 accept_ratio=accept / (accept + reject + nfail),
-                maxmcmc=maxmcmc)
+                old_act=walks,
+                maxmcmc=maxmcmc,
+                safety=5)
 
         # If we've taken too many likelihood evaluations then break
         if accept + reject > maxmcmc:
@@ -143,8 +144,8 @@ def sample_rwalk_parallel_with_act(args):
             break
 
     # If the act is finite, pick randomly from within the chain
-    if np.isfinite(act) and act < len(u_list):
-        idx = np.random.randint(act, len(u_list))
+    if np.isfinite(act) and int(.5 * nact * act) < len(u_list):
+        idx = np.random.randint(int(.5 * nact * act), len(u_list))
         u = u_list[idx]
         v = v_list[idx]
         logl = logl_list[idx]
