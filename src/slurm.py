@@ -95,7 +95,7 @@ class AnalysisNode(BaseNode):
         lines.append('export MKL_NUM_THREADS="1"')
         lines.append('export MKL_DYNAMIC="FALSE"')
         lines.append('export OMP_NUM_THREADS=1')
-        lines.append('export MPI_PER_NODE=16')
+        lines.append('export MPI_PER_NODE={}'.format(self.args.ntasks_per_node))
         lines.append("")
 
         run_string = self.get_run_string()

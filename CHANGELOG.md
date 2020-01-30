@@ -1,5 +1,9 @@
 # All notable changes will be documented in this file
 
+## v0.1.2 : 2020-01-30
+
+- Updates bilby dependencies and improves sampler proposoal behavior
+
 ## v0.1.1 : 2020-01-21
 
 Tighter integration with `bilby_pipe` and the addition of a full slurm-only scheduler. All inputs can now be specified via the ini file. For a complete set of instructions, see `parallel_bilby_generation --help`.
