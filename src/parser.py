@@ -2,6 +2,7 @@ import argparse
 
 import bilby
 import bilby_pipe
+from numpy import inf
 
 logger = bilby.core.utils.logger
 
@@ -44,8 +45,8 @@ dynesty_settings_parser.add_argument(
     "--dlogz", default=0.1, type=float,
     help="Stopping criteria: remaining evidence, (default=0.1)")
 dynesty_settings_parser.add_argument(
-    "--n-effective", default=5000, type=float,
-    help="Stopping criteria: effective number of samples, (default=5000)")
+    "--n-effective", default=inf, type=float,
+    help="Stopping criteria: effective number of samples, (default=inf)")
 dynesty_settings_parser.add_argument(
     "--dynesty-sample", default="rwalk", type=str,
     help="Dynesty sampling method (default=rwalk). Note, the dynesty rwalk "
@@ -62,6 +63,9 @@ dynesty_settings_parser.add_argument(
 dynesty_settings_parser.add_argument(
     "--nact", default=5, type=int,
     help="Number of autocorrelation times to take, defaults to 5")
+dynesty_settings_parser.add_argument(
+    "--min-eff", default=10, type=float,
+    help="The minimum efficiency at which to switch from uniform sampling.")
 dynesty_settings_parser.add_argument(
     "--facc", default=0.5, type=float, help="See dynesty.NestedSampler")
 dynesty_settings_parser.add_argument(
