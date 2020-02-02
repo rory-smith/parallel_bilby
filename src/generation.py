@@ -6,22 +6,25 @@ import pickle
 import shutil
 import subprocess
 
-import bilby
-import bilby_pipe
-from bilby_pipe.data_generation import (DataGenerationInput,
-                                        create_generation_parser, parse_args)
 import dynesty
 
-from .utils import get_cli_args
+import bilby
+import bilby_pipe
+from bilby_pipe.data_generation import (
+    DataGenerationInput,
+    create_generation_parser,
+    parse_args,
+)
+
+from . import __version__, slurm
 from .parser import generation_parser
-from . import slurm, __version__
+from .utils import get_cli_args
 
 logger = bilby.core.utils.logger
 
 
 def add_extra_args_from_bilby_pipe_namespace(args):
-    pipe_args, _ = parse_args(
-        get_cli_args(), create_generation_parser())
+    pipe_args, _ = parse_args(get_cli_args(), create_generation_parser())
     for key, val in vars(pipe_args).items():
         if key not in args:
             setattr(args, key, val)
@@ -44,7 +47,8 @@ def main():
         "Setting up likelihood with marginalizations: "
         f"distance={args.distance_marginalization} "
         f"time={args.time_marginalization} "
-        f"phase={args.phase_marginalization} ")
+        f"phase={args.phase_marginalization} "
+    )
 
     # This is done before instantiating the likelihood so that it is the full prior
     prior_file = f"{data_dir}/{label}_prior.json"
@@ -67,9 +71,13 @@ def main():
     logger.info("Initial meta_data = {}".format(meta_data))
 
     data_dump = dict(
-        waveform_generator=inputs.waveform_generator, ifo_list=ifo_list,
-        prior_file=prior_file, args=args, data_dump_file=data_dump_file,
-        meta_data=meta_data)
+        waveform_generator=inputs.waveform_generator,
+        ifo_list=ifo_list,
+        prior_file=prior_file,
+        args=args,
+        data_dump_file=data_dump_file,
+        meta_data=meta_data,
+    )
 
     with open(data_dump_file, "wb+") as file:
         pickle.dump(data_dump, file)

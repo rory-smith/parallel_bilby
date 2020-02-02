@@ -13,7 +13,7 @@ $ parallel_bilby_generation GW150914.ini
 
 The config file requires 
 - the trigger time of the event
-- the channel dictionary where to aquire the data from
+- the channel dictionary where to acquire the data from
 - duration of the data to be analysed
 - paths to the PSD files
 - which waveform approximant to use for PE
@@ -107,7 +107,7 @@ contains the posterior as sampled.
 
 The sampling itself generates samples only in the sampled parameters. We
 include a postprocessing step to generate samples in the parameter available
-by conversion (i.e. componant masses) and the parameters which are marginalised
+by conversion (i.e. component masses) and the parameters which are marginalised
 during sampling. This, like the analysis step, should be run under mpi, e.g.
 
 ```bash

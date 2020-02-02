@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 
 
 def get_cli_args():
@@ -9,9 +9,10 @@ def get_cli_args():
 
 def get_version_information():
     version_file = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), 'parallel_bilby/.version')
+        os.path.dirname(os.path.dirname(__file__)), "parallel_bilby/.version"
+    )
     try:
-        with open(version_file, 'r') as f:
+        with open(version_file, "r") as f:
             return f.readline().rstrip()
     except EnvironmentError:
         print("No version information file '.version' found")

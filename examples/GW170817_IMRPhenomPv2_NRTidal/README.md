@@ -46,7 +46,7 @@ contains the posterior as sampled.
 
 The sampling itself generates samples only in the sampled parameters. We
 include a postprocessing step to generate samples in the parameter available
-by conversion (i.e. componant masses) and the parameters which are marginalised
+by conversion (i.e. component masses) and the parameters which are marginalised
 during sampling. This, like the analysis step, should be run under mpi, e.g.
 
 ```bash
@@ -58,7 +58,7 @@ $ mpirun parallel_bilby_postprocess outdir/GW170817_result.json
 For either the analysis or post-processing steps, you should submit the job to
 run on a cluster, leveraging a number of parallel cores. As an example, here is
 a slurm submit script for running the analysis step above using 8 tasks over
-4 cores, giving a total of 32 cores abailable to MPI:
+4 cores, giving a total of 32 cores available to MPI:
 
 ```ini
 #!/bin/bash
