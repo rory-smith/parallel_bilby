@@ -83,8 +83,8 @@ setup(
     license="MIT",
     version=VERSION,
     packages=["parallel_bilby"],
-    package_dir={'parallel_bilby': 'src'},
-    package_data={'parallel_bilby': [version_file]},
+    package_dir={"parallel_bilby": "src"},
+    package_data={"parallel_bilby": [version_file]},
     install_requires=[
         "future",
         "bilby>=0.6.4",

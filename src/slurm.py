@@ -25,16 +25,18 @@ def setup_submit(data_dump_file, inputs, args):
             print("jid{}=$(sbatch {})".format(ii, node.filename), file=ff)
             dependent_job_ids.append("${{jid{}##* }}".format(ii))
         if len(analysis_nodes) > 1:
-            print("sbatch --dependency=afterok:{} {}".format(
-                ":".join(dependent_job_ids), final_analysis_node.filename),
-                  file=ff)
+            print(
+                "sbatch --dependency=afterok:{} {}".format(
+                    ":".join(dependent_job_ids), final_analysis_node.filename
+                ),
+                file=ff,
+            )
         print('squeue -u $USER -o "%u %.10j %.8A %.4C %.40E %R"', file=ff)
 
     return bash_script
 
 
 class BaseNode(object):
-
     def get_lines(self):
         lines = ["#!/bin/bash"]
         lines.append("#SBATCH --job-name={}".format(self.job_name))
@@ -69,7 +71,8 @@ class AnalysisNode(BaseNode):
         self.args = args
         self.idx = idx
         self.filename = "{}/analysis_{}_{}.sh".format(
-            self.inputs.submit_directory, self.inputs.label, self.idx)
+            self.inputs.submit_directory, self.inputs.label, self.idx
+        )
 
         self.job_name = "{}_{}".format(self.idx, self.inputs.label)
         self.nodes = self.args.nodes
@@ -88,18 +91,19 @@ class AnalysisNode(BaseNode):
     @property
     def output_filename(self):
         return "{}/{}_{}_result.json".format(
-            self.inputs.result_directory, self.inputs.label, self.idx)
+            self.inputs.result_directory, self.inputs.label, self.idx
+        )
 
     def get_contents(self):
         lines = self.get_lines()
         lines.append('export MKL_NUM_THREADS="1"')
         lines.append('export MKL_DYNAMIC="FALSE"')
-        lines.append('export OMP_NUM_THREADS=1')
-        lines.append('export MPI_PER_NODE={}'.format(self.args.ntasks_per_node))
+        lines.append("export OMP_NUM_THREADS=1")
+        lines.append("export MPI_PER_NODE={}".format(self.args.ntasks_per_node))
         lines.append("")
 
         run_string = self.get_run_string()
-        lines.append('mpirun parallel_bilby_analysis {}'.format(run_string))
+        lines.append("mpirun parallel_bilby_analysis {}".format(run_string))
         return "\n".join(lines)
 
     def get_run_string(self):
@@ -131,7 +135,8 @@ class MergeNodes(BaseNode):
         self.logs = self.inputs.data_analysis_log_directory
 
         self.filename = "{}/merge_{}.sh".format(
-            self.inputs.submit_directory, self.inputs.label)
+            self.inputs.submit_directory, self.inputs.label
+        )
 
     @property
     def file_list(self):
@@ -143,7 +148,9 @@ class MergeNodes(BaseNode):
 
     def get_contents(self):
         lines = self.get_lines()
-        lines.append('bilby_result -r {} --merge --label {} --outdir {}'
-                     .format(self.file_list, self.merged_result_label,
-                             self.inputs.result_directory))
+        lines.append(
+            "bilby_result -r {} --merge --label {} --outdir {}".format(
+                self.file_list, self.merged_result_label, self.inputs.result_directory
+            )
+        )
         return "\n".join(lines)

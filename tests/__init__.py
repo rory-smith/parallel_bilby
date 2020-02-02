@@ -6,5 +6,7 @@ psd_strain_file = "tests/test_files/strain_data/strain_for_psd.hdf5"
 
 
 def get_timeseries():
-    return gwpy.timeseries.TimeSeries.read(strain_file), \
-           gwpy.timeseries.TimeSeries.read(psd_strain_file)
+    return (
+        gwpy.timeseries.TimeSeries.read(strain_file),
+        gwpy.timeseries.TimeSeries.read(psd_strain_file),
+    )

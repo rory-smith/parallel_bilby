@@ -1,0 +1,62 @@
+# This script is an edited version of the example found at
+# https://git.ligo.org/lscsoft/example-ci-project/blob/python/.gitlab-ci.yml
+# Each 0th-indendation level is a job that will be run within GitLab CI
+# The only exception are a short list of reserved keywords
+#
+# https://docs.gitlab.com/ee/ci/yaml/#gitlab-ci-yml
+
+# stages is a reserved keyword that defines job dependencies and
+# parallelization. each stage runs in parallel but must complete
+# before the next stage begins
+
+stages:
+  - test
+
+cache:
+  paths:
+    - .pip37
+    - .pip36
+
+precommits-py3.7:
+  stage: test
+  image: bilbydev/bilby_pipe-test-suite-python37
+  script:
+    - source activate python37
+    - mkdir -p .pip37
+    - pip install --upgrade pip
+    - pip --cache-dir=.pip37 install --upgrade bilby
+    - pip --cache-dir=.pip37 install .
+    - pip --cache-dir=.pip37 install pre-commit
+
+    # Run precommits (black, flake8, spellcheck, isort, no merge conflicts, etc)
+    - pre-commit run --all-files --verbose --show-diff-on-failure
+
+precommits-py3.6:
+  stage: test
+  image: bilbydev/bilby_pipe-test-suite-python36
+  script:
+    - source activate python36
+    - mkdir -p .pip36
+    - pip install --upgrade pip
+    - pip --cache-dir=.pip36 install --upgrade bilby
+    - pip --cache-dir=.pip36 install .
+    - pip --cache-dir=.pip37 install pre-commit
+
+    # Run precommits (black, flake8, spellcheck, isort, no merge conflicts, etc)
+    - pre-commit run --all-files --verbose --show-diff-on-failure
+
+# test install on python 3.6
+python-3.6:
+  stage: test
+  image: bilbydev/bilby_pipe-test-suite-python36
+  script:
+    - conda install -c conda-forge schwimmbad
+    - python -m pip install .
+
+# test install on python 3.7
+python-3.7:
+  stage: test
+  image: bilbydev/bilby_pipe-test-suite-python37
+  script:
+    - conda install -c conda-forge schwimmbad
+    - python -m pip install .

@@ -4,7 +4,6 @@ from argparse import Namespace
 from unittest import TestCase
 
 import mock
-
 from src import generation
 
 from . import get_timeseries, ini, psd_strain_file, strain_file
@@ -18,8 +17,8 @@ class TestGeneration(TestCase):
         self.maxDiff = 0
 
     def tearDown(self):
-        if os.path.isdir('outdir'):
-            shutil.rmtree('outdir')
+        if os.path.isdir("outdir"):
+            shutil.rmtree("outdir")
 
     def test_arg_parser(self):
         with self.assertRaises(SystemExit):
@@ -34,8 +33,8 @@ class TestGeneration(TestCase):
         get_data_method.side_effect = [h1_strain, h1_psd]
         is_data_good.return_value = True
         get_args.return_value = Namespace(
-            outdir='outdir',
-            label='test',
+            outdir="outdir",
+            label="test",
             trigger_time=1126259462.4,
             duration=4,
             psd_dict={"H1": "tests/test_files/raw_data/h1_psd.txt"},
@@ -56,5 +55,5 @@ class TestGeneration(TestCase):
         )
         cli_args.return_value = ["tests/test_files/test.ini"]
         generation.main()
-        self.assertTrue(os.path.isfile('outdir/data/H1_strain.hdf5'))
+        self.assertTrue(os.path.isfile("outdir/data/H1_strain.hdf5"))
         generation.main()  # testing the removal of cached strain data
