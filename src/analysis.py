@@ -241,6 +241,8 @@ def write_checkpoint(
         id=sampler.saved_id,
         it=sampler.saved_it,
         nc=sampler.saved_nc,
+        bound=sampler.bound,
+        nbound=sampler.nbound,
         boundidx=sampler.saved_boundidx,
         bounditer=sampler.saved_bounditer,
         scale=sampler.saved_scale,
@@ -339,6 +341,8 @@ def read_saved_state(resume_file, sampler):
         sampler.live_bound = saved['live_bound']
         sampler.live_it = saved['live_it']
         sampler.added_live = saved['added_live']
+        sampler.bound = saved["bound"]
+        sampler.nbound = saved["nbound"]
         sampling_time = datetime.timedelta(
             seconds=saved['sampling_time']).total_seconds()
         return sampler, sampling_time
@@ -469,14 +473,16 @@ with MPIPool() as pool:
     maxmcmc = input_args.maxmcmc
     nact = input_args.nact
     facc = input_args.facc
+    min_eff = input_args.min_eff
+    vol_dec = input_args.vol_dec
+    vol_check = input_args.vol_check
+    enlarge = input_args.enlarge
 
     init_sampler_kwargs = dict(
-        nlive=input_args.nlive, sample=input_args.dynesty_sample,
-        bound=input_args.dynesty_bound, walks=input_args.walks,
-        maxmcmc=input_args.maxmcmc, nact=input_args.nact, facc=input_args.facc,
-        first_update=dict(min_eff=10, min_ncall=2*input_args.nlive),
-        vol_dec=input_args.vol_dec, vol_check=input_args.vol_check,
-        enlarge=input_args.enlarge)
+        nlive=nlive, sample=dynesty_sample, bound=dynesty_bound, walks=walks,
+        maxmcmc=maxmcmc, nact=nact, facc=facc,
+        first_update=dict(min_eff=min_eff, min_ncall=2 * nlive),
+        vol_dec=vol_dec, vol_check=vol_check, enlarge=enlarge)
 
     logger.info(
         "Initialize NestedSampler with {}"
