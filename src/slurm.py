@@ -109,7 +109,7 @@ class AnalysisNode(BaseNode):
     def get_run_string(self):
         run_list = ["{}".format(self.data_dump_file)]
         for key, val in vars(self.analysis_args).items():
-            if key in ["data_dump", "label", "outdir"]:
+            if key in ["data_dump", "label", "outdir", "sampling_seed"]:
                 continue
             input_val = getattr(self.args, key)
             if val != input_val:
@@ -117,6 +117,9 @@ class AnalysisNode(BaseNode):
 
         run_list.append("--label {}".format(self.label))
         run_list.append("--outdir {}".format(abspath(self.inputs.result_directory)))
+        run_list.append(
+            "--sampling-seed {}".format(self.analysis_args.sampling_seed + self.idx)
+        )
 
         return " ".join(run_list)
 
