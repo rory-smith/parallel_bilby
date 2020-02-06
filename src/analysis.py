@@ -374,6 +374,7 @@ ifo_list = data_dump["ifo_list"]
 waveform_generator = data_dump["waveform_generator"]
 waveform_generator.start_time = ifo_list[0].time_array[0]
 args = data_dump["args"]
+injection_parameters = data_dump.get("injection_parameters", None)
 
 outdir = args.outdir
 if input_args.outdir is not None:
@@ -585,6 +586,7 @@ with MPIPool() as pool:
     result.meta_data["likelihood"] = likelihood.meta_data
     result.meta_data["sampler_kwargs"] = init_sampler_kwargs
     result.meta_data["run_sampler_kwargs"] = sampler_kwargs
+    result.meta_data["injection_parameters"] = injection_parameters
 
     result.log_likelihood_evaluations = reorder_loglikelihoods(
         unsorted_loglikelihoods=out.logl,

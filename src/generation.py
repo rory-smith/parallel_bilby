@@ -77,6 +77,7 @@ def main():
         args=args,
         data_dump_file=data_dump_file,
         meta_data=meta_data,
+        injection_parameters=inputs.injection_parameters,
     )
 
     with open(data_dump_file, "wb+") as file:
