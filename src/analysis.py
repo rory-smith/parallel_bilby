@@ -465,6 +465,10 @@ with MPIPool() as pool:
         pool.wait()
         sys.exit(0)
     POOL_SIZE = pool.size
+
+    logger.info("Setting sampling seed = {}".format(input_args.sampling_seed))
+    np.random.seed(input_args.sampling_seed)
+
     logger.info(f"sampling_keys={sampling_keys}")
     logger.info("Periodic keys: {}".format([sampling_keys[ii] for ii in periodic]))
     logger.info("Reflective keys: {}".format([sampling_keys[ii] for ii in reflective]))
@@ -596,7 +600,6 @@ with MPIPool() as pool:
 
     result.samples_to_posterior()
 
-    np.random.seed(input_args.rand_seed)
     posterior = result.posterior
 
     nsamples = len(posterior)

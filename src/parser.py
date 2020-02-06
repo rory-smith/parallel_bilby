@@ -109,10 +109,10 @@ misc_settings_parser.add_argument(
     "--bilby-zero-likelihood-mode", default=False, action="store_true"
 )
 misc_settings_parser.add_argument(
-    "--rand-seed",
+    "--sampling-seed",
     type=int,
     default=1234,
-    help="Random seed: important for reproducible resampling",
+    help="Random seed for sampling, parallel runs will be incremented",
 )
 misc_settings_parser.add_argument(
     "-c", "--clean", action="store_true", help="Run clean: ignore any resume files"
