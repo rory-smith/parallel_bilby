@@ -51,6 +51,22 @@ def fill_sample(args):
     return sample
 
 
+def get_initial_points_from_prior(ndim, npoints):
+    unit_cube = []
+    parameters = []
+    likelihood = []
+    while len(unit_cube) < npoints:
+        unit = np.random.rand(ndim)
+        theta = prior_transform_function(unit)
+        if bool(np.isinf(log_prior_function(theta))) is False:
+            if bool(np.isinf(likelihood_function(theta))) is False:
+                unit_cube.append(unit)
+                parameters.append(theta)
+                likelihood.append(likelihood_function(theta))
+
+    return np.array(unit_cube), np.array(parameters), np.array(likelihood)
+
+
 def sample_rwalk_parallel_with_act(args):
     """ A dynesty sampling method optimised for parallel_bilby
 
@@ -414,6 +430,11 @@ def likelihood_function(v_array):
         return np.nan_to_num(-np.inf)
 
 
+def log_prior_function(v_array):
+    params = {key: t for key, t in zip(sampling_keys, v_array)}
+    return priors.ln_prob(params)
+
+
 sampling_keys = []
 for p in priors:
     if isinstance(priors[p], bilby.core.prior.Constraint):
@@ -512,15 +533,20 @@ with MPIPool() as pool:
         )
     )
 
+    ndim = len(sampling_keys)
+    logger.info("Initializing sampling points")
+    live_points = get_initial_points_from_prior(ndim, nlive)
+
     sampler = NestedSampler(
         likelihood_function,
         prior_transform_function,
-        len(sampling_keys),
+        ndim,
         pool=pool,
         queue_size=POOL_SIZE,
         print_func=dynesty.results.print_fn_fallback,
         periodic=periodic,
         reflective=reflective,
+        live_points=live_points,
         use_pool=dict(
             update_bound=True,
             propose_point=True,
