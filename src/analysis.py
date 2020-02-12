@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Script to run parallel bilby using MPI
+Module to run parallel bilby using MPI
 """
 import datetime
 import json
@@ -25,7 +25,7 @@ import bilby
 from bilby.core.utils import reflect
 from bilby.gw import conversion
 
-from .parser import analysis_parser
+from .parser import create_analysis_parser
 
 mpi4py.rc.threads = False
 mpi4py.rc.recv_mprobe = False
@@ -380,7 +380,7 @@ os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["MKL_DYNAMIC"] = "0"
 os.environ["MPI_PER_NODE"] = "16"
 
-
+analysis_parser = create_analysis_parser()
 input_args = analysis_parser.parse_args()
 
 with open(input_args.data_dump, "rb") as file:

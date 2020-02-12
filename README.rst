@@ -1,37 +1,19 @@
-parallel_bilby
+Parallel Bilby
 ==============
 
-A python package to simplify the process of running parallel_bilby 
+A python package to run gravitational wave inference analyses on multiple cores of a
+machine using their message passing interface (MPI).
 
-Dependencies
-------------
+Online material to help you get started:
 
-Install dependencies using
+* `Installation instructions`_
+* `Examples`_
+* `Documentation`_
+* `Parallel Bilby paper`_
 
-.. code-block:: console
 
-   $ conda install -c conda-forge bilby_pipe schwimmbad 
+.. _Documentation: https://lscsoft.docs.ligo.org/parallel_bilby/
+.. _Installation instructions: https://lscsoft.docs.ligo.org/parallel_bilby/installation
+.. _Examples: https://lscsoft.docs.ligo.org/parallel_bilby/examples
+.. _Parallel Bilby paper: https://arxiv.org/pdf/1909.11873.pdf
 
-Installation
-------------
-
-Install the package locally with
-
-.. code-block:: console
-
-   $ python setup.py install
-
-Executables
------------
-
-This gives you access to three executables
-
-.. code-block:: console
-
-   $ parallel_bilby_generation --help
-   $ parallel_bilby_analysis --help
-
-Roughly speaking, the generation executable is run locally to prepare the data
-for analysis. It takes as input a :code:`gwf` file and configuration options
-such as which waveform model to use. The output, a :code:`data_dump.pickle` file
-is then the input to the analysis.

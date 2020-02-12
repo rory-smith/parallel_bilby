@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 """
-Generate/prepare data, likelihood, and priors for parallel runs
+Module to generate/prepare data, likelihood, and priors for parallel runs.
+
+This will create a directory structure for your parallel runs to store the
+output files, logs and plots. It will also generate a `data_dump` that stores
+information on the run settings and data to be analysed.
 """
 import pickle
 import shutil
@@ -10,21 +14,26 @@ import dynesty
 
 import bilby
 import bilby_pipe
-from bilby_pipe.data_generation import (
-    DataGenerationInput,
-    create_generation_parser,
-    parse_args,
-)
+from bilby_pipe import data_generation as bilby_pipe_datagen
+from bilby_pipe.data_generation import parse_args
 
 from . import __version__, slurm
-from .parser import generation_parser
+from .parser import create_generation_parser
 from .utils import get_cli_args
 
 logger = bilby.core.utils.logger
 
+generation_parser = create_generation_parser()
+
 
 def add_extra_args_from_bilby_pipe_namespace(args):
-    pipe_args, _ = parse_args(get_cli_args(), create_generation_parser())
+    """
+    :param args: args from parallel_bilby
+    :return: Namespace argument object
+    """
+    pipe_args, _ = parse_args(
+        get_cli_args(), bilby_pipe_datagen.create_generation_parser()
+    )
     for key, val in vars(pipe_args).items():
         if key not in args:
             setattr(args, key, val)
@@ -34,7 +43,7 @@ def add_extra_args_from_bilby_pipe_namespace(args):
 def main():
     args = generation_parser.parse_args()
     args = add_extra_args_from_bilby_pipe_namespace(args)
-    inputs = DataGenerationInput(args, [])
+    inputs = bilby_pipe_datagen.DataGenerationInput(args, [])
     inputs.log_directory = None
     shutil.rmtree(inputs.data_generation_log_directory)  # Hack to remove unused dir
 
