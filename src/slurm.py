@@ -1,6 +1,6 @@
 from os.path import abspath
 
-from .parser import analysis_parser
+from .parser import create_analysis_parser
 
 
 def setup_submit(data_dump_file, inputs, args):
@@ -82,6 +82,7 @@ class AnalysisNode(BaseNode):
         self.logs = self.inputs.data_analysis_log_directory
 
         # This are the defaults: used only to figure out which arguments to use
+        analysis_parser = create_analysis_parser()
         self.analysis_args, _ = analysis_parser.parse_known_args()
 
     @property
