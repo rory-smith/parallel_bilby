@@ -170,7 +170,7 @@ slurm_settings.add_argument(
     help="Maximum wall time (defaults to 24:00:00)",
 )
 slurm_settings.add_argument(
-    "--mem-per-cpu", type=str, default="4000", help="Memory per CPU (defaults to 4000)"
+    "--mem-per-cpu", type=str, default="1000", help="Memory per CPU (defaults to 1000)"
 )
 slurm_settings.add_argument(
     "--extra-lines",
