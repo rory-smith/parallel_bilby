@@ -50,9 +50,9 @@ dynesty_settings_parser.add_argument(
 )
 dynesty_settings_parser.add_argument(
     "--n-effective",
-    default=inf,
-    type=float,
-    help="Stopping criteria: effective number of samples, (default=inf)",
+    default=5000,
+    type=int,
+    help="Stopping criteria: effective number of samples, (default=5000)",
 )
 dynesty_settings_parser.add_argument(
     "--dynesty-sample",

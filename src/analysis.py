@@ -74,13 +74,14 @@ def sample_rwalk_parallel_with_act(args):
     reject = 0
     nfail = 0
     act = np.inf
-    u_list = [u]
-    v_list = [prior_transform(u)]
-    logl_list = [loglikelihood(v_list[-1])]
+    u_list = []#[u]
+    v_list = []#[prior_transform(u)]
+    logl_list = []#[loglikelihood(v_list[-1])]
 
     drhat, dr, du, u_prop, logl_prop = np.nan, np.nan, np.nan, np.nan, np.nan
-    while len(u_list) < nact * act:
-
+    i=0
+    while i < nact * act:
+        i+=1
         # Propose a direction on the unit n-sphere.
         drhat = rstate.randn(n)
         drhat /= linalg.norm(drhat)
@@ -104,9 +105,10 @@ def sample_rwalk_parallel_with_act(args):
             pass
         else:
             nfail += 1
-            u_list.append(u_list[-1])
-            v_list.append(v_list[-1])
-            logl_list.append(logl_list[-1])
+            if accept > 0:
+                u_list.append(u_list[-1])
+                v_list.append(v_list[-1])
+                logl_list.append(logl_list[-1])
             continue
 
         # Check proposed point.
@@ -122,9 +124,10 @@ def sample_rwalk_parallel_with_act(args):
             logl_list.append(logl)
         else:
             reject += 1
-            u_list.append(u_list[-1])
-            v_list.append(v_list[-1])
-            logl_list.append(logl_list[-1])
+            if accept > 0:
+                u_list.append(u_list[-1])
+                v_list.append(v_list[-1])
+                logl_list.append(logl_list[-1])
 
         # If we've taken the minimum number of steps, calculate the ACT
         if accept + reject > walks:
@@ -151,11 +154,15 @@ def sample_rwalk_parallel_with_act(args):
         u = u_list[idx]
         v = v_list[idx]
         logl = logl_list[idx]
-    elif len(u_list) == 1:
+    elif len(u_list) <= 2 and len(u_list)>0:
         logger.warning("Returning the only point in the chain")
         u = u_list[-1]
         v = v_list[-1]
         logl = logl_list[-1]
+    elif len(u_list) == 0:
+        u = np.random.uniform(size=du.shape[0])
+        v = prior_transform(u)
+        logl = loglikelihood(v) 
     else:
         idx = np.random.randint(int(len(u_list) / 2), len(u_list))
         logger.warning("Returning random point in second half of the chain")
@@ -166,8 +173,8 @@ def sample_rwalk_parallel_with_act(args):
     blob = {"accept": accept, "reject": reject, "fail": nfail, "scale": scale}
 
     ncall = accept + reject
-    if logl <= logl_list[0]:
-        logl = -np.inf
+    #if logl <= logl_list[0]:
+    #    logl = -np.inf
     return u, v, logl, ncall, blob
 
 
