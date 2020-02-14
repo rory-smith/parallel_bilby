@@ -95,7 +95,9 @@ def sample_rwalk_parallel_with_act(args):
     logl_list = []
 
     drhat, dr, du, u_prop, logl_prop = np.nan, np.nan, np.nan, np.nan, np.nan
-    while len(u_list) < nact * act:
+    i = 0
+    while i < nact * act:
+        i += 1
         # Propose a direction on the unit n-sphere.
         drhat = rstate.randn(n)
         drhat /= linalg.norm(drhat)
