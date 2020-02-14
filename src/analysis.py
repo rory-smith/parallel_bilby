@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Script to run parallel bilby using MPI
+Module to run parallel bilby using MPI
 """
 import datetime
 import json
@@ -25,7 +25,7 @@ import bilby
 from bilby.core.utils import reflect
 from bilby.gw import conversion
 
-from .parser import analysis_parser
+from .parser import create_analysis_parser
 
 mpi4py.rc.threads = False
 mpi4py.rc.recv_mprobe = False
@@ -51,6 +51,22 @@ def fill_sample(args):
     return sample
 
 
+def get_initial_points_from_prior(ndim, npoints):
+    unit_cube = []
+    parameters = []
+    likelihood = []
+    while len(unit_cube) < npoints:
+        unit = np.random.rand(ndim)
+        theta = prior_transform_function(unit)
+        if bool(np.isinf(log_prior_function(theta))) is False:
+            if bool(np.isinf(likelihood_function(theta))) is False:
+                unit_cube.append(unit)
+                parameters.append(theta)
+                likelihood.append(likelihood_function(theta))
+
+    return np.array(unit_cube), np.array(parameters), np.array(likelihood)
+
+
 def sample_rwalk_parallel_with_act(args):
     """ A dynesty sampling method optimised for parallel_bilby
 
@@ -74,14 +90,14 @@ def sample_rwalk_parallel_with_act(args):
     reject = 0
     nfail = 0
     act = np.inf
-    u_list = []#[u]
-    v_list = []#[prior_transform(u)]
-    logl_list = []#[loglikelihood(v_list[-1])]
+    u_list = []  # [u]
+    v_list = []  # [prior_transform(u)]
+    logl_list = []  # [loglikelihood(v_list[-1])]
 
     drhat, dr, du, u_prop, logl_prop = np.nan, np.nan, np.nan, np.nan, np.nan
-    i=0
+    i = 0
     while i < nact * act:
-        i+=1
+        i += 1
         # Propose a direction on the unit n-sphere.
         drhat = rstate.randn(n)
         drhat /= linalg.norm(drhat)
@@ -154,7 +170,7 @@ def sample_rwalk_parallel_with_act(args):
         u = u_list[idx]
         v = v_list[idx]
         logl = logl_list[idx]
-    elif len(u_list) <= 2 and len(u_list)>0:
+    elif len(u_list) <= 2 and len(u_list) > 0:
         logger.warning("Returning the only point in the chain")
         u = u_list[-1]
         v = v_list[-1]
@@ -162,7 +178,7 @@ def sample_rwalk_parallel_with_act(args):
     elif len(u_list) == 0:
         u = np.random.uniform(size=du.shape[0])
         v = prior_transform(u)
-        logl = loglikelihood(v) 
+        logl = loglikelihood(v)
     else:
         idx = np.random.randint(int(len(u_list) / 2), len(u_list))
         logger.warning("Returning random point in second half of the chain")
@@ -173,7 +189,7 @@ def sample_rwalk_parallel_with_act(args):
     blob = {"accept": accept, "reject": reject, "fail": nfail, "scale": scale}
 
     ncall = accept + reject
-    #if logl <= logl_list[0]:
+    # if logl <= logl_list[0]:
     #    logl = -np.inf
     return u, v, logl, ncall, blob
 
@@ -371,7 +387,7 @@ os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["MKL_DYNAMIC"] = "0"
 os.environ["MPI_PER_NODE"] = "16"
 
-
+analysis_parser = create_analysis_parser()
 input_args = analysis_parser.parse_args()
 
 with open(input_args.data_dump, "rb") as file:
@@ -381,6 +397,7 @@ ifo_list = data_dump["ifo_list"]
 waveform_generator = data_dump["waveform_generator"]
 waveform_generator.start_time = ifo_list[0].time_array[0]
 args = data_dump["args"]
+injection_parameters = data_dump.get("injection_parameters", None)
 
 outdir = args.outdir
 if input_args.outdir is not None:
@@ -418,6 +435,11 @@ def likelihood_function(v_array):
         return likelihood.log_likelihood() - likelihood.noise_log_likelihood()
     else:
         return np.nan_to_num(-np.inf)
+
+
+def log_prior_function(v_array):
+    params = {key: t for key, t in zip(sampling_keys, v_array)}
+    return priors.ln_prob(params)
 
 
 sampling_keys = []
@@ -472,6 +494,10 @@ with MPIPool() as pool:
         pool.wait()
         sys.exit(0)
     POOL_SIZE = pool.size
+
+    logger.info("Setting sampling seed = {}".format(input_args.sampling_seed))
+    np.random.seed(input_args.sampling_seed)
+
     logger.info(f"sampling_keys={sampling_keys}")
     logger.info("Periodic keys: {}".format([sampling_keys[ii] for ii in periodic]))
     logger.info("Reflective keys: {}".format([sampling_keys[ii] for ii in reflective]))
@@ -514,15 +540,20 @@ with MPIPool() as pool:
         )
     )
 
+    ndim = len(sampling_keys)
+    logger.info("Initializing sampling points")
+    live_points = get_initial_points_from_prior(ndim, nlive)
+
     sampler = NestedSampler(
         likelihood_function,
         prior_transform_function,
-        len(sampling_keys),
+        ndim,
         pool=pool,
         queue_size=POOL_SIZE,
         print_func=dynesty.results.print_fn_fallback,
         periodic=periodic,
         reflective=reflective,
+        live_points=live_points,
         use_pool=dict(
             update_bound=True,
             propose_point=True,
@@ -588,6 +619,7 @@ with MPIPool() as pool:
     result.meta_data["likelihood"] = likelihood.meta_data
     result.meta_data["sampler_kwargs"] = init_sampler_kwargs
     result.meta_data["run_sampler_kwargs"] = sampler_kwargs
+    result.meta_data["injection_parameters"] = injection_parameters
 
     result.log_likelihood_evaluations = reorder_loglikelihoods(
         unsorted_loglikelihoods=out.logl,
@@ -603,7 +635,6 @@ with MPIPool() as pool:
 
     result.samples_to_posterior()
 
-    np.random.seed(input_args.rand_seed)
     posterior = result.posterior
 
     nsamples = len(posterior)

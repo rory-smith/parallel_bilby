@@ -1,5 +1,11 @@
 # All notable changes will be documented in this file
 
+## v0.1.3 : 2020-02-13
+- Add documentation
+- Add initialization of live points for constrained priors
+- Add injection parameters to stored meta data
+- Add a basic CI with pre commit
+
 ## v0.1.2 : 2020-01-30
 
 - Updates bilby dependencies and improves sampler proposoal behavior

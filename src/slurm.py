@@ -1,6 +1,6 @@
 from os.path import abspath
 
-from .parser import analysis_parser
+from .parser import create_analysis_parser
 
 
 def setup_submit(data_dump_file, inputs, args):
@@ -82,6 +82,7 @@ class AnalysisNode(BaseNode):
         self.logs = self.inputs.data_analysis_log_directory
 
         # This are the defaults: used only to figure out which arguments to use
+        analysis_parser = create_analysis_parser()
         self.analysis_args, _ = analysis_parser.parse_known_args()
 
     @property
@@ -109,7 +110,7 @@ class AnalysisNode(BaseNode):
     def get_run_string(self):
         run_list = ["{}".format(self.data_dump_file)]
         for key, val in vars(self.analysis_args).items():
-            if key in ["data_dump", "label", "outdir"]:
+            if key in ["data_dump", "label", "outdir", "sampling_seed"]:
                 continue
             input_val = getattr(self.args, key)
             if val != input_val:
@@ -117,6 +118,9 @@ class AnalysisNode(BaseNode):
 
         run_list.append("--label {}".format(self.label))
         run_list.append("--outdir {}".format(abspath(self.inputs.result_directory)))
+        run_list.append(
+            "--sampling-seed {}".format(self.analysis_args.sampling_seed + self.idx)
+        )
 
         return " ".join(run_list)
 
