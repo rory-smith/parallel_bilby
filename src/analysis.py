@@ -90,14 +90,12 @@ def sample_rwalk_parallel_with_act(args):
     reject = 0
     nfail = 0
     act = np.inf
-    u_list = []  # [u]
-    v_list = []  # [prior_transform(u)]
-    logl_list = []  # [loglikelihood(v_list[-1])]
+    u_list = []
+    v_list = []
+    logl_list = []
 
     drhat, dr, du, u_prop, logl_prop = np.nan, np.nan, np.nan, np.nan, np.nan
-    i = 0
-    while i < nact * act:
-        i += 1
+    while len(u_list) < nact * act:
         # Propose a direction on the unit n-sphere.
         drhat = rstate.randn(n)
         drhat /= linalg.norm(drhat)
@@ -176,6 +174,7 @@ def sample_rwalk_parallel_with_act(args):
         v = v_list[-1]
         logl = logl_list[-1]
     elif len(u_list) == 0:
+        logger.warning("No accepted points: returning a random draw")
         u = np.random.uniform(size=du.shape[0])
         v = prior_transform(u)
         logl = loglikelihood(v)
@@ -189,8 +188,6 @@ def sample_rwalk_parallel_with_act(args):
     blob = {"accept": accept, "reject": reject, "fail": nfail, "scale": scale}
 
     ncall = accept + reject
-    # if logl <= logl_list[0]:
-    #    logl = -np.inf
     return u, v, logl, ncall, blob
 
 
