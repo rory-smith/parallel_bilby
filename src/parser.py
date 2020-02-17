@@ -167,6 +167,12 @@ def _add_slurm_settings_to_parser(parser):
         default=None,
         help="Additional lines, separated by ';', use for setting up conda env ",
     )
+    slurm_group.add_argument(
+        "--slurm-extra-lines",
+        type=str,
+        default=None,
+        help="additional slurm args (args that need #SBATCH in front) of the form arg=val separated by sapce"
+    )
     return parser
 
 

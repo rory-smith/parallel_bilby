@@ -47,13 +47,15 @@ class BaseNode(object):
         lines.append("#SBATCH --time={}".format(self.time))
         lines.append("#SBATCH --mem-per-cpu={}".format(self.mem_per_cpu))
         lines.append("#SBATCH --output={}/{}.log".format(self.logs, self.job_name))
+        if self.args.slurm_extra_lines is not None:
+            slurm_extra_lines = " ".join(["--{}".format(lin) for lin in self.args.extra_lines.split()])
+            for line in slurm_extra_lines.split():
+                lines.append("#SBATCH {}".format(line))
         lines.append("")
-        if self.args.extra_lines is not None:
-            extra_lines = " ".join(["--{}".format(lin) for lin in self.args.extra_lines.split()])
-        else:
-            extra_lines = ""
-        for line in extra_lines.split():
-            lines.append("#SBATCH {} \n".format(line))
+        if self.args.extra_lines:
+            for line in self.args.extra_lines.split(";"):
+                lines.append(line.strip())
+
         lines.append("")
         return lines
 
