@@ -528,6 +528,7 @@ with MPIPool() as pool:
         vol_dec=vol_dec,
         vol_check=vol_check,
         enlarge=enlarge,
+        save_bounds=False,
     )
 
     logger.info(
