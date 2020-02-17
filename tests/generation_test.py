@@ -4,6 +4,7 @@ from argparse import Namespace
 from unittest import TestCase
 
 import mock
+
 from src import generation
 
 from . import get_timeseries, ini, psd_strain_file, strain_file
