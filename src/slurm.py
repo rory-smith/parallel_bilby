@@ -54,7 +54,7 @@ class BaseNode(object):
             )
         else:
             extra_lines = ""
-        for line in self.args.extra_lines.split():
+        for line in extra_lines.split():
             lines.append("#SBATCH {} \n".format(line))
         lines.append("")
         return lines
