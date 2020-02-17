@@ -577,6 +577,7 @@ with MPIPool() as pool:
     )
 
     while True:
+        sampler_kwargs["add_live"] = False
         sampler_kwargs["maxcall"] += input_args.n_check_point
         sampler.run_nested(**sampler_kwargs)
         if sampler.ncall == old_ncall:
@@ -593,6 +594,7 @@ with MPIPool() as pool:
             no_plot=input_args.no_plot,
         )
 
+    sampler_kwargs["add_live"] = True
     sampling_time += (datetime.datetime.now() - t0).total_seconds()
 
     out = sampler.results
@@ -616,6 +618,7 @@ with MPIPool() as pool:
     result.meta_data["sampler_kwargs"] = init_sampler_kwargs
     result.meta_data["run_sampler_kwargs"] = sampler_kwargs
     result.meta_data["injection_parameters"] = injection_parameters
+    result.injection_parameters = injection_parameters
 
     result.log_likelihood_evaluations = reorder_loglikelihoods(
         unsorted_loglikelihoods=out.logl,
