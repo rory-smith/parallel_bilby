@@ -49,9 +49,7 @@ class BaseNode(object):
         lines.append("#SBATCH --output={}/{}.log".format(self.logs, self.job_name))
         lines.append("")
         if self.args.extra_lines is not None:
-            extra_lines = " ".join(
-                ["--{}".format(lin) for lin in self.args.extra_lines.split()]
-            )
+            extra_lines = " ".join(["--{}".format(lin) for lin in self.args.extra_lines.split()])
         else:
             extra_lines = ""
         for line in extra_lines.split():

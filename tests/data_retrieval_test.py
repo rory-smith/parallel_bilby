@@ -3,7 +3,6 @@ import shutil
 from unittest import TestCase
 
 import mock
-
 from src.data_retrieval import main
 
 from . import get_timeseries, ini, psd_strain_file, strain_file
