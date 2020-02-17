@@ -95,9 +95,7 @@ def sample_rwalk_parallel_with_act(args):
     logl_list = []
 
     drhat, dr, du, u_prop, logl_prop = np.nan, np.nan, np.nan, np.nan, np.nan
-    i = 0
-    while i < nact * act:
-        i += 1
+    while len(u_list) < nact * act:
         # Propose a direction on the unit n-sphere.
         drhat = rstate.randn(n)
         drhat /= linalg.norm(drhat)
@@ -165,27 +163,26 @@ def sample_rwalk_parallel_with_act(args):
             break
 
     # If the act is finite, pick randomly from within the chain
-    if np.isfinite(act) and int(0.5 * nact * act) < len(u_list):
-        idx = np.random.randint(int(0.5 * nact * act), len(u_list))
+    factor = 0.1
+    if len(u_list) == 0:
+        logger.warning("No accepted points: returning -inf")
+        u = u
+        v = prior_transform(u)
+        logl = -np.inf
+    elif np.isfinite(act) and int(factor * nact * act) < len(u_list):
+        idx = np.random.randint(int(factor * nact * act), len(u_list))
         u = u_list[idx]
         v = v_list[idx]
         logl = logl_list[idx]
-    elif len(u_list) <= 2 and len(u_list) > 0:
-        logger.warning("Returning the only point in the chain")
+    else:
+        logger.warning(
+            "len(u_list)={}<{}: returning the last point in the chain".format(
+                len(u_list), int(factor * nact * act)
+            )
+        )
         u = u_list[-1]
         v = v_list[-1]
         logl = logl_list[-1]
-    elif len(u_list) == 0:
-        logger.warning("No accepted points: returning a random draw")
-        u = np.random.uniform(size=du.shape[0])
-        v = prior_transform(u)
-        logl = loglikelihood(v)
-    else:
-        idx = np.random.randint(int(len(u_list) / 2), len(u_list))
-        logger.warning("Returning random point in second half of the chain")
-        u = u_list[idx]
-        v = v_list[idx]
-        logl = logl_list[idx]
 
     blob = {"accept": accept, "reject": reject, "fail": nfail, "scale": scale}
 
