@@ -261,8 +261,6 @@ def write_checkpoint(
         id=sampler.saved_id,
         it=sampler.saved_it,
         nc=sampler.saved_nc,
-        bound=sampler.bound,
-        nbound=sampler.nbound,
         boundidx=sampler.saved_boundidx,
         bounditer=sampler.saved_bounditer,
         scale=sampler.saved_scale,
@@ -280,6 +278,12 @@ def write_checkpoint(
         live_it=sampler.live_it,
         added_live=sampler.added_live,
     )
+
+    if input_args.do_not_save_bounds_in_resume:
+        pass
+    else:
+        current_state["bound"] = sampler.bound
+        current_state["nbound"] = sampler.nbound
 
     # Try to save a set of current posterior samples
     try:
@@ -366,8 +370,11 @@ def read_saved_state(resume_file, sampler):
         sampler.live_bound = saved["live_bound"]
         sampler.live_it = saved["live_it"]
         sampler.added_live = saved["added_live"]
-        sampler.bound = saved["bound"]
-        sampler.nbound = saved["nbound"]
+        try:
+            sampler.bound = saved["bound"]
+            sampler.nbound = saved["nbound"]
+        except KeyError:
+            logger.info("No bounds saved in resume")
         sampling_time = datetime.timedelta(
             seconds=saved["sampling_time"]
         ).total_seconds()

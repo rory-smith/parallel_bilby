@@ -114,7 +114,11 @@ class AnalysisNode(BaseNode):
                 continue
             input_val = getattr(self.args, key)
             if val != input_val:
-                run_list.append("--{} {}".format(key.replace("_", "-"), input_val))
+                if input_val is True:
+                    # For flags only add the flag
+                    run_list.append("--{}".format(key.replace("_", "-")))
+                else:
+                    run_list.append("--{} {}".format(key.replace("_", "-"), input_val))
 
         run_list.append("--label {}".format(self.label))
         run_list.append("--outdir {}".format(abspath(self.inputs.result_directory)))

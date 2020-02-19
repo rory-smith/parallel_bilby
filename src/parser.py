@@ -137,6 +137,15 @@ def _add_misc_settings_to_parser(parser):
         action="store_true",
         help="If true, don't generate check-point plots",
     )
+    misc_group.add_argument(
+        "--do-not-save-bounds-in-resume",
+        default=False,
+        action="store_true",
+        help=(
+            "If true, do not store bounds in the resume file. This can make "
+            "resume files large (~GB)"
+        ),
+    )
     return parser
 
 
