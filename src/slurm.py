@@ -83,11 +83,22 @@ class AnalysisNode(BaseNode):
         self.logs = self.inputs.data_analysis_log_directory
 
         # This are the defaults: used only to figure out which arguments to use
-        analysis_parser = create_analysis_parser()
+        analysis_parser = create_analysis_parser(sampler=self.args.sampler)
         self.analysis_args, _ = analysis_parser.parse_known_args(args=get_cli_args())
         # hack -- in the above the parse_known_arg sets the position param (ini) as
         # the data dump
         self.analysis_args.data_dump = self.data_dump_file
+
+    @property
+    def executable(self):
+        if self.args.sampler == "dynesty":
+            return "parallel_bilby_analysis"
+        elif self.args.sampler == "ptemcee":
+            return "parallel_bilby_ptemcee_analysis"
+        else:
+            raise ValueError(
+                "Unable to determine sampler to use from {}".format(self.args.sampler)
+            )
 
     @property
     def label(self):
@@ -108,7 +119,7 @@ class AnalysisNode(BaseNode):
         lines.append("")
 
         run_string = self.get_run_string()
-        lines.append("mpirun parallel_bilby_analysis {}".format(run_string))
+        lines.append("mpirun {} {}".format(self.executable, run_string))
         return "\n".join(lines)
 
     def get_run_string(self):
