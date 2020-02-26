@@ -49,7 +49,9 @@ class BaseNode(object):
         lines.append("#SBATCH --mem-per-cpu={}".format(self.mem_per_cpu))
         lines.append("#SBATCH --output={}/{}.log".format(self.logs, self.job_name))
         if self.args.slurm_extra_lines is not None:
-            slurm_extra_lines = " ".join(["--{}".format(lin) for lin in self.args.extra_lines.split()])
+            slurm_extra_lines = " ".join(
+                ["--{}".format(lin) for lin in self.args.extra_lines.split()]
+            )
             for line in slurm_extra_lines.split():
                 lines.append("#SBATCH {}".format(line))
         lines.append("")

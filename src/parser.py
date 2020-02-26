@@ -280,7 +280,7 @@ def _add_slurm_settings_to_parser(parser):
         "--slurm-extra-lines",
         type=str,
         default=None,
-        help="additional slurm args (args that need #SBATCH in front) of the form arg=val separated by sapce"
+        help="additional slurm args (args that need #SBATCH in front) of the form arg=val separated by sapce",
     )
     return parser
 
