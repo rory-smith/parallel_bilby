@@ -26,6 +26,7 @@ from bilby.core.utils import reflect
 from bilby.gw import conversion
 
 from .parser import create_analysis_parser
+from .utils import get_cli_args
 
 mpi4py.rc.threads = False
 mpi4py.rc.recv_mprobe = False
@@ -391,7 +392,8 @@ os.environ["MKL_DYNAMIC"] = "0"
 os.environ["MPI_PER_NODE"] = "16"
 
 analysis_parser = create_analysis_parser()
-input_args = analysis_parser.parse_args()
+cli_args = get_cli_args()
+input_args = analysis_parser.parse_args(args=cli_args)
 
 with open(input_args.data_dump, "rb") as file:
     data_dump = pickle.load(file)

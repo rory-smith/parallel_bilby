@@ -41,7 +41,8 @@ def add_extra_args_from_bilby_pipe_namespace(args):
 
 
 def main():
-    args = generation_parser.parse_args()
+    cli_args = get_cli_args()
+    args = generation_parser.parse_args(args=cli_args)
     args = add_extra_args_from_bilby_pipe_namespace(args)
     inputs = bilby_pipe_datagen.DataGenerationInput(args, [])
     inputs.log_directory = None
