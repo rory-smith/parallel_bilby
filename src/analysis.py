@@ -391,7 +391,7 @@ os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["MKL_DYNAMIC"] = "0"
 os.environ["MPI_PER_NODE"] = "16"
 
-analysis_parser = create_analysis_parser()
+analysis_parser = create_analysis_parser(sampler="dynesty")
 cli_args = get_cli_args()
 input_args = analysis_parser.parse_args(args=cli_args)
 

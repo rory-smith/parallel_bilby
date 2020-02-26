@@ -103,6 +103,7 @@ setup(
         "console_scripts": [
             "parallel_bilby_generation=parallel_bilby.generation:main",
             "parallel_bilby_analysis=parallel_bilby.analysis:main",
+            "parallel_bilby_ptemcee_analysis=parallel_bilby.ptemcee_analysis:main",
         ]
     },
     classifiers=[
