@@ -309,6 +309,12 @@ def _create_reduced_bilby_pipe_parser():
         "sampler",
         "sampling-seed",
         "sampler-kwargs",
+        "plot_calibration",
+        "plot_corner",
+        "plot_format",
+        "plot_marginal",
+        "plot_skymap",
+        "plot_waveform",
     ]
     for arg in bilby_pipe_arguments_to_ignore:
         remove_argument_from_parser(bilby_pipe_parser, arg)
