@@ -33,6 +33,8 @@ precommits-py3.7:
     # Run precommits (black, flake8, spellcheck, isort, no merge conflicts, etc)
     - pre-commit run --all-files --verbose --show-diff-on-failure
 
+
+
 precommits-py3.6:
   stage: test
   image: bilbydev/bilby_pipe-test-suite-python36
@@ -63,6 +65,24 @@ python-3.7:
     - conda install -c conda-forge schwimmbad
     - python -m pip install .
 
+pytest:
+  stage: test
+  image: bilbydev/bilby_pipe-test-suite-python37
+  script:
+    - conda install -c conda-forge schwimmbad
+    - mkdir -p .pip37
+    - pip install --upgrade pip
+    - pip --cache-dir=.pip37 install --upgrade bilby
+    - pip --cache-dir=.pip37 install .
+    # Run tests and collect coverage data
+    - pytest --cov src
+    - coverage html
+    - coverage-badge -o coverage_badge.svg -f
+
+  artifacts:
+    paths:
+      - htmlcov/
+      - coverage_badge.svg
 
 docs:
   stage: docs
@@ -90,6 +110,8 @@ pages:
   script:
     - mkdir public/
     - mv docs/_build/html/* public/
+    - mv htmlcov/ public/
+    - mv /builds/lscsoft/parallel_bilby/coverage_badge.svg public/
   artifacts:
     paths:
       - public

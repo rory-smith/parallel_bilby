@@ -1,6 +1,7 @@
 from os.path import abspath
 
 from .parser import create_analysis_parser
+from .utils import get_cli_args
 
 
 def setup_submit(data_dump_file, inputs, args):
@@ -83,7 +84,10 @@ class AnalysisNode(BaseNode):
 
         # This are the defaults: used only to figure out which arguments to use
         analysis_parser = create_analysis_parser()
-        self.analysis_args, _ = analysis_parser.parse_known_args()
+        self.analysis_args, _ = analysis_parser.parse_known_args(args=get_cli_args())
+        # hack -- in the above the parse_known_arg sets the position param (ini) as
+        # the data dump
+        self.analysis_args.data_dump = self.data_dump_file
 
     @property
     def label(self):

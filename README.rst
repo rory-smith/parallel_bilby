@@ -1,3 +1,6 @@
+|pipeline status| |coverage report| |pypi| |conda| |version|
+
+
 Parallel Bilby
 ==============
 
@@ -17,3 +20,13 @@ Online material to help you get started:
 .. _Examples: https://lscsoft.docs.ligo.org/parallel_bilby/examples
 .. _Parallel Bilby paper: https://arxiv.org/pdf/1909.11873.pdf
 
+.. |pipeline status| image:: https://git.ligo.org/lscsoft/parallel_bilby/badges/master/pipeline.svg
+   :target: https://git.ligo.org/lscsoft/parallel_bilby/commits/master
+.. |coverage report| image:: https://lscsoft.docs.ligo.org/bilby_pipe/coverage_badge.svg
+   :target: https://lscsoft.docs.ligo.org/parallel_bilby/htmlcov/
+.. |version| image:: https://img.shields.io/pypi/pyversions/parallel_bilby.svg
+   :target: https://pypi.org/project/parallel_bilby/
+.. |pypi| image:: https://badge.fury.io/py/bilby-pipe.svg
+   :target: https://pypi.org/project/parallel_bilby/
+.. |conda| image:: https://img.shields.io/conda/vn/conda-forge/bilby_pipe.svg
+   :target: https://anaconda.org/conda-forge/parallel_bilby

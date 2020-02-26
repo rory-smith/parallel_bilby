@@ -214,6 +214,7 @@ def create_generation_parser():
     parser = _create_base_parser()
     bilby_pipe_parser = _create_reduced_bilby_pipe_parser()
     generation_parser = bilby_pipe.parser.BilbyArgParser(
+        prog="parallel_bilby_generation",
         usage=__doc__,
         ignore_unknown_config_file_keys=False,
         allow_abbrev=False,
@@ -227,7 +228,9 @@ def create_generation_parser():
 def create_analysis_parser():
     """Parser for parallel_bilby_analysis"""
     parser = _create_base_parser()
-    analysis_parser = argparse.ArgumentParser("base", parents=[parser])
+    analysis_parser = argparse.ArgumentParser(
+        prog="parallel_bilby_analysis", parents=[parser]
+    )
     analysis_parser.add_argument(
         "data_dump",
         type=str,
