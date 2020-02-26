@@ -58,7 +58,6 @@ class BaseNode(object):
         if self.args.extra_lines:
             for line in self.args.extra_lines.split(";"):
                 lines.append(line.strip())
-
         lines.append("")
         return lines
 
