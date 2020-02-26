@@ -26,6 +26,7 @@ from bilby.core.utils import reflect
 from bilby.gw import conversion
 
 from .parser import create_analysis_parser
+from .utils import get_cli_args
 
 mpi4py.rc.threads = False
 mpi4py.rc.recv_mprobe = False
@@ -261,8 +262,6 @@ def write_checkpoint(
         id=sampler.saved_id,
         it=sampler.saved_it,
         nc=sampler.saved_nc,
-        bound=sampler.bound,
-        nbound=sampler.nbound,
         boundidx=sampler.saved_boundidx,
         bounditer=sampler.saved_bounditer,
         scale=sampler.saved_scale,
@@ -280,6 +279,12 @@ def write_checkpoint(
         live_it=sampler.live_it,
         added_live=sampler.added_live,
     )
+
+    if input_args.do_not_save_bounds_in_resume:
+        pass
+    else:
+        current_state["bound"] = sampler.bound
+        current_state["nbound"] = sampler.nbound
 
     # Try to save a set of current posterior samples
     try:
@@ -366,8 +371,11 @@ def read_saved_state(resume_file, sampler):
         sampler.live_bound = saved["live_bound"]
         sampler.live_it = saved["live_it"]
         sampler.added_live = saved["added_live"]
-        sampler.bound = saved["bound"]
-        sampler.nbound = saved["nbound"]
+        try:
+            sampler.bound = saved["bound"]
+            sampler.nbound = saved["nbound"]
+        except KeyError:
+            logger.info("No bounds saved in resume")
         sampling_time = datetime.timedelta(
             seconds=saved["sampling_time"]
         ).total_seconds()
@@ -383,8 +391,9 @@ os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["MKL_DYNAMIC"] = "0"
 os.environ["MPI_PER_NODE"] = "16"
 
-analysis_parser = create_analysis_parser()
-input_args = analysis_parser.parse_args()
+analysis_parser = create_analysis_parser(sampler="dynesty")
+cli_args = get_cli_args()
+input_args = analysis_parser.parse_args(args=cli_args)
 
 with open(input_args.data_dump, "rb") as file:
     data_dump = pickle.load(file)
@@ -528,6 +537,7 @@ with MPIPool() as pool:
         vol_dec=vol_dec,
         vol_check=vol_check,
         enlarge=enlarge,
+        save_bounds=False,
     )
 
     logger.info(

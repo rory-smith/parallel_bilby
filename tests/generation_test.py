@@ -1,59 +1,71 @@
 import os
 import shutil
-from argparse import Namespace
-from unittest import TestCase
+import unittest
 
 import mock
 from src import generation
 
-from . import get_timeseries, ini, psd_strain_file, strain_file
+from bilby_pipe.data_generation import DataGenerationInput
+from bilby_pipe.utils import DataDump
+
+GW150914_ROOT = "examples/GW150914_IMRPhenomPv2"
+GW150914_INI = f"{GW150914_ROOT}/GW150914.ini"
+GW150914_PRIOR = f"{GW150914_ROOT}/GW150914.prior"
+GW150914_PSD = (
+    "{H1=examples/GW150914_IMRPhenomPv2/raw_data/h1_psd.txt, "
+    "L1=examples/GW150914_IMRPhenomPv2/raw_data/l1_psd.txt}"
+)
+GW150914_TABLE = "tests/test_files/out_GW150914/.distance_marginalization_lookup.npz"
 
 
-class TestGeneration(TestCase):
+class GenerationTest(unittest.TestCase):
     def setUp(self):
-        self.ini = ini
-        self.strain_file = strain_file
-        self.psd_strain_file = psd_strain_file
-        self.maxDiff = 0
+        self.outdir = "tests/test_files/test_out"
+        os.makedirs(self.outdir, exist_ok=True)
+        self.ini = GW150914_INI
 
     def tearDown(self):
-        if os.path.isdir("outdir"):
-            shutil.rmtree("outdir")
+        if os.path.exists(self.outdir):
+            shutil.rmtree(self.outdir)
 
-    def test_arg_parser(self):
-        with self.assertRaises(SystemExit):
-            generation.get_args()
+    @staticmethod
+    def get_timeseries_data():
+        d = DataDump.from_pickle("tests/test_files/gwpy_data.pickle")
+        timeseries = d.interferometers[0].strain_data.to_gwpy_timeseries()
+        return timeseries
 
-    @mock.patch("src.generation.get_args")
+    @mock.patch("gwpy.timeseries.TimeSeries.fetch_open_data")
     @mock.patch("src.generation.get_cli_args")
-    @mock.patch("bilby_pipe.data_generation.DataGenerationInput._gwpy_get")
-    @mock.patch("bilby_pipe.data_generation.DataGenerationInput._is_gwpy_data_good")
-    def test_get_data(self, is_data_good, get_data_method, cli_args, get_args):
-        h1_strain, h1_psd = get_timeseries()
-        get_data_method.side_effect = [h1_strain, h1_psd]
-        is_data_good.return_value = True
-        get_args.return_value = Namespace(
-            outdir="outdir",
-            label="test",
-            trigger_time=1126259462.4,
-            duration=4,
-            psd_dict={"H1": "tests/test_files/raw_data/h1_psd.txt"},
-            prior_file="tests/test_files/test.prior",
-            waveform_approximant="IMRPhenomPv2",
-            distance_marginalization=False,
-            phase_marginalization=True,
-            time_marginalization=True,
-            data_dict=None,
-            binary_neutron_star=False,
-            deltaT=0.2,
-            sampling_frequency=4096,
-            minimum_frequency=20,
-            maximum_frequency=2048,
-            calibration_model=None,
-            reference_frequency=20,
-            distance_marginalization_lookup_table=None,
-        )
-        cli_args.return_value = ["tests/test_files/test.ini"]
+    def get_datagen_input_object(self, get_cli_args, fetch_open_data_method):
+        get_cli_args.return_value = [
+            GW150914_INI,
+            "--distance_marginalization_lookup_table",
+            GW150914_TABLE,
+        ]
+        fetch_open_data_method.return_value = self.get_timeseries_data()
+        args = generation.generation_parser.parse_args(args=[self.ini])
+        args = generation.add_extra_args_from_bilby_pipe_namespace(args)
+        args.prior_file = GW150914_PRIOR
+        args.outdir = self.outdir
+        args.psd_dict = GW150914_PSD
+        args.submit = False
+        args.distance_marginalisation = True
+        args.distance_marginalization_lookup_table = GW150914_TABLE
+        return DataGenerationInput(args=args, unknown_args=[])
+
+    @mock.patch("src.generation.bilby_pipe.data_generation.DataGenerationInput")
+    @mock.patch("src.generation.get_cli_args")
+    @mock.patch("src.slurm.get_cli_args")
+    def test_generation(self, slurm_cli, generation_cli, datagen_input):
+        datagen_input.return_value = self.get_datagen_input_object()
+        generation_cli.return_value = [GW150914_INI]
+        slurm_cli.return_value = [GW150914_INI]
         generation.main()
-        self.assertTrue(os.path.isfile("outdir/data/H1_strain.hdf5"))
-        generation.main()  # testing the removal of cached strain data
+        files = ["data/GW150914_data_dump.pickle", "submit/bash_GW150914.sh"]
+        for f in files:
+            path = os.path.join(self.outdir, f)
+            self.assertTrue(os.path.isfile(path))
+
+
+if __name__ == "__main__":
+    unittest.main()
