@@ -2,7 +2,7 @@ import unittest
 from argparse import Namespace
 
 import numpy as np
-from src.parser import create_analysis_parser, create_generation_parser
+from parallel_bilby.parser import create_analysis_parser, create_generation_parser
 
 GW150914_INI = "examples/GW150914_IMRPhenomPv2/GW150914.ini"
 TEST_INI = "tests/test_files/test.ini"
@@ -121,6 +121,7 @@ class ParserTest(unittest.TestCase):
             autocorr_c=5.0,
             autocorr_tol=50.0,
             adapt=False,
+            slurm_extra_lines=None,
         )
         self.assertDictEqual(vars(args), vars(expected_args))
 
