@@ -24,6 +24,7 @@ from bilby.gw import conversion
 from schwimmbad import MPIPool
 
 from .parser import create_analysis_parser
+from .utils import fill_sample, get_initial_points_from_prior
 
 mpi4py.rc.threads = False
 mpi4py.rc.recv_mprobe = False
@@ -92,7 +93,7 @@ def checkpoint(outdir, label, nsamples_effective, sampler):
 
     # Generate the walkers plot diagnostic
     plot_walkers(
-        sampler.chain[0, :, : sampler.time, :], nburn, sampling_keys, outdir, label,
+        sampler.chain[0, :, : sampler.time, :], nburn, sampling_keys, outdir, label
     )
 
     # Generate the tau plot diagnostic
@@ -207,37 +208,6 @@ def compute_evidence(sampler, outdir, label, nburn, thin, make_plots=True):
     return lnZ, lnZerr
 
 
-def fill_sample(args):
-    ii, sample = args
-    sample = dict(sample).copy()
-    marg_params = likelihood.parameters.copy()
-    likelihood.parameters.update(sample)
-    sample = likelihood.generate_posterior_sample_from_marginalized_likelihood()
-    # Likelihood needs to have marg params to calculate correct SNR
-    likelihood.parameters.update(marg_params)
-    bilby.gw.conversion.compute_snrs(sample, likelihood)
-    sample = conversion.generate_all_bbh_parameters(sample)
-    return sample
-
-
-def get_initial_points_from_prior(
-    ndim, npoints, prior_transform_function, log_prior_function, likelihood_function
-):
-    unit_cube = []
-    parameters = []
-    likelihood = []
-    while len(unit_cube) < npoints:
-        unit = np.random.rand(ndim)
-        theta = prior_transform_function(unit)
-        if bool(np.isinf(log_prior_function(theta))) is False:
-            if bool(np.isinf(likelihood_function(theta))) is False:
-                unit_cube.append(unit)
-                parameters.append(theta)
-                likelihood.append(likelihood_function(theta))
-
-    return np.array(unit_cube), np.array(parameters), np.array(likelihood)
-
-
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["MKL_DYNAMIC"] = "0"
@@ -282,7 +252,7 @@ def prior_transform_function(u_array):
     return priors.rescale(sampling_keys, u_array)
 
 
-def likelihood_function(v_array):
+def log_likelihood_function(v_array):
     if input_args.bilby_zero_likelihood_mode:
         return 0
 
@@ -345,7 +315,7 @@ with MPIPool() as pool:
 
     # Check for a resume file
     resume_file = "{}/{}_checkpoint_resume.pickle".format(outdir, label)
-    if os.path.isfile(resume_file):
+    if os.path.isfile(resume_file) and os.stat(resume_file).st_size > 0:
         try:
             logger.info("Resume data {} found".format(resume_file))
             with open(resume_file, "rb") as file:
@@ -367,7 +337,7 @@ with MPIPool() as pool:
         # Initialize resume file
         Path(resume_file).touch()
 
-        logger.info("Initializing sampling points")
+        logger.info(f"Initializing sampling points with pool size={POOL_SIZE}")
         p0_list = []
         for i in tqdm.tqdm(range(input_args.ntemps)):
             _, p0, _ = get_initial_points_from_prior(
@@ -375,7 +345,9 @@ with MPIPool() as pool:
                 input_args.nwalkers,
                 prior_transform_function,
                 log_prior_function,
-                likelihood_function,
+                log_likelihood_function,
+                pool,
+                calculate_likelihood=False,
             )
             p0_list.append(p0)
         pos0 = np.array(p0_list)
@@ -390,7 +362,7 @@ with MPIPool() as pool:
             )
         )
         sampler = ptemcee.Sampler(
-            logl=likelihood_function,
+            logl=log_likelihood_function,
             logp=log_prior_function,
             pool=pool,
             **init_sampler_kwargs,

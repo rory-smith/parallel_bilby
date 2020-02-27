@@ -25,7 +25,7 @@ from pandas import DataFrame
 from schwimmbad import MPIPool
 
 from .parser import create_analysis_parser
-from .utils import get_cli_args
+from .utils import fill_sample, get_cli_args, get_initial_points_from_prior
 
 mpi4py.rc.threads = False
 mpi4py.rc.recv_mprobe = False
@@ -36,35 +36,6 @@ logger = bilby.core.utils.logger
 def main():
     """ Do nothing function to play nicely with MPI """
     pass
-
-
-def fill_sample(args):
-    ii, sample = args
-    sample = dict(sample).copy()
-    marg_params = likelihood.parameters.copy()
-    likelihood.parameters.update(sample)
-    sample = likelihood.generate_posterior_sample_from_marginalized_likelihood()
-    # Likelihood needs to have marg params to calculate correct SNR
-    likelihood.parameters.update(marg_params)
-    bilby.gw.conversion.compute_snrs(sample, likelihood)
-    sample = conversion.generate_all_bbh_parameters(sample)
-    return sample
-
-
-def get_initial_points_from_prior(ndim, npoints):
-    unit_cube = []
-    parameters = []
-    likelihood = []
-    while len(unit_cube) < npoints:
-        unit = np.random.rand(ndim)
-        theta = prior_transform_function(unit)
-        if bool(np.isinf(log_prior_function(theta))) is False:
-            if bool(np.isinf(likelihood_function(theta))) is False:
-                unit_cube.append(unit)
-                parameters.append(theta)
-                likelihood.append(likelihood_function(theta))
-
-    return np.array(unit_cube), np.array(parameters), np.array(likelihood)
 
 
 def sample_rwalk_parallel_with_act(args):
@@ -430,7 +401,7 @@ def prior_transform_function(u_array):
     return priors.rescale(sampling_keys, u_array)
 
 
-def likelihood_function(v_array):
+def log_likelihood_function(v_array):
     if input_args.bilby_zero_likelihood_mode:
         return 0
     parameters = {key: v for key, v in zip(sampling_keys, v_array)}
@@ -546,11 +517,18 @@ with MPIPool() as pool:
     )
 
     ndim = len(sampling_keys)
-    logger.info("Initializing sampling points")
-    live_points = get_initial_points_from_prior(ndim, nlive)
+    logger.info(f"Initializing sampling points with pool size={POOL_SIZE}")
+    live_points = get_initial_points_from_prior(
+        ndim,
+        nlive,
+        prior_transform_function,
+        log_prior_function,
+        log_likelihood_function,
+        pool,
+    )
 
     sampler = NestedSampler(
-        likelihood_function,
+        log_likelihood_function,
         prior_transform_function,
         ndim,
         pool=pool,
