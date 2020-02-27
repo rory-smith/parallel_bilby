@@ -14,6 +14,7 @@ stages:
   - docs
   - deploy
 
+
 cache:
   paths:
     - .pip37
@@ -107,11 +108,13 @@ pages:
   stage: deploy
   dependencies:
     - docs
+    - pytest
   script:
+    - ls
     - mkdir public/
     - mv docs/_build/html/* public/
     - mv htmlcov/ public/
-    - mv /builds/lscsoft/parallel_bilby/coverage_badge.svg public/
+    - mv coverage_badge.svg public/
   artifacts:
     paths:
       - public
