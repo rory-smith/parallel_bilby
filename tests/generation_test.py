@@ -3,10 +3,9 @@ import shutil
 import unittest
 
 import mock
-from src import generation
-
 from bilby_pipe.data_generation import DataGenerationInput
 from bilby_pipe.utils import DataDump
+from parallel_bilby import generation
 
 GW150914_ROOT = "examples/GW150914_IMRPhenomPv2"
 GW150914_INI = f"{GW150914_ROOT}/GW150914.ini"
@@ -35,7 +34,7 @@ class GenerationTest(unittest.TestCase):
         return timeseries
 
     @mock.patch("gwpy.timeseries.TimeSeries.fetch_open_data")
-    @mock.patch("src.generation.get_cli_args")
+    @mock.patch("parallel_bilby.generation.get_cli_args")
     def get_datagen_input_object(self, get_cli_args, fetch_open_data_method):
         get_cli_args.return_value = [
             GW150914_INI,
@@ -53,9 +52,11 @@ class GenerationTest(unittest.TestCase):
         args.distance_marginalization_lookup_table = GW150914_TABLE
         return DataGenerationInput(args=args, unknown_args=[])
 
-    @mock.patch("src.generation.bilby_pipe.data_generation.DataGenerationInput")
-    @mock.patch("src.generation.get_cli_args")
-    @mock.patch("src.slurm.get_cli_args")
+    @mock.patch(
+        "parallel_bilby.generation.bilby_pipe.data_generation.DataGenerationInput"
+    )
+    @mock.patch("parallel_bilby.generation.get_cli_args")
+    @mock.patch("parallel_bilby.slurm.get_cli_args")
     def test_generation(self, slurm_cli, generation_cli, datagen_input):
         datagen_input.return_value = self.get_datagen_input_object()
         generation_cli.return_value = [GW150914_INI]

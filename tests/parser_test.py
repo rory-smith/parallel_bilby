@@ -108,7 +108,7 @@ class ParserTest(unittest.TestCase):
             check_point_deltaT=600,
             frac_threshold=0.01,
             max_iterations=100000,
-            min_tau=50,
+            min_tau=30,
             ncheck=500,
             nfrac=5,
             nsamples=10000,

@@ -30,7 +30,7 @@ class AnalysisTest(unittest.TestCase):
         return data_dump
 
     @mock.patch("pickle.load")
-    @mock.patch("src.utils.get_cli_args")
+    @mock.patch("parallel_bilby.utils.get_cli_args")
     def test_analysis(self, get_args, pickle_load):
         get_args.return_value = [DATA_DUMP]
         pickle_load.return_value = self.data_dump
@@ -39,7 +39,7 @@ class AnalysisTest(unittest.TestCase):
             # ValueError: Tried to create an MPI pool,
             # but there was only one MPI process available.
             # Need at least two.
-            from src import analysis
+            from parallel_bilby import analysis
 
             analysis.main()
 

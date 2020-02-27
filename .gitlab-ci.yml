@@ -75,7 +75,7 @@ pytest:
     - pip --cache-dir=.pip37 install --upgrade bilby
     - pip --cache-dir=.pip37 install .
     # Run tests and collect coverage data
-    - pytest --cov src
+    - pytest --cov parallel_bilby
     - coverage html
     - coverage-badge -o coverage_badge.svg -f
 
