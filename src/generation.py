@@ -10,10 +10,9 @@ import pickle
 import shutil
 import subprocess
 
-import dynesty
-
 import bilby
 import bilby_pipe
+import dynesty
 from bilby_pipe import data_generation as bilby_pipe_datagen
 from bilby_pipe.data_generation import parse_args
 

@@ -12,6 +12,7 @@ import sys
 import time
 from pathlib import Path
 
+import bilby
 import emcee
 import matplotlib.pyplot as plt
 import mpi4py
@@ -19,10 +20,8 @@ import numpy as np
 import pandas as pd
 import ptemcee
 import tqdm
-from schwimmbad import MPIPool
-
-import bilby
 from bilby.gw import conversion
+from schwimmbad import MPIPool
 
 from .parser import create_analysis_parser
 

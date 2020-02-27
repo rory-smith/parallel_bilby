@@ -9,21 +9,20 @@ import os
 import pickle
 import sys
 
+import bilby
 import dynesty
 import matplotlib.pyplot as plt
 import mpi4py
 import numpy as np
 import pandas as pd
+from bilby.core.utils import reflect
+from bilby.gw import conversion
 from dynesty import NestedSampler
 from dynesty.plotting import traceplot
 from dynesty.utils import resample_equal, unitcheck
 from numpy import linalg
 from pandas import DataFrame
 from schwimmbad import MPIPool
-
-import bilby
-from bilby.core.utils import reflect
-from bilby.gw import conversion
 
 from .parser import create_analysis_parser
 from .utils import get_cli_args

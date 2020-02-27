@@ -1,9 +1,8 @@
 import argparse
 
-from numpy import inf
-
 import bilby
 import bilby_pipe
+from numpy import inf
 
 logger = bilby.core.utils.logger
 
@@ -167,7 +166,7 @@ def _add_ptemcee_settings_to_parser(parser):
     )
     ptemcee_group.add_argument(
         "--min-tau",
-        default=50,
+        default=30,
         type=int,
         help="The minimum tau to accept: used to prevent early convergence",
     )
