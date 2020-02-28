@@ -4,14 +4,20 @@ import bilby
 import bilby_pipe
 from numpy import inf
 
+from .utils import get_version_information
+
 logger = bilby.core.utils.logger
+
+__version__ = get_version_information()
 
 
 def remove_argument_from_parser(parser, arg):
     for action in parser._actions:
         if action.dest == arg.replace("-", "_"):
-            parser._handle_conflict_resolve(None, [("--" + arg, action)])
-            return
+            try:
+                parser._handle_conflict_resolve(None, [("--" + arg, action)])
+            except ValueError as e:
+                logger.warning("Error removing {}: {}".format(arg, e))
     logger.warning(
         "Request to remove arg {} from bilby_pipe args, but arg not found".format(arg)
     )
@@ -37,6 +43,13 @@ class StoreBoolean(argparse.Action):
 
 def _create_base_parser(sampler="dynesty"):
     base_parser = argparse.ArgumentParser("base", add_help=False)
+    base_parser.add(
+        "--version",
+        action="version",
+        version="%(prog)s={version}\nbilby={bilby_version}".format(
+            version=__version__, bilby_version=bilby.__version__
+        ),
+    )
     if sampler in ["all", "dynesty"]:
         base_parser = _add_dynesty_settings_to_parser(base_parser)
     if sampler in ["all", "ptemcee"]:
@@ -287,6 +300,7 @@ def _add_slurm_settings_to_parser(parser):
 def _create_reduced_bilby_pipe_parser():
     bilby_pipe_parser = bilby_pipe.parser.create_parser()
     bilby_pipe_arguments_to_ignore = [
+        "version",
         "accounting",
         "local",
         "local-generation",
