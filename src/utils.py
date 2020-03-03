@@ -21,8 +21,8 @@ def get_version_information():
         print("No version information file '.version' found")
 
 
-def fill_sample(args, likelihood):
-    ii, sample = args
+def fill_sample(args):
+    ii, sample, likelihood = args
     sample = dict(sample).copy()
     marg_params = likelihood.parameters.copy()
     likelihood.parameters.update(sample)

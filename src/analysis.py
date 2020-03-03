@@ -632,7 +632,8 @@ with MPIPool() as pool:
         "Generating posterior from marginalized parameters for"
         f" nsamples={len(posterior)}, POOL={pool.size}"
     )
-    samples = pool.map(fill_sample, posterior.iterrows())
+    fill_args = [(ii, row, likelihood) for ii, row in posterior.iterrows()]
+    samples = pool.map(fill_sample, fill_args)
     result.posterior = pd.DataFrame(samples)
 
     logger.debug("Updating prior to the actual prior")
