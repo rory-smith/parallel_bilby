@@ -565,7 +565,6 @@ with MPIPool() as pool:
 
     while True:
         sampler_kwargs["add_live"] = False
-        sampler_kwargs["maxcall"] += input_args.n_check_point
         sampler.run_nested(**sampler_kwargs)
         if sampler.ncall == old_ncall:
             break
