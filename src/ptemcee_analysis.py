@@ -398,7 +398,9 @@ with MPIPool() as pool:
         samples = sampler.chain[0, :, : sampler.time, :]
         taus = []
         for ii in range(input_args.nwalkers):
-            for jj in range(ndim):
+            for jj, key in enumerate(sampling_keys):
+                if "recalib" in key:
+                    continue
                 try:
                     taus.append(
                         emcee.autocorr.integrated_time(
