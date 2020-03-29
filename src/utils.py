@@ -79,3 +79,22 @@ def get_initial_points_from_prior(
     l_list = [point[2] for point in initial_points]
 
     return np.array(u_list), np.array(v_list), np.array(l_list)
+
+
+def safe_file_dump(data, filename, module):
+    """ Safely dump data to a .pickle file
+
+    Parameters
+    ----------
+    data:
+        data to dump
+    filename: str
+        The file to dump to
+    module: pickle, dill
+        The python module to use
+    """
+
+    temp_filename = filename + ".temp"
+    with open(temp_filename, "wb") as file:
+        module.dump(data, file)
+    os.rename(temp_filename, filename)

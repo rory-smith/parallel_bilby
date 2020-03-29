@@ -126,9 +126,9 @@ def _add_dynesty_settings_to_parser(parser):
     )
     dynesty_group.add_argument(
         "--n-check-point",
-        default=100000,
+        default=100,
         type=int,
-        help="Steps to take before checkpoint",
+        help="Steps to take before attempting checkpoint",
     )
     return parser
 
@@ -221,12 +221,6 @@ def _add_ptemcee_settings_to_parser(parser):
             "<http://arxiv.org/abs/1501.05823>`_ for details."
         ),
     )
-    ptemcee_group.add_argument(
-        "--check-point-deltaT",
-        default=600,
-        type=float,
-        help="Write a checkpoint resume file and diagnostic plots every deltaT [s]",
-    )
     return parser
 
 
@@ -257,6 +251,12 @@ def _add_misc_settings_to_parser(parser):
             "If true, do not store bounds in the resume file. This can make "
             "resume files large (~GB)"
         ),
+    )
+    misc_group.add_argument(
+        "--check-point-deltaT",
+        default=600,
+        type=float,
+        help="Write a checkpoint resume file and diagnostic plots every deltaT [s]",
     )
     return parser
 
