@@ -30,7 +30,11 @@ def fill_sample(args):
     # Likelihood needs to have marg params to calculate correct SNR
     likelihood.parameters.update(marg_params)
     conversion.compute_snrs(sample, likelihood)
-    sample = conversion.generate_all_bbh_parameters(sample)
+    sample = conversion._generate_all_cbc_parameters(
+        sample,
+        likelihood.waveform_generator.waveform_arguments,
+        conversion.convert_to_lal_binary_black_hole_parameters,
+    )
     return sample
 
 
