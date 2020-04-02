@@ -1,5 +1,12 @@
 # All notable changes will be documented in this file
 
+## v0.1.4 : 2020-04-02
+- Fix a bug in the reference frequency setting during post-processing. All runs prior to this can be fixed offline and should document the process here: https://wiki.ligo.org/CBC/ParamEst/Reference-frequencyBugInParallelBilbyMarch2020
+- Adds an initial implementation of ptemcee
+- Improvements to the dynesty checkpointing to reduce CPU idle time
+- Parallelize initial points calculation
+- Other bug fixes and improvements
+
 ## v0.1.3 : 2020-02-13
 - Add documentation
 - Add initialization of live points for constrained priors
