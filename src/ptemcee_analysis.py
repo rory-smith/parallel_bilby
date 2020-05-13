@@ -2,24 +2,28 @@
 """
 Module to run parallel bilby using MPI and ptemcee
 """
-import copy
 import datetime
-import json
 import logging
 import os
 import pickle
 import sys
 import time
-from pathlib import Path
 
 import bilby
-import emcee
-import matplotlib.pyplot as plt
+import dill
 import mpi4py
 import numpy as np
 import pandas as pd
 import ptemcee
 import tqdm
+from bilby.core.sampler.ptemcee import (
+    ConvergenceInputs,
+    check_iteration,
+    checkpoint,
+    compute_evidence,
+    plot_tau,
+    plot_walkers,
+)
 from bilby.gw import conversion
 from schwimmbad import MPIPool
 
@@ -37,175 +41,70 @@ def main():
     pass
 
 
-def plot_walkers(walkers, nburn, parameter_labels, outdir, label):
-    """ Method to plot the trace of the walkers in an ensemble MCMC plot """
-    nwalkers, nsteps, ndim = walkers.shape
-    idxs = np.arange(nsteps)
-    fig, axes = plt.subplots(nrows=ndim, figsize=(6, 3 * ndim))
-    scatter_kwargs = dict(lw=0, marker="o", markersize=1, alpha=0.05)
-    for i, ax in enumerate(axes):
-        ax.plot(
-            idxs[: nburn + 1], walkers[:, : nburn + 1, i].T, color="r", **scatter_kwargs
+def get_pos0():
+    p0_list = []
+    for i in tqdm.tqdm(range(input_args.ntemps)):
+        _, p0, _ = get_initial_points_from_prior(
+            ndim,
+            input_args.nwalkers,
+            prior_transform_function,
+            log_likelihood_function,
+            pool,
+            calculate_likelihood=False,
         )
-        ax.set_ylabel(parameter_labels[i])
-
-    for i, ax in enumerate(axes):
-        ax.plot(idxs[nburn:], walkers[:, nburn:, i].T, color="k", **scatter_kwargs)
-
-    fig.tight_layout()
-    filename = "{}/{}_traceplot.png".format(outdir, label)
-    fig.savefig(filename)
-    plt.close(fig)
+        p0_list.append(p0)
+    return np.array(p0_list)
 
 
-def plot_tau(tau_list_n, tau_list):
-    fig, ax = plt.subplots()
-    ax.plot(tau_list_n, tau_list, "-x")
-    ax.set_xlabel("Iteration")
-    ax.set_ylabel(r"$\langle \tau \rangle$")
-    fig.savefig("{}/{}_tau.png".format(outdir, label))
-    plt.close(fig)
+def get_zero_chain_array():
+    np.zeros((input_args.nwalkers, max_steps, ndim))
 
 
-def checkpoint(outdir, label, nsamples_effective, sampler):
-    logger.info("Writing checkpoint and diagnostics")
+def get_zero_log_likelihood_array():
+    np.zeros((input_args.ntemps, input_args.nwalkers, max_steps))
 
-    # Store the samples if possible
-    if nsamples_effective > 0:
-        filename = "{}/{}_samples.txt".format(outdir, label)
-        samples = sampler.chain[0, :, nburn : sampler.time : thin, :].reshape(
-            (-1, ndim)
-        )
-        df = pd.DataFrame(samples, columns=sampling_keys)
-        df.to_csv(filename, index=False, header=True, sep=" ")
 
-    # Pickle the resume artefacts
-    sampler_copy = copy.copy(sampler)
-    del sampler_copy.pool
-    sampler_copy._chain = sampler._chain[:, :, : sampler.time, :]
-    sampler_copy._logposterior = sampler._logposterior[:, :, : sampler.time]
-    sampler_copy._loglikelihood = sampler._loglikelihood[:, :, : sampler.time]
-    sampler_copy._beta_history = sampler._beta_history[:, : sampler.time]
-    data = dict(sampler=sampler_copy, tau_list=tau_list, tau_list_n=tau_list_n)
-    with open(resume_file, "wb") as file:
-        pickle.dump(data, file, protocol=4)
-    del data, sampler_copy
-
-    # Generate the walkers plot diagnostic
-    plot_walkers(
-        sampler.chain[0, :, : sampler.time, :], nburn, sampling_keys, outdir, label
+def write_current_state(plot=True):
+    checkpoint(
+        iteration,
+        outdir,
+        label,
+        nsamples_effective,
+        sampler,
+        nburn,
+        thin,
+        search_parameter_keys,
+        resume_file,
+        log_likelihood_array,
+        chain_array,
+        pos0,
+        beta_list,
+        tau_list,
+        tau_list_n,
+        time_per_check,
     )
 
-    # Generate the tau plot diagnostic
-    plot_tau(tau_list_n, tau_list)
-
-    logger.info("Finished writing checkpoint and diagnostics")
-
-
-def print_progress(
-    sampler,
-    input_args,
-    time_per_check,
-    nsamples_effective,
-    samples_per_check,
-    passes,
-    tau,
-    tau_pass,
-):
-    # Setup acceptance string
-    acceptance = sampler.acceptance_fraction[0, :]
-    acceptance_str = "{:1.2f}->{:1.2f}".format(np.min(acceptance), np.max(acceptance))
-
-    # Setup tswap acceptance string
-    tswap_acceptance_fraction = sampler.tswap_acceptance_fraction
-    tswap_acceptance_str = "{:1.2f}->{:1.2f}".format(
-        np.min(tswap_acceptance_fraction), np.max(tswap_acceptance_fraction)
-    )
-
-    ave_time_per_check = np.mean(time_per_check[-3:])
-    time_left = (
-        (input_args.nsamples - nsamples_effective)
-        * ave_time_per_check
-        / samples_per_check
-    )
-    if time_left > 0:
-        time_left = str(datetime.timedelta(seconds=int(time_left)))
-    else:
-        time_left = "waiting on convergence"
-
-    convergence = "".join([["F", "T"][i] for i in passes])
-
-    tau_str = str(tau)
-    if tau_pass is False:
-        tau_str = tau_str + "(F)"
-
-    ncalls = "{:1.1e}".format(sampler.time * input_args.nwalkers * sampler.ntemps)
-    eval_timing = "{:1.1f}ms/evl".format(1e3 * ave_time_per_check / evals_per_check)
-    samp_timing = "{:1.2f}ms/smp".format(1e3 * ave_time_per_check / samples_per_check)
-
-    print(
-        "{}| nc:{}| a0:{}| swp:{}| n:{}<{}| tau:{}| {}| {}| {}".format(
-            sampler.time,
-            ncalls,
-            acceptance_str,
-            tswap_acceptance_str,
-            nsamples_effective,
-            input_args.nsamples,
-            tau_str,
-            eval_timing,
-            samp_timing,
-            convergence,
-        ),
-        flush=True,
-    )
-
-
-def compute_evidence(sampler, outdir, label, nburn, thin, make_plots=True):
-    """ Computes the evidence using thermodynamic integration """
-    betas = sampler.betas
-    # We compute the evidence without the burnin samples, but we do not thin
-    lnlike = sampler.loglikelihood[:, :, nburn : sampler.time]
-    mean_lnlikes = np.mean(np.mean(lnlike, axis=1), axis=1)
-
-    mean_lnlikes = mean_lnlikes[::-1]
-    betas = betas[::-1]
-
-    if any(np.isinf(mean_lnlikes)):
-        logger.warning(
-            "mean_lnlikes contains inf: recalculating without"
-            " the {} infs".format(len(betas[np.isinf(mean_lnlikes)]))
+    if plot and not np.isnan(nburn):
+        # Generate the walkers plot diagnostic
+        plot_walkers(
+            chain_array[:, :iteration, :],
+            nburn,
+            thin,
+            search_parameter_keys,
+            outdir,
+            label,
         )
-        idxs = np.isinf(mean_lnlikes)
-        mean_lnlikes = mean_lnlikes[~idxs]
-        betas = betas[~idxs]
 
-    lnZ = np.trapz(mean_lnlikes, betas)
-    z1 = np.trapz(mean_lnlikes, betas)
-    z2 = np.trapz(mean_lnlikes[::-1][::2][::-1], betas[::-1][::2][::-1])
-    lnZerr = np.abs(z1 - z2)
-
-    if make_plots:
-        fig, (ax1, ax2) = plt.subplots(nrows=2, figsize=(6, 8))
-        ax1.semilogx(betas, mean_lnlikes, "-o")
-        ax1.set_xlabel(r"$\beta$")
-        ax1.set_ylabel(r"$\langle \log(\mathcal{L}) \rangle$")
-        min_betas = []
-        evidence = []
-        for i in range(int(len(betas) / 2.0)):
-            min_betas.append(betas[i])
-            evidence.append(np.trapz(mean_lnlikes[i:], betas[i:]))
-
-        ax2.semilogx(min_betas, evidence, "-o")
-        ax2.set_ylabel(
-            r"$\int_{\beta_{min}}^{\beta=1}"
-            + r"\langle \log(\mathcal{L})\rangle d\beta$",
-            size=16,
+        # Generate the tau plot diagnostic
+        plot_tau(
+            tau_list_n,
+            tau_list,
+            search_parameter_keys,
+            outdir,
+            label,
+            tau_int,
+            convergence_inputs.autocorr_tau,
         )
-        ax2.set_xlabel(r"$\beta_{min}$")
-        plt.tight_layout()
-        fig.savefig("{}/{}_beta_lnl.png".format(outdir, label))
-
-    return lnZ, lnZerr
 
 
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -219,20 +118,24 @@ input_args = analysis_parser.parse_args()
 with open(input_args.data_dump, "rb") as file:
     data_dump = pickle.load(file)
 
+# Load in data from the dump
 ifo_list = data_dump["ifo_list"]
 waveform_generator = data_dump["waveform_generator"]
 waveform_generator.start_time = ifo_list[0].time_array[0]
 args = data_dump["args"]
 injection_parameters = data_dump.get("injection_parameters", None)
+priors = bilby.gw.prior.PriorDict.from_json(data_dump["prior_file"])
 
+# Overwrite outdir if given at the command line
 outdir = args.outdir
 if input_args.outdir is not None:
     outdir = input_args.outdir
+
+# Overwrite label if given at the command line
 label = args.label
 if input_args.label is not None:
     label = input_args.label
 
-priors = bilby.gw.prior.PriorDict.from_json(data_dump["prior_file"])
 
 logger.setLevel(logging.WARNING)
 likelihood = bilby.gw.likelihood.GravitationalWaveTransient(
@@ -249,7 +152,7 @@ logger.setLevel(logging.INFO)
 
 
 def prior_transform_function(u_array):
-    return priors.rescale(sampling_keys, u_array)
+    return priors.rescale(search_parameter_keys, u_array)
 
 
 def log_likelihood_function(v_array):
@@ -260,7 +163,7 @@ def log_likelihood_function(v_array):
     if np.isinf(log_prior):
         return log_prior
 
-    parameters = {key: v for key, v in zip(sampling_keys, v_array)}
+    parameters = {key: v for key, v in zip(search_parameter_keys, v_array)}
     if priors.evaluate_constraints(parameters) > 0:
         likelihood.parameters.update(parameters)
         return likelihood.log_likelihood()
@@ -269,11 +172,11 @@ def log_likelihood_function(v_array):
 
 
 def log_prior_function(v_array):
-    params = {key: t for key, t in zip(sampling_keys, v_array)}
+    params = {key: t for key, t in zip(search_parameter_keys, v_array)}
     return priors.ln_prob(params)
 
 
-sampling_keys = []
+search_parameter_keys = []
 for p in priors:
     if isinstance(priors[p], bilby.core.prior.Constraint):
         continue
@@ -282,7 +185,7 @@ for p in priors:
     elif priors[p].is_fixed:
         likelihood.parameters[p] = priors[p].peak
     else:
-        sampling_keys.append(p)
+        search_parameter_keys.append(p)
 
 # Setting marginalized parameters to their reference values
 if likelihood.phase_marginalization:
@@ -298,6 +201,8 @@ with MPIPool() as pool:
         sys.exit(0)
     POOL_SIZE = pool.size
 
+    max_steps = 500
+
     logger.info("Setting sampling seed = {}".format(input_args.sampling_seed))
     np.random.seed(input_args.sampling_seed)
 
@@ -305,68 +210,78 @@ with MPIPool() as pool:
     for key in priors:
         logger.info(f"{key}: {priors[key]}")
 
-    ndim = len(sampling_keys)
-    init_sampler_kwargs = dict(
+    ndim = len(search_parameter_keys)
+    sampler_init_kwargs = dict(
         nwalkers=input_args.nwalkers,
         dim=ndim,
         ntemps=input_args.ntemps,
         Tmax=input_args.Tmax,
     )
 
-    # Check for a resume file
+    # Store convergence checking inputs in a named tuple
+    convergence_inputs_dict = dict(
+        autocorr_c=input_args.autocorr_c,
+        autocorr_tol=input_args.autocorr_tol,
+        autocorr_tau=input_args.autocorr_tau,
+        safety=input_args.safety,
+        burn_in_nact=input_args.burn_in_nact,
+        thin_by_nact=input_args.thin_by_nact,
+        frac_threshold=input_args.frac_threshold,
+        nsamples=input_args.nsamples,
+        ignore_keys_for_tau=None,
+        min_tau=input_args.min_tau,
+        niterations_per_check=input_args.niterations_per_check,
+    )
+    convergence_inputs = ConvergenceInputs(**convergence_inputs_dict)
+
+    resume = True
+    check_point_deltaT = args.check_point_deltaT
+    check_point_plot = args.check_point_plot
     resume_file = "{}/{}_checkpoint_resume.pickle".format(outdir, label)
-    if os.path.isfile(resume_file) and os.stat(resume_file).st_size > 0:
-        try:
-            logger.info("Resume data {} found".format(resume_file))
-            with open(resume_file, "rb") as file:
-                data = pickle.load(file)
-            sampler = data["sampler"]
-            tau_list = data["tau_list"]
-            tau_list_n = data["tau_list_n"]
-            sampler.pool = pool
-            pos0 = None
-            iterations = input_args.max_iterations  # - sampler.time
-            logger.info("Resuming from previous run with time={}".format(sampler.time))
-        except Exception:
-            raise ValueError(
-                "Unable to read resume file {}, please delete it and retry".format(
-                    resume_file
-                )
-            )
+
+    if os.path.isfile(resume_file) and resume is True:
+        logger.info("Resume data {} found".format(resume_file))
+        with open(resume_file, "rb") as file:
+            data = dill.load(file)
+
+        # Extract the check-point data
+        sampler = data["sampler"]
+        iteration = data["iteration"]
+        chain_array = data["chain_array"]
+        log_likelihood_array = data["log_likelihood_array"]
+        pos0 = data["pos0"]
+        beta_list = data["beta_list"]
+        sampler._betas = np.array(beta_list[-1])
+        tau_list = data["tau_list"]
+        tau_list_n = data["tau_list_n"]
+        time_per_check = data["time_per_check"]
+
+        # Initialize the pool
+        sampler.pool = pool
+        sampler.threads = POOL_SIZE
+
+        logger.info("Resuming from previous run with time={}".format(iteration))
+
     else:
-        # Initialize resume file
-        Path(resume_file).touch()
-
-        logger.info(f"Initializing sampling points with pool size={POOL_SIZE}")
-        p0_list = []
-        for i in tqdm.tqdm(range(input_args.ntemps)):
-            _, p0, _ = get_initial_points_from_prior(
-                ndim,
-                input_args.nwalkers,
-                prior_transform_function,
-                log_prior_function,
-                log_likelihood_function,
-                pool,
-                calculate_likelihood=False,
-            )
-            p0_list.append(p0)
-        pos0 = np.array(p0_list)
-        iterations = input_args.max_iterations
-        tau_list = []
-        tau_list_n = []
-
-        # Set up the sampler
-        logger.info(
-            "Initialize ptemcee.Sampler with {}".format(
-                json.dumps(init_sampler_kwargs, indent=1, sort_keys=True)
-            )
-        )
+        # Initialize the PTSampler
         sampler = ptemcee.Sampler(
+            dim=ndim,
             logl=log_likelihood_function,
             logp=log_prior_function,
             pool=pool,
-            **init_sampler_kwargs,
+            threads=POOL_SIZE,
+            **sampler_init_kwargs,
         )
+
+        # Initialize storing results
+        iteration = 0
+        chain_array = get_zero_chain_array()
+        log_likelihood_array = get_zero_log_likelihood_array()
+        beta_list = []
+        tau_list = []
+        tau_list_n = []
+        time_per_check = []
+        pos0 = get_pos0()
 
     logger.info(
         "Starting sampling: nsamples={}, burn_in_nact={}, thin_by_nact={},"
@@ -386,113 +301,79 @@ with MPIPool() as pool:
 
     evals_per_check = input_args.nwalkers * input_args.ntemps * input_args.ncheck
 
-    for (pos0, lnprob, lnlike) in sampler.sample(
-        pos0, iterations=iterations, adapt=input_args.adapt
-    ):
-        # Only check convergence every ncheck steps
-        if sampler.time % input_args.ncheck:
-            continue
+    while True:
+        for (pos0, log_posterior, log_likelihood) in sampler.sample(
+            pos0,
+            storechain=False,
+            iterations=convergence_inputs.niterations_per_check,
+            adapt=input_args.adapt,
+        ):
+            pass
 
-        t0_internal = datetime.datetime.now()
-        # Compute ACT tau for 0-temperature chains
-        samples = sampler.chain[0, :, : sampler.time, :]
-        taus = []
-        for ii in range(input_args.nwalkers):
-            for jj, key in enumerate(sampling_keys):
-                if "recalib" in key:
-                    continue
-                try:
-                    taus.append(
-                        emcee.autocorr.integrated_time(
-                            samples[ii, :, jj], c=input_args.autocorr_c, tol=0
-                        )[0]
-                    )
-                except emcee.autocorr.AutocorrError:
-                    taus.append(np.inf)
+        if iteration == chain_array.shape[1]:
+            chain_array = np.concatenate((chain_array, get_zero_chain_array()), axis=1)
+            log_likelihood_array = np.concatenate(
+                (log_likelihood_array, get_zero_log_likelihood_array()), axis=2
+            )
 
-        # Apply multiplicitive safety factor
-        tau = input_args.safety * np.mean(taus)
-
-        if np.isnan(tau) or np.isinf(tau):
-            logger.info("{} | Unable to use tau={}".format(sampler.time, tau))
-            continue
-
-        # Convert to an integer and store for plotting
-        tau = int(tau)
-        tau_list.append(tau)
-        tau_list_n.append(sampler.time)
-
-        # Calculate the effective number of samples available
-        nburn = int(input_args.burn_in_nact * tau)
-        thin = int(np.max([1, input_args.thin_by_nact * tau]))
-        samples_per_check = input_args.ncheck * input_args.nwalkers / thin
-        nsamples_effective = int(input_args.nwalkers * (sampler.time - nburn) / thin)
-
-        # Calculate fractional change in tau from previous iteration
-        frac = (tau - np.array(tau_list)[-input_args.nfrac - 1 : -1]) / tau
-        passes = frac < input_args.frac_threshold
-
-        # Calculate convergence boolean
-        converged = input_args.nsamples < nsamples_effective
-        converged &= np.all(passes)
-        if sampler.time < tau * input_args.autocorr_tol or tau < input_args.min_tau:
-            converged = False
-            tau_pass = False
-        else:
-            tau_pass = True
+        pos0 = pos0
+        chain_array[:, iteration, :] = pos0[0, :, :]
+        log_likelihood_array[:, :, iteration] = log_likelihood
 
         # Calculate time per iteration
         time_per_check.append((datetime.datetime.now() - t0).total_seconds())
         t0 = datetime.datetime.now()
 
-        # Print an update on the progress
-        print_progress(
+        iteration += 1
+
+        (stop, nburn, thin, tau_int, nsamples_effective) = check_iteration(
+            chain_array[:, : iteration + 1, :],
             sampler,
-            input_args,
+            convergence_inputs,
+            search_parameter_keys,
             time_per_check,
-            nsamples_effective,
-            samples_per_check,
-            passes,
-            tau,
-            tau_pass,
+            beta_list,
+            tau_list,
+            tau_list_n,
         )
 
-        if converged:
+        if stop:
             logger.info("Finished sampling")
             break
 
         # If a checkpoint is due, checkpoint
-        last_checkpoint_s = time.time() - os.path.getmtime(resume_file)
-        if last_checkpoint_s > input_args.check_point_deltaT:
-            checkpoint(outdir, label, nsamples_effective, sampler)
+        if os.path.isfile(resume_file):
+            last_checkpoint_s = time.time() - os.path.getmtime(resume_file)
+        else:
+            last_checkpoint_s = np.sum(time_per_check)
 
-    # Check if we reached the end without converging
-    if sampler.time == input_args.max_iterations:
-        raise ValueError(
-            "Failed to reach convergence by max_iterations={}".format(
-                input_args.max_iterations
-            )
-        )
+        if last_checkpoint_s > check_point_deltaT:
+            write_current_state(plot=check_point_plot)
 
     # Run a final checkpoint to update the plots and samples
-    checkpoint(outdir, label, nsamples_effective, sampler)
+    write_current_state(plot=check_point_plot)
 
     # Set up an empty result object
     result = bilby.core.result.Result(
-        label=label, outdir=outdir, search_parameter_keys=sampling_keys
+        label=label, outdir=outdir, search_parameter_keys=search_parameter_keys
     )
     result.priors = priors
     result.nburn = nburn
 
     # Get 0-likelihood samples and store in the result
-    samples = sampler.chain[0, :, :, :]  # nwalkers, nsteps, ndim
-    # result.walkers = samples[:, : sampler.time :, :]
-    result.samples = samples[:, nburn : sampler.time : thin, :].reshape((-1, ndim))
-    loglikelihood = sampler.loglikelihood[
-        0, :, nburn : sampler.time : thin
-    ]  # nwalkers, nsteps
+    result.samples = chain_array[:, nburn:iteration:thin, :].reshape((-1, ndim))
+    loglikelihood = log_likelihood_array[0, :, nburn:iteration:thin]  # nwalkers, nsteps
     result.log_likelihood_evaluations = loglikelihood.reshape((-1))
-    result.samples_to_posterior()
+
+    result.nburn = nburn
+
+    log_evidence, log_evidence_err = compute_evidence(
+        sampler, log_likelihood_array, outdir, label, nburn, thin, iteration
+    )
+    result.log_evidence = log_evidence
+    result.log_evidence_err = log_evidence_err
+
+    result.sampling_time = datetime.timedelta(seconds=np.sum(time_per_check))
 
     # Create and store the meta data and injection_parameters
     result.meta_data = data_dump["meta_data"]
@@ -500,20 +381,10 @@ with MPIPool() as pool:
     result.meta_data["command_line_args"]["sampler"] = "parallel_bilby_ptemcee"
     result.meta_data["config_file"] = vars(args)
     result.meta_data["data_dump"] = input_args.data_dump
-    result.meta_data["sampler_kwargs"] = init_sampler_kwargs
+    result.meta_data["sampler_kwargs"] = sampler_init_kwargs
     result.meta_data["likelihood"] = likelihood.meta_data
     result.meta_data["injection_parameters"] = injection_parameters
     result.injection_parameters = injection_parameters
-
-    log_evidence, log_evidence_err = compute_evidence(
-        sampler, outdir, label, nburn, thin
-    )
-
-    result.log_noise_evidence = likelihood.noise_log_likelihood()
-    result.log_evidence = log_evidence
-    result.log_bayes_factor = log_evidence - result.log_noise_evidence
-    result.log_evidence_err = log_evidence_err
-    result.sampling_time = np.sum(time_per_check)
 
     # Post-process the posterior
     posterior = result.posterior
