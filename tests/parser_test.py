@@ -19,7 +19,7 @@ class ParserTest(unittest.TestCase):
             catch_waveform_errors=False,
             bilby_zero_likelihood_mode=False,
             calibration_model=None,
-            channel_dict="{H1:DCS-CALIB_STRAIN_C02, L1:DCS-CALIB_STRAIN_C02}",
+            channel_dict="{H1:GWOSC, L1:GWOSC}",
             deltaT=0.2,
             detectors=["H1", "L1"],
             distance_marginalization=True,
