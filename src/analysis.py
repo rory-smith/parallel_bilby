@@ -18,11 +18,8 @@ import matplotlib.pyplot as plt
 import mpi4py
 import numpy as np
 import pandas as pd
-from bilby.core.utils import reflect
 from bilby.gw import conversion
 from dynesty import NestedSampler
-from dynesty.utils import unitcheck
-from numpy import linalg
 from pandas import DataFrame
 from schwimmbad import MPIPool
 
@@ -43,129 +40,6 @@ logger = bilby.core.utils.logger
 def main():
     """ Do nothing function to play nicely with MPI """
     pass
-
-
-def sample_rwalk_parallel_with_act(args):
-    """ A dynesty sampling method optimised for parallel_bilby
-
-    """
-
-    # Unzipping.
-    (u, loglstar, axes, scale, prior_transform, loglikelihood, kwargs) = args
-    rstate = np.random
-    # Bounds
-    nonbounded = kwargs.get("nonbounded", None)
-    periodic = kwargs.get("periodic", None)
-    reflective = kwargs.get("reflective", None)
-
-    # Setup.
-    n = len(u)
-    walks = kwargs.get("walks", 50)  # minimum number of steps
-    maxmcmc = kwargs.get("maxmcmc", 10000)  # maximum number of steps
-    nact = kwargs.get("nact", 10)  # number of act
-
-    accept = 0
-    reject = 0
-    nfail = 0
-    act = np.inf
-    u_list = []
-    v_list = []
-    logl_list = []
-
-    drhat, dr, du, u_prop, logl_prop = np.nan, np.nan, np.nan, np.nan, np.nan
-    while len(u_list) < nact * act:
-        # Propose a direction on the unit n-sphere.
-        drhat = rstate.randn(n)
-        drhat /= linalg.norm(drhat)
-
-        # Scale based on dimensionality.
-        dr = drhat * rstate.rand() ** (1.0 / n)
-
-        # Transform to proposal distribution.
-        du = np.dot(axes, dr)
-        u_prop = u + scale * du
-
-        # Wrap periodic parameters
-        if periodic is not None:
-            u_prop[periodic] = np.mod(u_prop[periodic], 1)
-        # Reflect
-        if reflective is not None:
-            u_prop[reflective] = reflect(u_prop[reflective])
-
-        # Check unit cube constraints.
-        if unitcheck(u_prop, nonbounded):
-            pass
-        else:
-            nfail += 1
-            if accept > 0:
-                u_list.append(u_list[-1])
-                v_list.append(v_list[-1])
-                logl_list.append(logl_list[-1])
-            continue
-
-        # Check proposed point.
-        v_prop = prior_transform(u_prop)
-        logl_prop = loglikelihood(v_prop)
-        if logl_prop >= loglstar:
-            u = u_prop
-            v = v_prop
-            logl = logl_prop
-            accept += 1
-            u_list.append(u)
-            v_list.append(v)
-            logl_list.append(logl)
-        else:
-            reject += 1
-            if accept > 0:
-                u_list.append(u_list[-1])
-                v_list.append(v_list[-1])
-                logl_list.append(logl_list[-1])
-
-        # If we've taken the minimum number of steps, calculate the ACT
-        if accept + reject > walks:
-            act = bilby.core.sampler.dynesty.estimate_nmcmc(
-                accept_ratio=accept / (accept + reject + nfail),
-                old_act=walks,
-                maxmcmc=maxmcmc,
-                safety=5,
-            )
-
-        # If we've taken too many likelihood evaluations then break
-        if accept + reject > maxmcmc:
-            logger.warning(
-                "Hit maximum number of walks {} with accept={}, reject={}, "
-                "nfail={}, and act={}. Try increasing maxmcmc".format(
-                    maxmcmc, accept, reject, nfail, act
-                )
-            )
-            break
-
-    # If the act is finite, pick randomly from within the chain
-    factor = 0.1
-    if len(u_list) == 0:
-        logger.warning("No accepted points: returning -inf")
-        u = u
-        v = prior_transform(u)
-        logl = -np.inf
-    elif np.isfinite(act) and int(factor * nact * act) < len(u_list):
-        idx = np.random.randint(int(factor * nact * act), len(u_list))
-        u = u_list[idx]
-        v = v_list[idx]
-        logl = logl_list[idx]
-    else:
-        logger.warning(
-            "len(u_list)={}<{}: returning the last point in the chain".format(
-                len(u_list), int(factor * nact * act)
-            )
-        )
-        u = u_list[-1]
-        v = v_list[-1]
-        logl = logl_list[-1]
-
-    blob = {"accept": accept, "reject": reject, "fail": nfail, "scale": scale}
-
-    ncall = accept + reject
-    return u, v, logl, ncall, blob
 
 
 def reorder_loglikelihoods(unsorted_loglikelihoods, unsorted_samples, sorted_samples):
@@ -402,8 +276,10 @@ if input_args.dynesty_sample == "rwalk":
     logger.debug(
         "Using the parallel-bilby-implemented rwalk sample method with estimated walks"
     )
-    dynesty.dynesty._SAMPLING["rwalk"] = sample_rwalk_parallel_with_act
-    dynesty.nestedsamplers._SAMPLING["rwalk"] = sample_rwalk_parallel_with_act
+    dynesty.dynesty._SAMPLING["rwalk"] = bilby.core.sampler.dynesty.sample_rwalk_bilby
+    dynesty.nestedsamplers._SAMPLING[
+        "rwalk"
+    ] = bilby.core.sampler.dynesty.sample_rwalk_bilby
 elif input_args.dynesty_sample == "rwalk_dynesty":
     logger.debug("Using the dynesty-implemented rwalk sample method")
     input_args.dynesty_sample = "rwalk"

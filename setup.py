@@ -87,8 +87,8 @@ setup(
     package_data={"parallel_bilby": [version_file]},
     install_requires=[
         "future",
-        "bilby>=0.6.5",
-        "bilby_pipe>=0.3.10",
+        "bilby>=0.6.9",
+        "bilby_pipe>=0.3.12",
         "scipy>=1.2.0",
         "gwpy",
         "matplotlib",
