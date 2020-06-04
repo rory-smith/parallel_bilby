@@ -27,6 +27,8 @@ class AnalysisTest(unittest.TestCase):
         data_dump["args"].outdir = self.outdir
         data_dump["args"].distance_marginalisation = True
         data_dump["args"].distance_marginalization_lookup_table = GW150914_TABLE
+        data_dump["args"].reference_frame = "sky"
+        data_dump["args"].time_reference = "geocent"
         return data_dump
 
     @mock.patch("pickle.load")

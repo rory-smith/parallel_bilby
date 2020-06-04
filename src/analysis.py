@@ -97,9 +97,30 @@ def write_current_state(sampler, resume_file, sampling_time):
         safe_file_dump(sampler, resume_file, dill)
         logger.info("Written checkpoint file {}".format(resume_file))
     else:
-        logger.warning(
-            "Cannot write pickle resume file! " "Job will not resume if interrupted."
-        )
+        logger.warning("Cannot write pickle resume file!")
+
+
+def write_sample_dump(sampler, samples_file, search_parameter_keys):
+    """ Writes a checkpoint file
+
+    Parameters
+    ----------
+    sampler: dynesty.NestedSampler
+        The sampler object itself
+    """
+
+    ln_weights = sampler.saved_logwt - sampler.saved_logz[-1]
+    weights = np.exp(ln_weights)
+    samples = bilby.core.result.rejection_sample(np.array(sampler.saved_v), weights)
+    nsamples = len(samples)
+
+    # If we don't have enough samples, don't dump them
+    if nsamples < 100:
+        return
+
+    logger.info("Writing {} current samples to {}".format(nsamples, samples_file))
+    df = DataFrame(samples, columns=search_parameter_keys)
+    df.to_csv(samples_file, index=False, header=True, sep=" ")
 
 
 def plot_current_state(sampler, search_parameter_keys, outdir, label):
@@ -219,6 +240,8 @@ likelihood = bilby.gw.likelihood.GravitationalWaveTransient(
     distance_marginalization=args.distance_marginalization,
     distance_marginalization_lookup_table=args.distance_marginalization_lookup_table,
     jitter_time=args.jitter_time,
+    reference_frame=args.reference_frame,
+    time_reference=args.time_reference,
 )
 logger.setLevel(logging.INFO)
 
@@ -273,9 +296,7 @@ if likelihood.distance_marginalization:
     likelihood.parameters["luminosity_distance"] = priors["luminosity_distance"]
 
 if input_args.dynesty_sample == "rwalk":
-    logger.debug(
-        "Using the parallel-bilby-implemented rwalk sample method with estimated walks"
-    )
+    logger.debug("Using the bilby-implemented rwalk sample method")
     dynesty.dynesty._SAMPLING["rwalk"] = bilby.core.sampler.dynesty.sample_rwalk_bilby
     dynesty.nestedsamplers._SAMPLING[
         "rwalk"
@@ -310,6 +331,7 @@ with MPIPool() as pool:
 
     filename_trace = "{}/{}_checkpoint_trace.png".format(outdir, label)
     resume_file = "{}/{}_checkpoint_resume.pickle".format(outdir, label)
+    samples_file = "{}/{}_samples.dat".format(outdir, label)
 
     dynesty_sample = input_args.dynesty_sample
     dynesty_bound = input_args.dynesty_bound
@@ -376,6 +398,7 @@ with MPIPool() as pool:
         )
     else:
         # Reinstate the pool and map (not saved in the pickle)
+        logger.info("Read in resume file with sampling_time = {}".format(sampling_time))
         sampler.pool = pool
         sampler.M = pool.map
 
@@ -426,6 +449,7 @@ with MPIPool() as pool:
             last_checkpoint_s = np.inf
         if last_checkpoint_s > input_args.check_point_deltaT:
             write_current_state(sampler, resume_file, sampling_time)
+            write_sample_dump(sampler, samples_file, sampling_keys)
             if input_args.no_plot is False:
                 plot_current_state(sampler, sampling_keys, outdir, label)
 
@@ -435,6 +459,7 @@ with MPIPool() as pool:
 
     # Create a final checkpoint and set of plots
     write_current_state(sampler, resume_file, sampling_time)
+    write_sample_dump(sampler, samples_file, sampling_keys)
     if input_args.no_plot is False:
         plot_current_state(sampler, sampling_keys, outdir, label)
 
