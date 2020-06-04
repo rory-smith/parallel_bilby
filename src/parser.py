@@ -18,7 +18,7 @@ def remove_argument_from_parser(parser, arg):
                 parser._handle_conflict_resolve(None, [("--" + arg, action)])
             except ValueError as e:
                 logger.warning("Error removing {}: {}".format(arg, e))
-    logger.warning(
+    logger.debug(
         "Request to remove arg {} from bilby_pipe args, but arg not found".format(arg)
     )
 
@@ -322,12 +322,12 @@ def _create_reduced_bilby_pipe_parser():
         "sampler",
         "sampling-seed",
         "sampler-kwargs",
-        "plot_calibration",
-        "plot_corner",
-        "plot_format",
-        "plot_marginal",
-        "plot_skymap",
-        "plot_waveform",
+        "plot-calibration",
+        "plot-corner",
+        "plot-format",
+        "plot-marginal",
+        "plot-skymap",
+        "plot-waveform",
     ]
     for arg in bilby_pipe_arguments_to_ignore:
         remove_argument_from_parser(bilby_pipe_parser, arg)
