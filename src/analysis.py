@@ -29,6 +29,7 @@ from .utils import (
     get_cli_args,
     get_initial_points_from_prior,
     safe_file_dump,
+    stopwatch,
 )
 
 mpi4py.rc.threads = False
@@ -78,6 +79,7 @@ def reorder_loglikelihoods(unsorted_loglikelihoods, unsorted_samples, sorted_sam
     return unsorted_loglikelihoods[idxs]
 
 
+@stopwatch
 def write_current_state(sampler, resume_file, sampling_time):
     """ Writes a checkpoint file
 
@@ -91,7 +93,7 @@ def write_current_state(sampler, resume_file, sampling_time):
         The total sampling time in seconds
     """
     print("")
-
+    logger.info("Start checkpoint writing")
     sampler.kwargs["sampling_time"] = sampling_time
     if dill.pickles(sampler):
         safe_file_dump(sampler, resume_file, dill)
@@ -123,6 +125,7 @@ def write_sample_dump(sampler, samples_file, search_parameter_keys):
     df.to_csv(samples_file, index=False, header=True, sep=" ")
 
 
+@stopwatch
 def plot_current_state(sampler, search_parameter_keys, outdir, label):
     labels = [label.replace("_", " ") for label in search_parameter_keys]
     try:
@@ -166,6 +169,7 @@ def plot_current_state(sampler, search_parameter_keys, outdir, label):
         plt.close("all")
 
 
+@stopwatch
 def read_saved_state(resume_file, continuing=True):
     """
     Read a saved state of the sampler to disk.
