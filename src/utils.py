@@ -1,8 +1,13 @@
+import datetime
 import os
 import sys
+import timeit
 
+import bilby
 import numpy as np
 from bilby.gw import conversion
+
+logger = bilby.core.utils.logger
 
 
 def get_cli_args():
@@ -102,3 +107,17 @@ def safe_file_dump(data, filename, module):
     with open(temp_filename, "wb") as file:
         module.dump(data, file)
     os.rename(temp_filename, filename)
+
+
+def stopwatch(method):
+    """A decorator that logs the time spent in a function"""
+
+    def timed(*args, **kw):
+        t_start = timeit.time.perf_counter()
+        result = method(*args, **kw)
+        t_end = timeit.time.perf_counter()
+        duration = datetime.timedelta(seconds=t_end - t_start)
+        logger.info(f"{method.__name__}: {duration}")
+        return result
+
+    return timed
