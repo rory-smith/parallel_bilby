@@ -254,9 +254,9 @@ def _add_misc_settings_to_parser(parser):
     )
     misc_group.add_argument(
         "--check-point-deltaT",
-        default=600,
+        default=3600,
         type=float,
-        help="Write a checkpoint resume file and diagnostic plots every deltaT [s]",
+        help="Write a checkpoint resume file and diagnostic plots every deltaT [s].",
     )
     return parser
 
