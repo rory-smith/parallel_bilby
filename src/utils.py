@@ -44,6 +44,15 @@ def fill_sample(args):
 
 
 def get_initial_point_from_prior(args):
+    """
+    Draw initial points from the prior subject to constraints applied both to
+    the prior and the likelihood.
+
+    We remove any points where the likelihood or prior is infinite or NaN.
+
+    The `log_likelihood_function` often converts infinite values to large
+    finite values so we catch those.
+    """
     (
         prior_transform_function,
         log_prior_function,
@@ -51,13 +60,14 @@ def get_initial_point_from_prior(args):
         ndim,
         calculate_likelihood,
     ) = args
+    bad_values = [np.inf, np.nan_to_num(np.inf), np.nan]
     while True:
         unit = np.random.rand(ndim)
         theta = prior_transform_function(unit)
-        if bool(np.isinf(log_prior_function(theta))) is False:
+        if abs(log_prior_function(theta)) not in bad_values:
             if calculate_likelihood:
                 logl = log_likelihood_function(theta)
-                if bool(np.isinf(logl)) is False:
+                if abs(logl) not in bad_values:
                     return unit, theta, logl
             else:
                 return unit, theta, np.nan
