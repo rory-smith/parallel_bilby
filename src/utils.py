@@ -31,6 +31,7 @@ def fill_sample(args):
     sample = dict(sample).copy()
     marg_params = likelihood.parameters.copy()
     likelihood.parameters.update(sample)
+    sample.update(likelihood.get_sky_frame_parameters())
     sample = likelihood.generate_posterior_sample_from_marginalized_likelihood()
     # Likelihood needs to have marg params to calculate correct SNR
     likelihood.parameters.update(marg_params)
@@ -101,7 +102,7 @@ def get_initial_points_from_prior(
 
 
 def safe_file_dump(data, filename, module):
-    """ Safely dump data to a .pickle file
+    """Safely dump data to a .pickle file
 
     Parameters
     ----------
