@@ -24,7 +24,7 @@ def remove_argument_from_parser(parser, arg):
 
 
 class StoreBoolean(argparse.Action):
-    """ argparse class for robust handling of booleans with configargparse
+    """argparse class for robust handling of booleans with configargparse
 
     When using configargparse, if the argument is setup with
     action="store_true", but the default is set to True, then there is no way,
@@ -129,6 +129,48 @@ def _add_dynesty_settings_to_parser(parser):
         default=100,
         type=int,
         help="Steps to take before attempting checkpoint",
+    )
+    dynesty_group.add_argument(
+        "--max-its",
+        default=10 ** 10,
+        type=int,
+        help="Maximum number of iterations to sample for (default=1.e10)",
+    )
+    dynesty_group.add_argument(
+        "--max-run-time",
+        default=1.0e10,
+        type=float,
+        help="Maximum time to run for (default=1.e10 s)",
+    )
+    dynesty_group.add_argument(
+        "--fast-mpi",
+        default=False,
+        type=bool,
+        help="Fast MPI communication pattern (default=False)",
+    )
+    dynesty_group.add_argument(
+        "--mpi-timing",
+        default=False,
+        type=bool,
+        help="Print MPI timing when finished (default=False)",
+    )
+    dynesty_group.add_argument(
+        "--mpi-timing-interval",
+        default=False,
+        type=int,
+        help="Interval to write timing snapshot to disk (default=0 -- disabled)",
+    )
+    dynesty_group.add_argument(
+        "--nestcheck",
+        default=False,
+        action="store_true",
+        help=(
+            "Save a 'nestcheck' pickle in the outdir (default=False). "
+            "This pickle stores a `nestcheck.data_processing.process_dynesty_run` "
+            "object, which can be used during post processing to compute the "
+            "implementation and bootstrap errors explained by Higson et al (2018) "
+            "in “Sampling Errors In Nested Sampling Parameter Estimation”."
+        ),
     )
     return parser
 
@@ -279,8 +321,8 @@ def _add_slurm_settings_to_parser(parser):
     slurm_group.add_argument(
         "--mem-per-cpu",
         type=str,
-        default="1000",
-        help="Memory per CPU (defaults to 1000 MB)",
+        default=None,
+        help="Memory per CPU (defaults to None)",
     )
     slurm_group.add_argument(
         "--extra-lines",

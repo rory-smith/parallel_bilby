@@ -16,7 +16,7 @@ print("Confirmed Python version 3.5.0 or above")
 
 
 def write_version_file(version):
-    """ Writes a file with version information to be used at run time
+    """Writes a file with version information to be used at run time
 
     Parameters
     ----------
@@ -69,7 +69,7 @@ def get_long_description():
     return long_description
 
 
-VERSION = "0.1.4"
+VERSION = "0.1.5"
 version_file = write_version_file(VERSION)
 long_description = get_long_description()
 
@@ -98,6 +98,7 @@ setup(
         "dynesty>=1.0.0",
         "schwimmbad",
         "pandas",
+        "nestcheck",
     ],
     entry_points={
         "console_scripts": [
