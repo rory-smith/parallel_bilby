@@ -44,6 +44,8 @@ def main():
     args = generation_parser.parse_args(args=cli_args)
     args = add_extra_args_from_bilby_pipe_namespace(args)
     inputs = bilby_pipe_datagen.DataGenerationInput(args, [])
+    if inputs.likelihood_type == "ROQGravitationalWaveTransient":
+        inputs.save_roq_weights()
     inputs.log_directory = None
     shutil.rmtree(inputs.data_generation_log_directory)  # Hack to remove unused dir
 
@@ -69,13 +71,16 @@ def main():
 
     data_dump_file = f"{data_dir}/{label}_data_dump.pickle"
 
-    meta_data = dict(
-        config_file=args.ini,
-        data_dump_file=data_dump_file,
-        bilby_version=bilby.__version__,
-        bilby_pipe_version=bilby_pipe.__version__,
-        parallel_bilby_version=__version__,
-        dynesty_version=dynesty.__version__,
+    meta_data = inputs.meta_data
+    meta_data.update(
+        dict(
+            config_file=args.ini,
+            data_dump_file=data_dump_file,
+            bilby_version=bilby.__version__,
+            bilby_pipe_version=bilby_pipe.__version__,
+            parallel_bilby_version=__version__,
+            dynesty_version=dynesty.__version__,
+        )
     )
     logger.info("Initial meta_data = {}".format(meta_data))
 
