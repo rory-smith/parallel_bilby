@@ -16,7 +16,7 @@ print("Confirmed Python version 3.5.0 or above")
 
 
 def write_version_file(version):
-    """ Writes a file with version information to be used at run time
+    """Writes a file with version information to be used at run time
 
     Parameters
     ----------
@@ -28,7 +28,7 @@ def write_version_file(version):
     version_file: str
         A path to the version file (relative to the src package directory)
     """
-    version_file = Path("src") / ".version"
+    version_file = Path("parallel_bilby") / ".version"
 
     try:
         git_log = subprocess.check_output(
@@ -69,7 +69,7 @@ def get_long_description():
     return long_description
 
 
-VERSION = "0.1.4"
+VERSION = "0.1.5"
 version_file = write_version_file(VERSION)
 long_description = get_long_description()
 
@@ -83,12 +83,14 @@ setup(
     license="MIT",
     version=VERSION,
     packages=["parallel_bilby"],
-    package_dir={"parallel_bilby": "src"},
+    package_dir={"parallel_bilby": "parallel_bilby"},
     package_data={"parallel_bilby": [version_file]},
     install_requires=[
         "future",
         "bilby>=0.6.8",
         "bilby_pipe>=0.3.10",
+        "bilby>=0.6.9",
+        "bilby_pipe>=0.3.12",
         "scipy>=1.2.0",
         "gwpy",
         "matplotlib",
@@ -98,6 +100,7 @@ setup(
         "dynesty>=1.0.0",
         "schwimmbad",
         "pandas",
+        "nestcheck",
     ],
     entry_points={
         "console_scripts": [

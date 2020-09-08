@@ -1,8 +1,13 @@
+import datetime
 import os
 import sys
+import timeit
 
+import bilby
 import numpy as np
 from bilby.gw import conversion
+
+logger = bilby.core.utils.logger
 
 
 def get_cli_args():
@@ -26,6 +31,7 @@ def fill_sample(args):
     sample = dict(sample).copy()
     marg_params = likelihood.parameters.copy()
     likelihood.parameters.update(sample)
+    sample.update(likelihood.get_sky_frame_parameters())
     sample = likelihood.generate_posterior_sample_from_marginalized_likelihood()
     # Likelihood needs to have marg params to calculate correct SNR
     likelihood.parameters.update(marg_params)
@@ -39,6 +45,15 @@ def fill_sample(args):
 
 
 def get_initial_point_from_prior(args):
+    """
+    Draw initial points from the prior subject to constraints applied both to
+    the prior and the likelihood.
+
+    We remove any points where the likelihood or prior is infinite or NaN.
+
+    The `log_likelihood_function` often converts infinite values to large
+    finite values so we catch those.
+    """
     (
         prior_transform_function,
         log_prior_function,
@@ -46,13 +61,14 @@ def get_initial_point_from_prior(args):
         ndim,
         calculate_likelihood,
     ) = args
+    bad_values = [np.inf, np.nan_to_num(np.inf), np.nan]
     while True:
         unit = np.random.rand(ndim)
         theta = prior_transform_function(unit)
-        if bool(np.isinf(log_prior_function(theta))) is False:
+        if abs(log_prior_function(theta)) not in bad_values:
             if calculate_likelihood:
                 logl = log_likelihood_function(theta)
-                if bool(np.isinf(logl)) is False:
+                if abs(logl) not in bad_values:
                     return unit, theta, logl
             else:
                 return unit, theta, np.nan
@@ -86,7 +102,7 @@ def get_initial_points_from_prior(
 
 
 def safe_file_dump(data, filename, module):
-    """ Safely dump data to a .pickle file
+    """Safely dump data to a .pickle file
 
     Parameters
     ----------
@@ -102,3 +118,17 @@ def safe_file_dump(data, filename, module):
     with open(temp_filename, "wb") as file:
         module.dump(data, file)
     os.rename(temp_filename, filename)
+
+
+def stopwatch(method):
+    """A decorator that logs the time spent in a function"""
+
+    def timed(*args, **kw):
+        t_start = timeit.time.perf_counter()
+        result = method(*args, **kw)
+        t_end = timeit.time.perf_counter()
+        duration = datetime.timedelta(seconds=t_end - t_start)
+        logger.info(f"{method.__name__}: {duration}")
+        return result
+
+    return timed
