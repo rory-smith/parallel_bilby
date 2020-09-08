@@ -1,5 +1,16 @@
 # All notable changes will be documented in this file
 
+## v0.1.5 : 2020-09-08
+- Remove redundant pool.wait [@conrad.chan]
+- Add Max Iterations fix [@conrad.chan]
+- Add `schwimmbad_fast.py` allowing MPI worker tasks workers to spawn at the start and persist until the end (no benefit to killing them early) [@conrad.chan]
+- Fix trigger time parser to read strings [@colm.talbot]
+- Remove mem per cpu default [@maite.mateu-lucena]
+- Add nestcheck file option [@maite.mateu-lucena]
+- Add constructing sky frame parameters [@colm.talbot]
+- Change MPI isend --> send (to allow master task to finish sending messages to workers) [@conrad.chan]
+- Disable the flag messages when timing is off [@conrad.chan]
+
 ## v0.1.4 : 2020-04-02
 - Fix a bug in the reference frequency setting during post-processing. All runs prior to this can be fixed offline and should document the process here: https://wiki.ligo.org/CBC/ParamEst/Reference-frequencyBugInParallelBilbyMarch2020
 - Adds an initial implementation of ptemcee
