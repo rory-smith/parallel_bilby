@@ -1,5 +1,10 @@
 # All notable changes will be documented in this file
 
+## v0.1.6 : 2020-09-08
+- Add ROQ likelihood [@greg.ashton]
+- Add complete config ini generation [@avi.vajpeyi]
+- Rename `src` dir to `parallel_bilby` dir (to make `python setup.py develop` work) [@avi.vajpeyi]
+
 ## v0.1.5 : 2020-09-08
 - Remove redundant pool.wait [@conrad.chan]
 - Add Max Iterations fix [@conrad.chan]
