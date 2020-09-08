@@ -28,7 +28,7 @@ def write_version_file(version):
     version_file: str
         A path to the version file (relative to the src package directory)
     """
-    version_file = Path("src") / ".version"
+    version_file = Path("parallel_bilby") / ".version"
 
     try:
         git_log = subprocess.check_output(
@@ -83,7 +83,7 @@ setup(
     license="MIT",
     version=VERSION,
     packages=["parallel_bilby"],
-    package_dir={"parallel_bilby": "src"},
+    package_dir={"parallel_bilby": "parallel_bilby"},
     package_data={"parallel_bilby": [version_file]},
     install_requires=[
         "future",
