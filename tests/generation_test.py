@@ -108,6 +108,9 @@ class GenerationTest(unittest.TestCase):
                     data_dump = pickle.load(file)
                     self.assertTrue(data_dump["args"].n_parallel, 4)
 
+        complete_config = os.path.join(self.outdir, "GW150914_config_complete.ini")
+        self.assertTrue(os.path.exists(complete_config))
+
 
 if __name__ == "__main__":
     unittest.main()

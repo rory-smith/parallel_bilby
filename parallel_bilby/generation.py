@@ -39,6 +39,28 @@ def add_extra_args_from_bilby_pipe_namespace(args):
     return args
 
 
+def write_complete_config_file(parser, args, inputs):
+    """Wrapper function that uses bilby_pipe's complete config writer.
+
+    Note: currently this function does not verify that the written complete config is
+    identical to the source config
+
+    :param parser: The argparse.ArgumentParser to parse user input
+    :param args: The parsed user input in a Namespace object
+    :param inputs: The bilby_pipe.input.Input object storing user args
+    :return: None
+    """
+    inputs.request_cpus = 1
+    inputs.sampler_kwargs = "{}"
+    inputs.mpi_timing_interval = 0
+    try:
+        bilby_pipe.main.write_complete_config_file(parser, args, inputs)
+    except AttributeError:
+        # bilby_pipe expects the ini to have "online_pe" and some other non pBilby args
+        pass
+    logger.info(f"Complete ini written: {inputs.complete_ini_file}")
+
+
 def main():
     cli_args = get_cli_args()
     args = generation_parser.parse_args(args=cli_args)
@@ -96,6 +118,8 @@ def main():
 
     with open(data_dump_file, "wb+") as file:
         pickle.dump(data_dump, file)
+
+    write_complete_config_file(parser=generation_parser, args=args, inputs=inputs)
 
     bash_file = slurm.setup_submit(data_dump_file, inputs, args)
     if args.submit:

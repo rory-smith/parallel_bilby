@@ -156,7 +156,7 @@ def _add_dynesty_settings_to_parser(parser):
     )
     dynesty_group.add_argument(
         "--mpi-timing-interval",
-        default=False,
+        default=0,
         type=int,
         help="Interval to write timing snapshot to disk (default=0 -- disabled)",
     )
