@@ -94,11 +94,10 @@ def setup_likelihood(interferometers, waveform_generator, priors, args):
 
     """
 
-    search_priors = priors.copy()
     likelihood_kwargs = dict(
         interferometers=interferometers,
         waveform_generator=waveform_generator,
-        priors=search_priors,
+        priors=priors,
         phase_marginalization=args.phase_marginalization,
         distance_marginalization=args.distance_marginalization,
         distance_marginalization_lookup_table=args.distance_marginalization_lookup_table,
@@ -148,7 +147,8 @@ def setup_likelihood(interferometers, waveform_generator, priors, args):
         )
     )
 
-    return Likelihood(**likelihood_kwargs)
+    likelihood = Likelihood(**likelihood_kwargs)
+    return likelihood
 
 
 def main():
