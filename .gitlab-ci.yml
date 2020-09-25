@@ -92,6 +92,7 @@ cli-test:
   script:
     - mkdir -p ~/.ssh
     - cp $OZSTAR_ID_RSA ~/.ssh/id_rsa
+    - ls ~/.ssh/
     # SSH into OzStar
     - ssh -tt $OZSTAR_USER
     - ls
