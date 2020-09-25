@@ -93,7 +93,7 @@ cli-test:
     - mkdir -p ~/.ssh
     - cp $OZSTAR_ID_RSA ~/.ssh/id_rsa
     # SSH into OzStar
-    - ssh $OZSTAR_USER
+    - ssh -tt $OZSTAR_USER
     - ls
     # clone dir
     # install pbilby
