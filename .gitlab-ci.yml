@@ -86,17 +86,18 @@ pytest:
       - coverage_badge.svg
 
 # Test pbilby CLI (in the future will only run on master)
-#cli-test:
-#  stage: test
-#  image: bilbydev/bilby_pipe-test-suite-python37
-#  script:
-#    # SSH into OzStar
-#    - ssh
-#    # clone dir
-#    # install pbilby
-#    # Run tests which are only done on schedule
-#    - pytest test/integration/example_test.py
-#    - pytest test/integration/sample_from_the_prior_test.py
+cli-test:
+  stage: test
+  image: bilbydev/bilby_pipe-test-suite-python37
+  script:
+    - mkdir -p ~/.ssh
+    - cp $OZSTAR_ID_RSA ~/.ssh/id_rsa
+    # SSH into OzStar
+    - ssh $OZSTAR_USER
+    - ls
+    # clone dir
+    # install pbilby
+    # Run tests which are only done on schedule
 
 
 
