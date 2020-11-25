@@ -49,7 +49,7 @@ class ParserTest(unittest.TestCase):
             n_check_point=100,
             n_effective=np.inf,
             n_simulation=0,
-            n_parallel=4,
+            n_parallel=1,
             nact=5,
             nestcheck=False,
             nlive=1000,

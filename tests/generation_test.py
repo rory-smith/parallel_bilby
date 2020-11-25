@@ -76,8 +76,8 @@ class GenerationTest(unittest.TestCase):
         args.outdir = self.outdir
         args.psd_dict = GW150914_PSD
         args.submit = False
-        args.distance_marginalisation = True
-        args.distance_marginalization_lookup_table = GW150914_TABLE
+        args.distance_marginalization = False
+        args.n_parallel = 4
         return DataGenerationInput(args=args, unknown_args=[])
 
     @mock.patch(
@@ -91,6 +91,7 @@ class GenerationTest(unittest.TestCase):
         slurm_cli.return_value = [GW150914_INI]
         generation.main()
         files = [
+            "GW150914_config_complete.ini",
             "data/GW150914_data_dump.pickle",
             "submit/bash_GW150914.sh",
             "submit/analysis_GW150914_0.sh",
@@ -107,9 +108,6 @@ class GenerationTest(unittest.TestCase):
                 with open(path, "rb") as file:
                     data_dump = pickle.load(file)
                     self.assertTrue(data_dump["args"].n_parallel, 4)
-
-        complete_config = os.path.join(self.outdir, "GW150914_config_complete.ini")
-        self.assertTrue(os.path.exists(complete_config))
 
 
 if __name__ == "__main__":
