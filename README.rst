@@ -1,4 +1,4 @@
-|pipeline status| |coverage report| |pypi| |version|
+|pipeline status| |coverage report| |pypi| |conda| |version|
 
 
 Parallel Bilby
@@ -28,3 +28,5 @@ Online material to help you get started:
    :target: https://pypi.org/project/parallel_bilby/
 .. |pypi| image:: https://badge.fury.io/py/parallel-bilby.svg
    :target: https://pypi.org/project/parallel_bilby/
+.. |conda| image:: https://anaconda.org/conda-forge/parallel-bilby/badges/version.svg
+   :target: https://anaconda.org/conda-forge/parallel-bilby
