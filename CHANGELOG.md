@@ -1,20 +1,29 @@
 # All notable changes will be documented in this file
 
+## v1.0.0 : 2020-11-25
+- Update GW examples + add tutorial notebooks (e59e7068)
+- Add multiple injection example (!83)
+- Fix badges (!82)
+- Fix missing keys from marginalised runs (!79)
+
 ## v0.1.6 : 2020-09-08
-- Add ROQ likelihood [@greg.ashton]
-- Add complete config ini generation [@avi.vajpeyi]
-- Rename `src` dir to `parallel_bilby` dir (to make `python setup.py develop` work) [@avi.vajpeyi]
+- Rename `src` dir to `parallel_bilby` dir (!76)
+- Add complete config ini to outdir (!75)
+- Add ROQ likelihood (!60)
 
 ## v0.1.5 : 2020-09-08
-- Remove redundant pool.wait [@conrad.chan]
-- Add Max Iterations fix [@conrad.chan]
-- Add `schwimmbad_fast.py` allowing MPI worker tasks workers to spawn at the start and persist until the end (no benefit to killing them early) [@conrad.chan]
-- Fix trigger time parser to read strings [@colm.talbot]
-- Remove mem per cpu default [@maite.mateu-lucena]
-- Add nestcheck file option [@maite.mateu-lucena]
-- Add constructing sky frame parameters [@colm.talbot]
-- Change MPI isend --> send (to allow master task to finish sending messages to workers) [@conrad.chan]
-- Disable the flag messages when timing is off [@conrad.chan]
+- Change MPI isend --> send (to allow master task to finish sending messages to workers) (!71)
+- Disable the flag messages when timing is off (!71)
+- Pre-commit issues (!69)
+- Add constructing sky frame parameters (!68)
+- Fix trigger time parser to read strings (!67)
+- Add `schwimmbad_fast.py` allowing MPI worker tasks workers to spawn at the start and persist until the end (no benefit to killing them early) (!65)
+- Remove mem per cpu default (!64)
+- Add nestcheck file option (!64)
+- Add Max Iterations fix (!62)
+- Remove redundant pool.wait (!61)
+- Increase time between checkpoints (!59)
+- Add timing logs between checkpointing (!58)
 
 ## v0.1.4 : 2020-04-02
 - Fix a bug in the reference frequency setting during post-processing. All runs prior to this can be fixed offline and should document the process here: https://wiki.ligo.org/CBC/ParamEst/Reference-frequencyBugInParallelBilbyMarch2020
