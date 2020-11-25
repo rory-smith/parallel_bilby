@@ -95,14 +95,11 @@ class GenerationTest(unittest.TestCase):
             "data/GW150914_data_dump.pickle",
             "submit/bash_GW150914.sh",
             "submit/analysis_GW150914_0.sh",
-            "submit/analysis_GW150914_1.sh",
-            "submit/analysis_GW150914_2.sh",
-            "submit/analysis_GW150914_3.sh",
         ]
         for f in files:
             path = os.path.join(self.outdir, f)
             self.assertTrue(
-                os.path.isfile(path), f"After generation the file {f} not found"
+                os.path.isfile(path), f"After generation the file {f} not found. Files"
             )
             if "pickle" in path:
                 with open(path, "rb") as file:
