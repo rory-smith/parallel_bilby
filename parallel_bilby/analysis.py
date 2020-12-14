@@ -434,7 +434,11 @@ with MPIPool(
     if pool.is_master():
         POOL_SIZE = pool.size
         bilby.core.sampler.dynesty.log_multi_rwalk_info()
-        logger.info("Using parallel-bilby branch: {}".format(bilby.core.sampler.dynesty.get_branch_name(__file__)))
+        logger.info(
+            "Using parallel-bilby branch: {}".format(
+                bilby.core.sampler.dynesty.get_branch_name(__file__)
+            )
+        )
         logger.info("Setting sampling seed = {}".format(input_args.sampling_seed))
         np.random.seed(input_args.sampling_seed)
 
