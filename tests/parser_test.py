@@ -132,6 +132,7 @@ class ParserTest(unittest.TestCase):
             nlive=1000,
             no_plot=False,
             outdir=None,
+            rotate_checkpoints=False,
             sampling_seed=1234,
             vol_check=8,
             vol_dec=0.5,

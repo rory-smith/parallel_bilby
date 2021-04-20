@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import pickle
+import shutil
 import sys
 import time
 from importlib import import_module
@@ -193,7 +194,7 @@ def reorder_loglikelihoods(unsorted_loglikelihoods, unsorted_samples, sorted_sam
 
 
 @stopwatch
-def write_current_state(sampler, resume_file, sampling_time):
+def write_current_state(sampler, resume_file, sampling_time, rotate=False):
     """Writes a checkpoint file
 
     Parameters
@@ -204,9 +205,15 @@ def write_current_state(sampler, resume_file, sampling_time):
         The name of the resume/checkpoint file to use
     sampling_time: float
         The total sampling time in seconds
+    rotate: bool
+        If resume_file already exists, first make a backup file (ending in '.bk').
     """
     print("")
     logger.info("Start checkpoint writing")
+    if rotate and os.path.isfile(resume_file):
+        resume_file_bk = resume_file + ".bk"
+        logger.info("Backing up existing checkpoint file to {}".format(resume_file_bk))
+        shutil.copyfile(resume_file, resume_file_bk)
     sampler.kwargs["sampling_time"] = sampling_time
     if dill.pickles(sampler):
         safe_file_dump(sampler, resume_file, dill)
@@ -582,7 +589,9 @@ with MPIPool(
                 or it == input_args.max_its
                 or run_time > input_args.max_run_time
             ):
-                write_current_state(sampler, resume_file, sampling_time)
+                write_current_state(
+                    sampler, resume_file, sampling_time, input_args.rotate_checkpoints
+                )
                 write_sample_dump(sampler, samples_file, sampling_keys)
                 if input_args.no_plot is False:
                     plot_current_state(sampler, sampling_keys, outdir, label)
@@ -602,7 +611,9 @@ with MPIPool(
             pass
 
         # Create a final checkpoint and set of plots
-        write_current_state(sampler, resume_file, sampling_time)
+        write_current_state(
+            sampler, resume_file, sampling_time, input_args.rotate_checkpoints
+        )
         write_sample_dump(sampler, samples_file, sampling_keys)
         if input_args.no_plot is False:
             plot_current_state(sampler, sampling_keys, outdir, label)

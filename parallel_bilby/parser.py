@@ -300,6 +300,11 @@ def _add_misc_settings_to_parser(parser):
         type=float,
         help="Write a checkpoint resume file and diagnostic plots every deltaT [s].",
     )
+    misc_group.add_argument(
+        "--rotate-checkpoints",
+        action="store_true",
+        help="If true, backup checkpoint before overwriting (ending in '.bk').",
+    )
     return parser
 
 
