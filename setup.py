@@ -99,7 +99,7 @@ setup(
         "schwimmbad",
         "pandas",
         "nestcheck",
-        "mpi4py>3.0.0"
+        "mpi4py>3.0.0",
     ],
     entry_points={
         "console_scripts": [
