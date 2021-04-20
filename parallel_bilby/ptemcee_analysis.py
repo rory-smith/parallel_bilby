@@ -14,6 +14,7 @@ from pathlib import Path
 
 import bilby
 import emcee
+import matplotlib
 import matplotlib.pyplot as plt
 import mpi4py
 import numpy as np
@@ -25,6 +26,8 @@ from schwimmbad import MPIPool
 
 from .parser import create_analysis_parser
 from .utils import fill_sample, get_initial_points_from_prior
+
+matplotlib.use("Agg")
 
 mpi4py.rc.threads = False
 mpi4py.rc.recv_mprobe = False

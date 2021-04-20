@@ -17,6 +17,7 @@ import bilby
 import dill
 import dynesty
 import dynesty.plotting as dyplot
+import matplotlib
 import matplotlib.pyplot as plt
 import mpi4py
 import nestcheck.data_processing
@@ -35,6 +36,8 @@ from .utils import (
     safe_file_dump,
     stopwatch,
 )
+
+matplotlib.use("Agg")
 
 mpi4py.rc.threads = False
 mpi4py.rc.recv_mprobe = False
