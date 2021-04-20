@@ -13,6 +13,7 @@ import time
 from importlib import import_module
 
 import bilby
+import bilby_pipe
 import dill
 import dynesty
 import dynesty.plotting as dyplot
@@ -127,7 +128,9 @@ def setup_likelihood(interferometers, waveform_generator, priors, args):
         module = ".".join(split_path[:-1])
         likelihood_class = split_path[-1]
         Likelihood = getattr(import_module(module), likelihood_class)
-        likelihood_kwargs.update(args.extra_likelihood_kwargs)
+        likelihood_kwargs.update(
+            bilby_pipe.utils.convert_string_to_dict(args.extra_likelihood_kwargs)
+        )
         if "roq" in args.likelihood_type.lower():
             likelihood_kwargs.pop("time_marginalization", None)
             likelihood_kwargs.pop("jitter_time", None)
