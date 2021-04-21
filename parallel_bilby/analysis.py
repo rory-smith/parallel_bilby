@@ -361,8 +361,11 @@ if input_args.label is not None:
     label = input_args.label
 
 priors = bilby.gw.prior.PriorDict.from_json(data_dump["prior_file"])
+logger.info(f"PRIOR ON LOADING: \n{priors}")
+priors = priors.convert_floats_to_delta_functions()
+logger.info(f"ADJUSTING PRIORS: \n{priors}")
 
-logger.setLevel(logging.WARNING)
+# logger.setLevel(logging.WARNING)
 likelihood = setup_likelihood(
     interferometers=ifo_list,
     waveform_generator=waveform_generator,
