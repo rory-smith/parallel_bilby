@@ -13,6 +13,7 @@ import subprocess
 import bilby
 import bilby_pipe
 import dynesty
+import lalsimulation
 from bilby_pipe import data_generation as bilby_pipe_datagen
 from bilby_pipe.data_generation import parse_args
 
@@ -72,6 +73,16 @@ def main():
     args = generation_parser.parse_args(args=cli_args)
     args = add_extra_args_from_bilby_pipe_namespace(args)
     logger = create_generation_logger(outdir=args.outdir, label=args.label)
+    version_info = dict(
+        bilby_version=bilby.__version__,
+        bilby_pipe_version=bilby_pipe.__version__,
+        parallel_bilby_version=__version__,
+        dynesty_version=dynesty.__version__,
+        lalsimulation_version=lalsimulation.__version__,
+    )
+    for package, version in version_info.items():
+        logger.info(f"{package} version: {version}")
+
     inputs = bilby_pipe_datagen.DataGenerationInput(args, [])
     if inputs.likelihood_type == "ROQGravitationalWaveTransient":
         inputs.save_roq_weights()
@@ -95,14 +106,7 @@ def main():
 
     meta_data = inputs.meta_data
     meta_data.update(
-        dict(
-            config_file=args.ini,
-            data_dump_file=data_dump_file,
-            bilby_version=bilby.__version__,
-            bilby_pipe_version=bilby_pipe.__version__,
-            parallel_bilby_version=__version__,
-            dynesty_version=dynesty.__version__,
-        )
+        dict(config_file=args.ini, data_dump_file=data_dump_file, **version_info)
     )
     logger.info("Initial meta_data = {}".format(meta_data))
 
