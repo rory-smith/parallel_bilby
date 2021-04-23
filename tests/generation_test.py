@@ -12,7 +12,6 @@ from parallel_bilby import generation
 
 GW150914_ROOT = "examples/GW150914_IMRPhenomPv2"
 GW150914_INI = f"{GW150914_ROOT}/GW150914.ini"
-GW150914_PRIOR = f"{GW150914_ROOT}/GW150914.prior"
 GW150914_PSD = (
     "{H1=examples/GW150914_IMRPhenomPv2/psd_data/h1_psd.txt, "
     "L1=examples/GW150914_IMRPhenomPv2/psd_data/l1_psd.txt}"
@@ -45,7 +44,7 @@ class GenerationTest(unittest.TestCase):
             GW150914_TABLE,
         ]
         fetch_open_data_method.return_value = self.get_timeseries_data()
-        args = generation.generation_parser.parse_args(args=[self.ini])
+        args = generation.create_generation_parser().parse_args(args=[self.ini])
         args = generation.add_extra_args_from_bilby_pipe_namespace(args)
         args.prior_dict = dict(
             mass_ratio=Uniform(name="mass_ratio", minimum=0.125, maximum=1),
@@ -87,7 +86,13 @@ class GenerationTest(unittest.TestCase):
     @mock.patch("parallel_bilby.slurm.get_cli_args")
     def test_generation(self, slurm_cli, generation_cli, datagen_input):
         datagen_input.return_value = self.get_datagen_input_object()
-        generation_cli.return_value = [GW150914_INI]
+        generation_cli.return_value = [
+            GW150914_INI,
+            "--outdir",
+            self.outdir,
+            "--label",
+            "GW150914",
+        ]
         slurm_cli.return_value = [GW150914_INI]
         generation.main()
         files = [
@@ -95,6 +100,7 @@ class GenerationTest(unittest.TestCase):
             "data/GW150914_data_dump.pickle",
             "submit/bash_GW150914.sh",
             "submit/analysis_GW150914_0.sh",
+            "log_data_generation/GW150914.log",
         ]
         for f in files:
             path = os.path.join(self.outdir, f)
