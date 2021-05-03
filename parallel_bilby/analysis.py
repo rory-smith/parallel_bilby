@@ -361,9 +361,8 @@ if input_args.label is not None:
     label = input_args.label
 
 priors = bilby.gw.prior.PriorDict.from_json(data_dump["prior_file"])
-logger.info(f"PRIOR ON LOADING: \n{priors}")
 priors.convert_floats_to_delta_functions()
-logger.info(f"ADJUSTING PRIORS: \n{priors}")
+logger.info(f"PRIOR ON LOADING: \n{priors}")
 
 logger.setLevel(logging.WARNING)
 likelihood = setup_likelihood(
@@ -408,6 +407,8 @@ for p in priors:
         likelihood.parameters[p] = priors[p].peak
     else:
         sampling_keys.append(p)
+logger.info(f"PRIOR AFTER LIKELIHOOD PARAM SET UP: \n{priors}")
+
 
 periodic = []
 reflective = []
@@ -426,6 +427,8 @@ if likelihood.time_marginalization:
     likelihood.parameters["geocent_time"] = priors["geocent_time"]
 if likelihood.distance_marginalization:
     likelihood.parameters["luminosity_distance"] = priors["luminosity_distance"]
+
+logger.info(f"PRIOR AFTER LIKELIHOOD MARG SET UP: \n{priors}")
 
 if input_args.dynesty_sample == "rwalk":
     logger.debug("Using the bilby-implemented rwalk sample method")
