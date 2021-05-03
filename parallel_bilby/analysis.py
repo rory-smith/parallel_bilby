@@ -497,9 +497,18 @@ with MPIPool(
 
         ndim = len(sampling_keys)
         sampler, sampling_time = read_saved_state(resume_file)
-
         if sampler is False:
             logger.info(f"Initializing sampling points with pool size={POOL_SIZE}")
+            logger.info(
+                dict(
+                    ndim=ndim,
+                    nlive=nlive,
+                    prior_transform_function=prior_transform_function,
+                    log_prior_function=log_prior_function,
+                    log_likelihood_function=log_likelihood_function,
+                    pool=pool,
+                )
+            )
             live_points = get_initial_points_from_prior(
                 ndim,
                 nlive,
