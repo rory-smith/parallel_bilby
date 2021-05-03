@@ -377,6 +377,7 @@ logger.info("Likelihood set up complete")
 
 
 def prior_transform_function(u_array):
+    logger.info(f"prior_transform_function prior: {priors}")
     return priors.rescale(sampling_keys, u_array)
 
 
@@ -384,6 +385,7 @@ def log_likelihood_function(v_array):
     if input_args.bilby_zero_likelihood_mode:
         return 0
     parameters = {key: v for key, v in zip(sampling_keys, v_array)}
+    logger.info(f"log_likelihood_function prior: {priors}")
     if priors.evaluate_constraints(parameters) > 0:
         likelihood.parameters.update(parameters)
         return likelihood.log_likelihood() - likelihood.noise_log_likelihood()
@@ -499,16 +501,6 @@ with MPIPool(
         sampler, sampling_time = read_saved_state(resume_file)
         if sampler is False:
             logger.info(f"Initializing sampling points with pool size={POOL_SIZE}")
-            logger.info(
-                dict(
-                    ndim=ndim,
-                    nlive=nlive,
-                    prior_transform_function=prior_transform_function,
-                    log_prior_function=log_prior_function,
-                    log_likelihood_function=log_likelihood_function,
-                    pool=pool,
-                )
-            )
             live_points = get_initial_points_from_prior(
                 ndim,
                 nlive,
