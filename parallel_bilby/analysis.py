@@ -155,6 +155,7 @@ def setup_likelihood(interferometers, waveform_generator, priors, args):
     )
 
     likelihood = Likelihood(**likelihood_kwargs)
+    priors.convert_floats_to_delta_functions()
     return likelihood
 
 
