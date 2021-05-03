@@ -373,6 +373,7 @@ likelihood = setup_likelihood(
     args=args,
 )
 logger.setLevel(logging.INFO)
+logger.info("Likelihood set up complete")
 
 
 def prior_transform_function(u_array):
