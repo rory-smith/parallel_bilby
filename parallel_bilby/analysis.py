@@ -159,7 +159,7 @@ def setup_likelihood(interferometers, waveform_generator, priors, args):
 
 
 def main():
-    """ Do nothing function to play nicely with MPI """
+    """Do nothing function to play nicely with MPI"""
     pass
 
 
@@ -369,6 +369,7 @@ likelihood = setup_likelihood(
     priors=priors,
     args=args,
 )
+priors.convert_floats_to_delta_functions()
 logger.setLevel(logging.INFO)
 
 
@@ -396,8 +397,6 @@ sampling_keys = []
 for p in priors:
     if isinstance(priors[p], bilby.core.prior.Constraint):
         continue
-    if isinstance(priors[p], (int, float)):
-        likelihood.parameters[p] = priors[p]
     elif priors[p].is_fixed:
         likelihood.parameters[p] = priors[p].peak
     else:
@@ -412,14 +411,6 @@ for ii, key in enumerate(sampling_keys):
     elif priors[key].boundary == "reflective":
         logger.debug("Setting reflective boundary for {}".format(key))
         reflective.append(ii)
-
-# Setting marginalized parameters to their reference values
-if likelihood.phase_marginalization:
-    likelihood.parameters["phase"] = priors["phase"]
-if likelihood.time_marginalization:
-    likelihood.parameters["geocent_time"] = priors["geocent_time"]
-if likelihood.distance_marginalization:
-    likelihood.parameters["luminosity_distance"] = priors["luminosity_distance"]
 
 if input_args.dynesty_sample == "rwalk":
     logger.debug("Using the bilby-implemented rwalk sample method")
