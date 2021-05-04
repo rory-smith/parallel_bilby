@@ -320,7 +320,7 @@ class MPIPoolFast(MPIPool):
         return resultlist
 
     def close(self):
-        """ When master task is done, tidy up."""
+        """When master task is done, tidy up."""
 
         if self.is_master():
             self.kill_workers()
@@ -329,20 +329,20 @@ class MPIPoolFast(MPIPool):
             self.timer.parallel_total()
 
     def kill_workers(self):
-        """ Tell all the workers to quit."""
+        """Tell all the workers to quit."""
         buf = None
         for worker in self.workers:
             self.comm.send(buf, dest=worker, tag=0)
 
     def flag_serial(self):
-        """ Tell all the workers that serial code is being executed."""
+        """Tell all the workers that serial code is being executed."""
         if self.time_mpi:
             buf = "s"
             for worker in self.workers:
                 self.comm.send(buf, dest=worker, tag=0)
 
     def flag_parallel(self):
-        """ Tell all the workers that serial code has finished."""
+        """Tell all the workers that serial code has finished."""
         if self.time_mpi:
             buf = "p"
             for worker in self.workers:
