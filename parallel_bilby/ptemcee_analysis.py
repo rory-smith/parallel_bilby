@@ -36,12 +36,12 @@ logger = bilby.core.utils.logger
 
 
 def main():
-    """ Do nothing function to play nicely with MPI """
+    """Do nothing function to play nicely with MPI"""
     pass
 
 
 def plot_walkers(walkers, nburn, parameter_labels, outdir, label):
-    """ Method to plot the trace of the walkers in an ensemble MCMC plot """
+    """Method to plot the trace of the walkers in an ensemble MCMC plot"""
     nwalkers, nsteps, ndim = walkers.shape
     idxs = np.arange(nsteps)
     fig, axes = plt.subplots(nrows=ndim, figsize=(6, 3 * ndim))
@@ -164,7 +164,7 @@ def print_progress(
 
 
 def compute_evidence(sampler, outdir, label, nburn, thin, make_plots=True):
-    """ Computes the evidence using thermodynamic integration """
+    """Computes the evidence using thermodynamic integration"""
     betas = sampler.betas
     # We compute the evidence without the burnin samples, but we do not thin
     lnlike = sampler.loglikelihood[:, :, nburn : sampler.time]
