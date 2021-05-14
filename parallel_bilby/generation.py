@@ -108,7 +108,7 @@ def main():
     meta_data.update(
         dict(config_file=args.ini, data_dump_file=data_dump_file, **version_info)
     )
-    logger.info("Initial meta_data = {}".format(meta_data))
+    logger.info(f"Initial meta_data = {meta_data}")
 
     data_dump = dict(
         waveform_generator=inputs.waveform_generator,
@@ -128,6 +128,6 @@ def main():
 
     bash_file = slurm.setup_submit(data_dump_file, inputs, args)
     if args.submit:
-        subprocess.run(["bash {}".format(bash_file)], shell=True)
+        subprocess.run([f"bash {bash_file}"], shell=True)
     else:
-        logger.info("Setup complete, now run:\n $ bash {}".format(bash_file))
+        logger.info(f"Setup complete, now run:\n $ bash {bash_file}")

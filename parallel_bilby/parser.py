@@ -17,10 +17,8 @@ def remove_argument_from_parser(parser, arg):
             try:
                 parser._handle_conflict_resolve(None, [("--" + arg, action)])
             except ValueError as e:
-                logger.warning("Error removing {}: {}".format(arg, e))
-    logger.debug(
-        "Request to remove arg {} from bilby_pipe args, but arg not found".format(arg)
-    )
+                logger.warning(f"Error removing {arg}: {e}")
+    logger.debug(f"Request to remove arg {arg} from bilby_pipe args, but arg not found")
 
 
 class StoreBoolean(argparse.Action):
@@ -46,9 +44,7 @@ def _create_base_parser(sampler="dynesty"):
     base_parser.add(
         "--version",
         action="version",
-        version="%(prog)s={version}\nbilby={bilby_version}".format(
-            version=__version__, bilby_version=bilby.__version__
-        ),
+        version=f"%(prog)s={__version__}\nbilby={bilby.__version__}",
     )
     if sampler in ["all", "dynesty"]:
         base_parser = _add_dynesty_settings_to_parser(base_parser)

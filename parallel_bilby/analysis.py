@@ -70,7 +70,7 @@ def roq_likelihood_kwargs(args):
         weights = args.likelihood_roq_weights
     else:
         weights = args.weight_file
-        logger.info("Loading ROQ weights from {}".format(weights))
+        logger.info(f"Loading ROQ weights from {weights}")
 
     return dict(
         weights=weights, roq_params=params, roq_scale_factor=args.roq_scale_factor
@@ -149,9 +149,7 @@ def setup_likelihood(interferometers, waveform_generator, priors, args):
     }
 
     logger.info(
-        "Initialise likelihood {} with kwargs: \n{}".format(
-            Likelihood, likelihood_kwargs
-        )
+        f"Initialise likelihood {Likelihood} with kwargs: \n{likelihood_kwargs}"
     )
 
     likelihood = Likelihood(**likelihood_kwargs)
@@ -218,12 +216,12 @@ def write_current_state(sampler, resume_file, sampling_time, rotate=False):
     logger.info("Start checkpoint writing")
     if rotate and os.path.isfile(resume_file):
         resume_file_bk = resume_file + ".bk"
-        logger.info("Backing up existing checkpoint file to {}".format(resume_file_bk))
+        logger.info(f"Backing up existing checkpoint file to {resume_file_bk}")
         shutil.copyfile(resume_file, resume_file_bk)
     sampler.kwargs["sampling_time"] = sampling_time
     if dill.pickles(sampler):
         safe_file_dump(sampler, resume_file, dill)
-        logger.info("Written checkpoint file {}".format(resume_file))
+        logger.info(f"Written checkpoint file {resume_file}")
     else:
         logger.warning("Cannot write pickle resume file!")
 
@@ -246,7 +244,7 @@ def write_sample_dump(sampler, samples_file, search_parameter_keys):
     if nsamples < 100:
         return
 
-    logger.info("Writing {} current samples to {}".format(nsamples, samples_file))
+    logger.info(f"Writing {nsamples} current samples to {samples_file}")
     df = DataFrame(samples, columns=search_parameter_keys)
     df.to_csv(samples_file, index=False, header=True, sep=" ")
 
@@ -255,7 +253,7 @@ def write_sample_dump(sampler, samples_file, search_parameter_keys):
 def plot_current_state(sampler, search_parameter_keys, outdir, label):
     labels = [label.replace("_", " ") for label in search_parameter_keys]
     try:
-        filename = "{}/{}_checkpoint_trace.png".format(outdir, label)
+        filename = f"{outdir}/{label}_checkpoint_trace.png"
         fig = dyplot.traceplot(sampler.results, labels=labels)[0]
         fig.tight_layout()
         fig.savefig(filename)
@@ -270,7 +268,7 @@ def plot_current_state(sampler, search_parameter_keys, outdir, label):
     finally:
         plt.close("all")
     try:
-        filename = "{}/{}_checkpoint_run.png".format(outdir, label)
+        filename = f"{outdir}/{label}_checkpoint_run.png"
         fig, axs = dyplot.runplot(sampler.results)
         fig.tight_layout()
         plt.savefig(filename)
@@ -280,7 +278,7 @@ def plot_current_state(sampler, search_parameter_keys, outdir, label):
     finally:
         plt.close("all")
     try:
-        filename = "{}/{}_checkpoint_stats.png".format(outdir, label)
+        filename = f"{outdir}/{label}_checkpoint_stats.png"
         fig, axs = plt.subplots(nrows=3, sharex=True)
         for ax, name in zip(axs, ["boundidx", "nc", "scale"]):
             ax.plot(getattr(sampler, f"saved_{name}"), color="C0")
@@ -319,7 +317,7 @@ def read_saved_state(resume_file, continuing=True):
     """
 
     if os.path.isfile(resume_file):
-        logger.info("Reading resume file {}".format(resume_file))
+        logger.info(f"Reading resume file {resume_file}")
         with open(resume_file, "rb") as file:
             sampler = dill.load(file)
             if sampler.added_live and continuing:
@@ -329,7 +327,7 @@ def read_saved_state(resume_file, continuing=True):
             sampling_time = sampler.kwargs.pop("sampling_time")
         return sampler, sampling_time
     else:
-        logger.info("Resume file {} does not exist.".format(resume_file))
+        logger.info(f"Resume file {resume_file} does not exist.")
         return False, 0
 
 
@@ -406,10 +404,10 @@ periodic = []
 reflective = []
 for ii, key in enumerate(sampling_keys):
     if priors[key].boundary == "periodic":
-        logger.debug("Setting periodic boundary for {}".format(key))
+        logger.debug(f"Setting periodic boundary for {key}")
         periodic.append(ii)
     elif priors[key].boundary == "reflective":
-        logger.debug("Setting reflective boundary for {}".format(key))
+        logger.debug(f"Setting reflective boundary for {key}")
         reflective.append(ii)
 
 if input_args.dynesty_sample == "rwalk":
@@ -423,9 +421,7 @@ elif input_args.dynesty_sample == "rwalk_dynesty":
     input_args.dynesty_sample = "rwalk"
 else:
     logger.debug(
-        "Using the dynesty-implemented {} sample method".format(
-            input_args.dynesty_sample
-        )
+        f"Using the dynesty-implemented {input_args.dynesty_sample} sample method"
     )
 
 t0 = datetime.datetime.now()
@@ -438,21 +434,19 @@ with MPIPool(
     if pool.is_master():
         POOL_SIZE = pool.size
 
-        logger.info("Setting sampling seed = {}".format(input_args.sampling_seed))
+        logger.info(f"Setting sampling seed = {input_args.sampling_seed}")
         np.random.seed(input_args.sampling_seed)
 
         logger.info(f"sampling_keys={sampling_keys}")
-        logger.info("Periodic keys: {}".format([sampling_keys[ii] for ii in periodic]))
-        logger.info(
-            "Reflective keys: {}".format([sampling_keys[ii] for ii in reflective])
-        )
+        logger.info(f"Periodic keys: {[sampling_keys[ii] for ii in periodic]}")
+        logger.info(f"Reflective keys: {[sampling_keys[ii] for ii in reflective]}")
         logger.info("Using priors:")
         for key in priors:
             logger.info(f"{key}: {priors[key]}")
 
-        filename_trace = "{}/{}_checkpoint_trace.png".format(outdir, label)
-        resume_file = "{}/{}_checkpoint_resume.pickle".format(outdir, label)
-        samples_file = "{}/{}_samples.dat".format(outdir, label)
+        filename_trace = f"{outdir}/{label}_checkpoint_trace.png"
+        resume_file = f"{outdir}/{label}_checkpoint_resume.pickle"
+        samples_file = f"{outdir}/{label}_samples.dat"
 
         dynesty_sample = input_args.dynesty_sample
         dynesty_bound = input_args.dynesty_bound
@@ -496,9 +490,8 @@ with MPIPool(
                 pool,
             )
             logger.info(
-                "Initialize NestedSampler with {}".format(
-                    json.dumps(init_sampler_kwargs, indent=1, sort_keys=True)
-                )
+                f"Initialize NestedSampler with "
+                f"{json.dumps(init_sampler_kwargs, indent=1, sort_keys=True)}"
             )
             sampler = NestedSampler(
                 log_likelihood_function,
@@ -520,9 +513,7 @@ with MPIPool(
             )
         else:
             # Reinstate the pool and map (not saved in the pickle)
-            logger.info(
-                "Read in resume file with sampling_time = {}".format(sampling_time)
-            )
+            logger.info(f"Read in resume file with sampling_time = {sampling_time}")
             sampler.pool = pool
             sampler.M = pool.map
 
@@ -536,7 +527,7 @@ with MPIPool(
             dlogz=input_args.dlogz,
             save_bounds=not input_args.do_not_save_bounds_in_resume,
         )
-        logger.info("Run criteria: {}".format(json.dumps(sampler_kwargs)))
+        logger.info(f"Run criteria: {json.dumps(sampler_kwargs)}")
 
         run_time = 0
 
@@ -624,7 +615,7 @@ with MPIPool(
             ns_run = nestcheck.data_processing.process_dynesty_run(out)
             nestcheck_path = os.path.join(outdir, "Nestcheck")
             bilby.core.utils.check_directory_exists_and_if_not_mkdir(nestcheck_path)
-            nestcheck_result = "{}/{}_nestcheck.pickle".format(nestcheck_path, label)
+            nestcheck_result = f"{nestcheck_path}/{label}_nestcheck.pickle"
 
             with open(nestcheck_result, "wb") as file_nest:
                 pickle.dump(ns_run, file_nest)
@@ -668,7 +659,7 @@ with MPIPool(
         posterior = result.posterior
 
         nsamples = len(posterior)
-        logger.info("Using {} samples".format(nsamples))
+        logger.info(f"Using {nsamples} samples")
 
         posterior = conversion.fill_from_fixed_priors(posterior, priors)
 
@@ -685,7 +676,7 @@ with MPIPool(
             ["distance", "phase", "time"],
             ["luminosity_distance", "phase", "geocent_time"],
         ):
-            if getattr(likelihood, "{}_marginalization".format(par), False):
+            if getattr(likelihood, f"{par}_marginalization", False):
                 priors[name] = likelihood.priors[name]
         result.priors = priors
 
@@ -697,9 +688,5 @@ with MPIPool(
 
         logger.info(f"Saving result to {outdir}/{label}_result.json")
         result.save_to_file(extension="json")
-        print(
-            "Sampling time = {}s".format(
-                datetime.timedelta(seconds=result.sampling_time)
-            )
-        )
+        print(f"Sampling time = {datetime.timedelta(seconds=result.sampling_time)}s")
         print(result)
