@@ -20,10 +20,19 @@ repos:
     rev: v1.3.0
     hooks:
     -   id: seed-isort-config
-        args: [--application-directories, 'src']
+        args: [--application-directories, 'parallel_bilby, tests']
 -   repo: https://github.com/pre-commit/mirrors-isort
     rev: v4.3.21
     hooks:
     -   id: isort # sort imports alphabetically and separates import into sections
         args: [-w=88, -m=3, -tc, -sp=setup.cfg ]
-
+-   repo: local
+    hooks:
+    -   id: flynt # convert old .format(...) strings into "f-strings"
+        name: flynt
+        entry: flynt
+        args: [--fail-on-change]
+        types: [python]
+        language: python
+        additional_dependencies:
+            - flynt
