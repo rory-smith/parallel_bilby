@@ -269,8 +269,8 @@ def _add_misc_settings_to_parser(parser):
     )
     misc_group.add_argument(
         "--sampling-seed",
-        type=int,
-        default=1234,
+        type=bilby_pipe.utils.noneint,
+        default=None,
         help="Random seed for sampling, parallel runs will be incremented",
     )
     misc_group.add_argument(

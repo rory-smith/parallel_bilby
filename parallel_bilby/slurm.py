@@ -142,9 +142,7 @@ class AnalysisNode(BaseNode):
 
         run_list.append(f"--label {self.label}")
         run_list.append(f"--outdir {abspath(self.inputs.result_directory)}")
-        run_list.append(
-            f"--sampling-seed {self.analysis_args.sampling_seed + self.idx}"
-        )
+        run_list.append(f"--sampling-seed {self.inputs.sampling_seed + self.idx}")
 
         return " ".join(run_list)
 

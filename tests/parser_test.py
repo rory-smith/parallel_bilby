@@ -133,7 +133,7 @@ class ParserTest(unittest.TestCase):
             no_plot=False,
             outdir=None,
             rotate_checkpoints=False,
-            sampling_seed=1234,
+            sampling_seed=None,
             vol_check=8,
             vol_dec=0.5,
             walks=100,
