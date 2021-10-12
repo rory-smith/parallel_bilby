@@ -111,8 +111,15 @@ cite the specific version used in your work.
 
 Posters and talks
 ------------------
-Please include the `Parallel Bilby logo`_ on the title, conclusion slide, or about page.
+Please include the :code:`Bilby Logo` on the title, conclusion slide, or about page.
+
+.. image:: _static/logo.png
+   :scale: 50 %
+   :alt: Bilby Logo
+   :align: center
+
+
 
 
 .. _Parallel Bilby paper: http://dx.doi.org/10.1093/mnras/staa2483
-.. _Parallel Bilby logo: https://git.ligo.org/uploads/-/system/project/avatar/1846/bilby.jpg?width=40
+

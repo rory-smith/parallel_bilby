@@ -14,8 +14,10 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath("../parallel_bilby/"))
+import parallel_bilby
 
+sys.path.insert(0, os.path.abspath("../parallel_bilby/"))
+sys.path.insert(0, os.path.abspath("../examples/"))
 
 # -- Project information -----------------------------------------------------
 
@@ -24,7 +26,7 @@ copyright = "2020, Greg Ashton, Rory Smith"
 author = "Greg Ashton, Rory Smith"
 
 # The full version, including alpha/beta/rc tags
-release = "0.1"
+release = parallel_bilby.__version__
 
 # -- General configuration ---------------------------------------------------
 
@@ -63,3 +65,13 @@ html_theme = "sphinx_rtd_theme"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
+gitlab_url = "https://git.ligo.org/lscsoft/parallel_bilby"
+html_logo = "_static/logo.png"
+html_favicon = "_static/favicon.ico"
+
+html_theme_options = {
+    "logo_only": True,
+    "display_version": True,
+    "vcs_pageview_mode": "display_gitlab",
+    "style_nav_header_background": "#343131",
+}
