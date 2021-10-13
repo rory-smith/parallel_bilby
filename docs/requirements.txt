@@ -7,4 +7,3 @@ sphinx_rtd_theme
 sphinx-argparse
 sphinx-tabs
 graphviz
-parallel_bilby

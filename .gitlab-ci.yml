@@ -80,7 +80,6 @@ docs:
     - pip --cache-dir=.pip37 install .
 
     # Make the documentation
-    - apt-get update
     - apt-get -y install graphviz
     - cd docs
     - pip install -r requirements.txt
