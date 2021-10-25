@@ -56,7 +56,7 @@ def plot_walkers(walkers, nburn, parameter_labels, outdir, label):
         ax.plot(idxs[nburn:], walkers[:, nburn:, i].T, color="k", **scatter_kwargs)
 
     fig.tight_layout()
-    filename = "{}/{}_traceplot.png".format(outdir, label)
+    filename = f"{outdir}/{label}_traceplot.png"
     fig.savefig(filename)
     plt.close(fig)
 
@@ -66,7 +66,7 @@ def plot_tau(tau_list_n, tau_list):
     ax.plot(tau_list_n, tau_list, "-x")
     ax.set_xlabel("Iteration")
     ax.set_ylabel(r"$\langle \tau \rangle$")
-    fig.savefig("{}/{}_tau.png".format(outdir, label))
+    fig.savefig(f"{outdir}/{label}_tau.png")
     plt.close(fig)
 
 
@@ -75,7 +75,7 @@ def checkpoint(outdir, label, nsamples_effective, sampler):
 
     # Store the samples if possible
     if nsamples_effective > 0:
-        filename = "{}/{}_samples.txt".format(outdir, label)
+        filename = f"{outdir}/{label}_samples.txt"
         samples = sampler.chain[0, :, nburn : sampler.time : thin, :].reshape(
             (-1, ndim)
         )
@@ -117,12 +117,13 @@ def print_progress(
 ):
     # Setup acceptance string
     acceptance = sampler.acceptance_fraction[0, :]
-    acceptance_str = "{:1.2f}->{:1.2f}".format(np.min(acceptance), np.max(acceptance))
+    acceptance_str = f"{np.min(acceptance):1.2f}->{np.max(acceptance):1.2f}"
 
     # Setup tswap acceptance string
     tswap_acceptance_fraction = sampler.tswap_acceptance_fraction
-    tswap_acceptance_str = "{:1.2f}->{:1.2f}".format(
-        np.min(tswap_acceptance_fraction), np.max(tswap_acceptance_fraction)
+    tswap_acceptance_str = (
+        f"{np.min(tswap_acceptance_fraction):1.2f}->"
+        f"{np.max(tswap_acceptance_fraction):1.2f}"
     )
 
     ave_time_per_check = np.mean(time_per_check[-3:])
@@ -142,23 +143,20 @@ def print_progress(
     if tau_pass is False:
         tau_str = tau_str + "(F)"
 
-    ncalls = "{:1.1e}".format(sampler.time * input_args.nwalkers * sampler.ntemps)
-    eval_timing = "{:1.1f}ms/evl".format(1e3 * ave_time_per_check / evals_per_check)
-    samp_timing = "{:1.2f}ms/smp".format(1e3 * ave_time_per_check / samples_per_check)
+    ncalls = f"{sampler.time * input_args.nwalkers * sampler.ntemps:1.1e}"
+    eval_timing = f"{1000.0 * ave_time_per_check / evals_per_check:1.1f}ms/evl"
+    samp_timing = f"{1000.0 * ave_time_per_check / samples_per_check:1.2f}ms/smp"
 
     print(
-        "{}| nc:{}| a0:{}| swp:{}| n:{}<{}| tau:{}| {}| {}| {}".format(
-            sampler.time,
-            ncalls,
-            acceptance_str,
-            tswap_acceptance_str,
-            nsamples_effective,
-            input_args.nsamples,
-            tau_str,
-            eval_timing,
-            samp_timing,
-            convergence,
-        ),
+        f"{sampler.time}| "
+        f"nc:{ncalls}| "
+        f"a0:{acceptance_str}| "
+        f"swp:{tswap_acceptance_str}| "
+        f"n:{nsamples_effective}<{input_args.nsamples}| "
+        f"tau:{tau_str}| "
+        f"{eval_timing}| "
+        f"{samp_timing}| "
+        f"{convergence}",
         flush=True,
     )
 
@@ -176,7 +174,7 @@ def compute_evidence(sampler, outdir, label, nburn, thin, make_plots=True):
     if any(np.isinf(mean_lnlikes)):
         logger.warning(
             "mean_lnlikes contains inf: recalculating without"
-            " the {} infs".format(len(betas[np.isinf(mean_lnlikes)]))
+            f" the {len(betas[np.isinf(mean_lnlikes)])} infs"
         )
         idxs = np.isinf(mean_lnlikes)
         mean_lnlikes = mean_lnlikes[~idxs]
@@ -206,7 +204,7 @@ def compute_evidence(sampler, outdir, label, nburn, thin, make_plots=True):
         )
         ax2.set_xlabel(r"$\beta_{min}$")
         plt.tight_layout()
-        fig.savefig("{}/{}_beta_lnl.png".format(outdir, label))
+        fig.savefig(f"{outdir}/{label}_beta_lnl.png")
 
     return lnZ, lnZerr
 
@@ -301,7 +299,7 @@ with MPIPool() as pool:
         sys.exit(0)
     POOL_SIZE = pool.size
 
-    logger.info("Setting sampling seed = {}".format(input_args.sampling_seed))
+    logger.info(f"Setting sampling seed = {input_args.sampling_seed}")
     np.random.seed(input_args.sampling_seed)
 
     logger.info("Using priors:")
@@ -317,10 +315,10 @@ with MPIPool() as pool:
     )
 
     # Check for a resume file
-    resume_file = "{}/{}_checkpoint_resume.pickle".format(outdir, label)
+    resume_file = f"{outdir}/{label}_checkpoint_resume.pickle"
     if os.path.isfile(resume_file) and os.stat(resume_file).st_size > 0:
         try:
-            logger.info("Resume data {} found".format(resume_file))
+            logger.info(f"Resume data {resume_file} found")
             with open(resume_file, "rb") as file:
                 data = pickle.load(file)
             sampler = data["sampler"]
@@ -329,12 +327,10 @@ with MPIPool() as pool:
             sampler.pool = pool
             pos0 = None
             iterations = input_args.max_iterations  # - sampler.time
-            logger.info("Resuming from previous run with time={}".format(sampler.time))
+            logger.info(f"Resuming from previous run with time={sampler.time}")
         except Exception:
             raise ValueError(
-                "Unable to read resume file {}, please delete it and retry".format(
-                    resume_file
-                )
+                f"Unable to read resume file {resume_file}, please delete it and retry"
             )
     else:
         # Initialize resume file
@@ -360,9 +356,8 @@ with MPIPool() as pool:
 
         # Set up the sampler
         logger.info(
-            "Initialize ptemcee.Sampler with {}".format(
-                json.dumps(init_sampler_kwargs, indent=1, sort_keys=True)
-            )
+            f"Initialize ptemcee.Sampler with "
+            f"{json.dumps(init_sampler_kwargs, indent=1, sort_keys=True)}"
         )
         sampler = ptemcee.Sampler(
             logl=log_likelihood_function,
@@ -372,16 +367,14 @@ with MPIPool() as pool:
         )
 
     logger.info(
-        "Starting sampling: nsamples={}, burn_in_nact={}, thin_by_nact={},"
-        " adapt={}, autocorr_c={}, autocorr_tol={}, ncheck={}".format(
-            input_args.nsamples,
-            input_args.burn_in_nact,
-            input_args.thin_by_nact,
-            input_args.adapt,
-            input_args.autocorr_c,
-            input_args.autocorr_tol,
-            input_args.ncheck,
-        )
+        f"Starting sampling: "
+        f"nsamples={input_args.nsamples}, "
+        f"burn_in_nact={input_args.burn_in_nact}, "
+        f"thin_by_nact={input_args.thin_by_nact}, "
+        f"adapt={input_args.adapt}, "
+        f"autocorr_c={input_args.autocorr_c}, "
+        f"autocorr_tol={input_args.autocorr_tol}, "
+        f"ncheck={input_args.ncheck}"
     )
 
     t0 = datetime.datetime.now()
@@ -417,7 +410,7 @@ with MPIPool() as pool:
         tau = input_args.safety * np.mean(taus)
 
         if np.isnan(tau) or np.isinf(tau):
-            logger.info("{} | Unable to use tau={}".format(sampler.time, tau))
+            logger.info(f"{sampler.time} | Unable to use tau={tau}")
             continue
 
         # Convert to an integer and store for plotting
@@ -472,9 +465,7 @@ with MPIPool() as pool:
     # Check if we reached the end without converging
     if sampler.time == input_args.max_iterations:
         raise ValueError(
-            "Failed to reach convergence by max_iterations={}".format(
-                input_args.max_iterations
-            )
+            f"Failed to reach convergence by max_iterations={input_args.max_iterations}"
         )
 
     # Run a final checkpoint to update the plots and samples
@@ -521,7 +512,7 @@ with MPIPool() as pool:
     # Post-process the posterior
     posterior = result.posterior
     nsamples = len(posterior)
-    logger.info("Using {} samples".format(nsamples))
+    logger.info(f"Using {nsamples} samples")
     posterior = conversion.fill_from_fixed_priors(posterior, priors)
     logger.info(
         "Generating posterior from marginalized parameters for"
@@ -536,7 +527,7 @@ with MPIPool() as pool:
     for par, name in zip(
         ["distance", "phase", "time"], ["luminosity_distance", "phase", "geocent_time"]
     ):
-        if getattr(likelihood, "{}_marginalization".format(par), False):
+        if getattr(likelihood, f"{par}_marginalization", False):
             priors[name] = likelihood.priors[name]
     result.priors = priors
 
@@ -548,7 +539,5 @@ with MPIPool() as pool:
 
     logger.info(f"Saving result to {outdir}/{label}_result.json")
     result.save_to_file(extension="json")
-    print(
-        "Sampling time = {}s".format(datetime.timedelta(seconds=result.sampling_time))
-    )
+    print(f"Sampling time = {datetime.timedelta(seconds=result.sampling_time)}s")
     print(result)

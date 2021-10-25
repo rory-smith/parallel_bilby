@@ -157,7 +157,7 @@ class MPIPoolFast(MPIPool):
                     "barrier"
                 )  # start the barrier timer in case this is the last parallel task
 
-            log.log(_VERBOSE, "Worker {0} waiting for task".format(worker))
+            log.log(_VERBOSE, f"Worker {worker} waiting for task")
             task = self.comm.recv(source=self.master, tag=MPI.ANY_TAG, status=status)
 
             # Indicator from master that a serial task is being performed
@@ -171,7 +171,7 @@ class MPIPoolFast(MPIPool):
             else:
                 # Process task
                 if task is None:
-                    log.log(_VERBOSE, "Worker {0} told to quit work".format(worker))
+                    log.log(_VERBOSE, f"Worker {worker} told to quit work")
 
                     if master_serial:
                         self.timer.stop("master_serial")
@@ -190,9 +190,7 @@ class MPIPoolFast(MPIPool):
                 func, arg = task
                 log.log(
                     _VERBOSE,
-                    "Worker {0} got task {1} with tag {2}".format(
-                        worker, arg, status.tag
-                    ),
+                    f"Worker {worker} got task {arg} with tag {status.tag}",
                 )
 
                 result = func(arg)
@@ -202,9 +200,7 @@ class MPIPoolFast(MPIPool):
                 self.timer.start("mpi_send")
                 log.log(
                     _VERBOSE,
-                    "Worker {0} sending answer {1} with tag {2}".format(
-                        worker, result, status.tag
-                    ),
+                    f"Worker {worker} sending answer {result} with tag {status.tag}",
                 )
 
                 self.comm.ssend(result, self.master, status.tag)

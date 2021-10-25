@@ -24,8 +24,6 @@ project = "Parallel Bilby"
 copyright = "2020, Greg Ashton, Rory Smith"
 author = "Greg Ashton, Rory Smith"
 
-# The full version, including alpha/beta/rc tags
-release = parallel_bilby.__version__
 
 # -- General configuration ---------------------------------------------------
 
@@ -69,8 +67,6 @@ html_logo = "_static/logo.png"
 html_favicon = "_static/favicon.ico"
 
 html_theme_options = {
-    'logo_only': True,
-    'display_version': True,
-    'vcs_pageview_mode': 'display_gitlab',
-    'style_nav_header_background': '#343131'
+    "logo_only": True,
+    "style_nav_header_background": "#343131",
 }

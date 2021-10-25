@@ -3,6 +3,9 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+|Pypi| |Conda|  |Gitlab|
+
+==========================================
 Parallel Bilby
 ==========================================
 Solving your inference needs at flaming new speeds
@@ -25,3 +28,17 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+
+.. |PyPI| image:: https://img.shields.io/pypi/v/parallel_bilby?label=Parallel%20Bilby&logo=Parallel%20Bilby
+   :alt: PyPI
+   :target: https://pypi.org/project/parallel_bilby/
+
+.. |Conda| image:: https://img.shields.io/conda/vn/conda-forge/parallel-bilby?color=green
+   :alt: Conda
+   :target: https://anaconda.org/conda-forge/parallel-bilby
+
+.. |Gitlab| image:: https://img.shields.io/badge/git.ligo-master-orange?style=flat&logo=gitlab
+   :alt: Gitlab
+   :target: https://git.ligo.org/lscsoft/parallel_bilby
+

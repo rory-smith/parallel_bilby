@@ -44,19 +44,18 @@ def write_version_file(version):
             return version_file.name
         # otherwise error out
         exc.args = (
-            "unable to obtain git version information, and {} doesn't "
-            "exist, cannot continue ({})".format(version_file, str(exc)),
+            f"unable to obtain git version information, and {version_file} doesn't "
+            f"exist, cannot continue ({exc})",
         )
         raise
     else:
-        git_version = "{}: ({}) {}".format(
-            version, "UNCLEAN" if git_diff else "CLEAN", git_log.rstrip()
-        )
-        print("parsed git version info as: {!r}".format(git_version))
+        clean_status = ("UNCLEAN" if git_diff else "CLEAN",)
+        git_version = f"{version}: ({clean_status}) {git_log.rstrip()}"
+        print(f"parsed git version info as: {git_version!r}")
 
     with open(version_file, "w") as f:
         print(git_version, file=f)
-        print("created {}".format(version_file))
+        print(f"created {version_file}")
 
     return version_file.name
 
@@ -69,7 +68,7 @@ def get_long_description():
     return long_description
 
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 version_file = write_version_file(VERSION)
 long_description = get_long_description()
 
