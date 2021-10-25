@@ -29,4 +29,4 @@ fast_injection:
     - pip --cache-dir=.pip37 install .
     - cd examples/fast_injection
     - parallel_bilby_generation fast_injection.ini
-    - mpirun -n 16 parallel_bilby_analysis outdir/data/fast_injection.pickle --label fast_injection --outdir outdir/result --sampling-seed 0
+    - mpirun -n 16 parallel_bilby_analysis outdir/data/fast_injection_data_dump.pickle --label fast_injection --outdir outdir/result --sampling-seed 0
