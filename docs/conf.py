@@ -13,7 +13,6 @@
 
 import os
 import sys
-import parallel_bilby
 
 sys.path.insert(0, os.path.abspath("../parallel_bilby/"))
 sys.path.insert(0, os.path.abspath("../examples/"))
