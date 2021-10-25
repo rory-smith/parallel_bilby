@@ -1,7 +1,9 @@
-# run precommit + pytest 
+# run precommit + pytest
 
 precommits:
   stage: test
+  tags:
+    - cit
   image: bilbydev/bilby_pipe-test-suite-python37
   script:
     - source activate python37
@@ -16,6 +18,8 @@ precommits:
 
 pytest:
   stage: test
+  tags:
+    - cit
   image: bilbydev/bilby_pipe-test-suite-python37
   script:
     - source activate python37

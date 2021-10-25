@@ -2,6 +2,8 @@
 
 docs:
   stage: docs
+  tags:
+    - cit
   image: bilbydev/bilby_pipe-test-suite-python37
   script:
     - source activate python37
@@ -20,6 +22,8 @@ docs:
 
 pages:
   stage: deploy
+  tags:
+    - cit
   dependencies:
     - docs
     - pytest
