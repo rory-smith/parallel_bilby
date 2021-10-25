@@ -36,6 +36,9 @@ install-on-python-3.7:
     - pip --cache-dir=.pip37 install .
 
 
-# Remaining CI in following folder
+# Include the additional CI tasks
 include:
-    - local: "/ci_workflows/*.yml"
+    - local: "/ci_workflows/tests.yml"
+    - local: "/ci_workflows/make_docs.yml"
+    - local: "/ci_workflows/pypi_deploy.yml"
+    - local: "/ci_workflows/end_to_end_analysis.yml"
