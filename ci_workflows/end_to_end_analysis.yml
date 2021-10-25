@@ -10,5 +10,5 @@ gw150914_analysis:
     - mkdir -p .pip37
     - pip --cache-dir=.pip37 install .
     - cd examples/GW150914_IMRPhenomPv2
-    - parallel_bilby_gernerate GW150914.ini
-    - cat outdir/submit/*.sh
+    - parallel_bilby_generation GW150914.ini
+    - mpirun parallel_bilby_analysis outdir/data/GW150914_data_dump.pickle --label GW150914_0 --outdir /Users/avaj0001/Documents/projects/parallel_bilby/examples/GW150914_IMRPhenomPv2/outdir/result --sampling-seed 905169
