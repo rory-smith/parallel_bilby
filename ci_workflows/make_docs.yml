@@ -1,4 +1,4 @@
-
+# make + upload documentation to https://lscsoft.docs.ligo.org/parallel_bilby/
 
 docs:
   stage: docs
@@ -7,7 +7,6 @@ docs:
     - source activate python37
     - mkdir -p .pip37
     - pip --cache-dir=.pip37 install .
-
     # Make the documentation
     - apt-get update
     - apt-get -y install graphviz

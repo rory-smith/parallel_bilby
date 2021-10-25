@@ -1,3 +1,5 @@
+# on a new tagged commit, deploy to Pypi
+
 deploy_release:
   stage: deploy
   image: bilbydev/bilby_pipe-test-suite-python37

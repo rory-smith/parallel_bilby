@@ -2,6 +2,7 @@
 # https://docs.gitlab.com/ee/ci/yaml/#gitlab-ci-yml
 
 stages:
+  - install
   - test
   - docs
   - deploy
@@ -12,6 +13,29 @@ cache:
     - .pip37
     - .pip36
 
-## All  CI workflows in the following folder
+# test install on python 3.6
+install-on-python-3.6:
+  stage: install
+  image: bilbydev/bilby_pipe-test-suite-python36
+  script:
+    - conda install -c conda-forge schwimmbad
+    - mkdir -p .pip36
+    - pip install --upgrade pip
+    - pip --cache-dir=.pip36 install --upgrade bilby
+    - pip --cache-dir=.pip36 install .
+
+# test install on python 3.7
+install-on-python-3.7:
+  stage: install
+  image: bilbydev/bilby_pipe-test-suite-python37
+  script:
+    - conda install -c conda-forge schwimmbad
+    - mkdir -p .pip37
+    - pip install --upgrade pip
+    - pip --cache-dir=.pip37 install --upgrade bilby
+    - pip --cache-dir=.pip37 install .
+
+
+# Remaining CI in following folder
 include:
-  - local: './ci_workflows/*.yml'
+    - local: "/ci_workflows/*.yml"

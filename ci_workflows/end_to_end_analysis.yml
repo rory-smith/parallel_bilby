@@ -1,4 +1,6 @@
-job:
+# run e2e analysis for GW150914
+
+gw150914_analysis:
   tags:
     - openstack
   when: manual
