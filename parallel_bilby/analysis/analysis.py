@@ -8,43 +8,36 @@ import json
 import logging
 import os
 import pickle
-import shutil
 import sys
 import time
 from importlib import import_module
 
 import bilby
 import bilby_pipe
-import dill
 import dynesty
-import dynesty.plotting as dyplot
-import matplotlib
-import matplotlib.pyplot as plt
-import mpi4py
 import nestcheck.data_processing
 import numpy as np
 import pandas as pd
 from bilby.gw import conversion
+from bilby.core.utils import logger
 from dynesty import NestedSampler
 from pandas import DataFrame
 
-from .parser import create_analysis_parser
-from .schwimmbad_fast import MPIPoolFast as MPIPool
-from .utils import (
+
+from .plotting import plot_current_state
+from .read_write import (
+    read_saved_state,
+    write_current_state,
+    write_sample_dump
+)
+
+from ..parser import create_analysis_parser
+from ..schwimmbad_fast import MPIPoolFast as MPIPool
+from ..utils import (
     fill_sample,
     get_cli_args,
     get_initial_points_from_prior,
-    safe_file_dump,
-    stopwatch,
 )
-
-matplotlib.use("Agg")
-
-mpi4py.rc.threads = False
-mpi4py.rc.recv_mprobe = False
-
-
-logger = bilby.core.utils.logger
 
 
 def roq_likelihood_kwargs(args):
@@ -195,140 +188,6 @@ def reorder_loglikelihoods(unsorted_loglikelihoods, unsorted_samples, sorted_sam
             )
         idxs.append(idx[0])
     return unsorted_loglikelihoods[idxs]
-
-
-@stopwatch
-def write_current_state(sampler, resume_file, sampling_time, rotate=False):
-    """Writes a checkpoint file
-
-    Parameters
-    ----------
-    sampler: dynesty.NestedSampler
-        The sampler object itself
-    resume_file: str
-        The name of the resume/checkpoint file to use
-    sampling_time: float
-        The total sampling time in seconds
-    rotate: bool
-        If resume_file already exists, first make a backup file (ending in '.bk').
-    """
-    print("")
-    logger.info("Start checkpoint writing")
-    if rotate and os.path.isfile(resume_file):
-        resume_file_bk = resume_file + ".bk"
-        logger.info(f"Backing up existing checkpoint file to {resume_file_bk}")
-        shutil.copyfile(resume_file, resume_file_bk)
-    sampler.kwargs["sampling_time"] = sampling_time
-    if dill.pickles(sampler):
-        safe_file_dump(sampler, resume_file, dill)
-        logger.info(f"Written checkpoint file {resume_file}")
-    else:
-        logger.warning("Cannot write pickle resume file!")
-
-
-def write_sample_dump(sampler, samples_file, search_parameter_keys):
-    """Writes a checkpoint file
-
-    Parameters
-    ----------
-    sampler: dynesty.NestedSampler
-        The sampler object itself
-    """
-
-    ln_weights = sampler.saved_logwt - sampler.saved_logz[-1]
-    weights = np.exp(ln_weights)
-    samples = bilby.core.result.rejection_sample(np.array(sampler.saved_v), weights)
-    nsamples = len(samples)
-
-    # If we don't have enough samples, don't dump them
-    if nsamples < 100:
-        return
-
-    logger.info(f"Writing {nsamples} current samples to {samples_file}")
-    df = DataFrame(samples, columns=search_parameter_keys)
-    df.to_csv(samples_file, index=False, header=True, sep=" ")
-
-
-@stopwatch
-def plot_current_state(sampler, search_parameter_keys, outdir, label):
-    labels = [label.replace("_", " ") for label in search_parameter_keys]
-    try:
-        filename = f"{outdir}/{label}_checkpoint_trace.png"
-        fig = dyplot.traceplot(sampler.results, labels=labels)[0]
-        fig.tight_layout()
-        fig.savefig(filename)
-    except (
-        AssertionError,
-        RuntimeError,
-        np.linalg.linalg.LinAlgError,
-        ValueError,
-    ) as e:
-        logger.warning(e)
-        logger.warning("Failed to create dynesty state plot at checkpoint")
-    finally:
-        plt.close("all")
-    try:
-        filename = f"{outdir}/{label}_checkpoint_run.png"
-        fig, axs = dyplot.runplot(sampler.results)
-        fig.tight_layout()
-        plt.savefig(filename)
-    except (RuntimeError, np.linalg.linalg.LinAlgError, ValueError) as e:
-        logger.warning(e)
-        logger.warning("Failed to create dynesty run plot at checkpoint")
-    finally:
-        plt.close("all")
-    try:
-        filename = f"{outdir}/{label}_checkpoint_stats.png"
-        fig, axs = plt.subplots(nrows=3, sharex=True)
-        for ax, name in zip(axs, ["boundidx", "nc", "scale"]):
-            ax.plot(getattr(sampler, f"saved_{name}"), color="C0")
-            ax.set_ylabel(name)
-        axs[-1].set_xlabel("iteration")
-        fig.tight_layout()
-        plt.savefig(filename)
-    except (RuntimeError, ValueError) as e:
-        logger.warning(e)
-        logger.warning("Failed to create dynesty stats plot at checkpoint")
-    finally:
-        plt.close("all")
-
-
-@stopwatch
-def read_saved_state(resume_file, continuing=True):
-    """
-    Read a saved state of the sampler to disk.
-
-    The required information to reconstruct the state of the run is read from a
-    pickle file.
-
-    Parameters
-    ----------
-    resume_file: str
-        The path to the resume file to read
-
-    Returns
-    -------
-    sampler: dynesty.NestedSampler
-        If a resume file exists and was successfully read, the nested sampler
-        instance updated with the values stored to disk. If unavailable,
-        returns False
-    sampling_time: int
-        The sampling time from previous runs
-    """
-
-    if os.path.isfile(resume_file):
-        logger.info(f"Reading resume file {resume_file}")
-        with open(resume_file, "rb") as file:
-            sampler = dill.load(file)
-            if sampler.added_live and continuing:
-                sampler._remove_live_points()
-            sampler.nqueue = -1
-            sampler.rstate = np.random
-            sampling_time = sampler.kwargs.pop("sampling_time")
-        return sampler, sampling_time
-    else:
-        logger.info(f"Resume file {resume_file} does not exist.")
-        return False, 0
 
 
 os.environ["OMP_NUM_THREADS"] = "1"
