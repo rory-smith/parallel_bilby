@@ -21,6 +21,7 @@ import pandas as pd
 from bilby.gw import conversion
 from bilby.core.utils import logger
 from dynesty import NestedSampler
+from functools import partial
 from pandas import DataFrame
 
 
@@ -149,11 +150,6 @@ def setup_likelihood(interferometers, waveform_generator, priors, args):
     return likelihood
 
 
-def main():
-    """Do nothing function to play nicely with MPI"""
-    pass
-
-
 def reorder_loglikelihoods(unsorted_loglikelihoods, unsorted_samples, sorted_samples):
     """Reorders the stored log-likelihood after they have been reweighted
 
@@ -190,52 +186,12 @@ def reorder_loglikelihoods(unsorted_loglikelihoods, unsorted_samples, sorted_sam
     return unsorted_loglikelihoods[idxs]
 
 
-os.environ["OMP_NUM_THREADS"] = "1"
-os.environ["MKL_NUM_THREADS"] = "1"
-os.environ["MKL_DYNAMIC"] = "0"
-os.environ["MPI_PER_NODE"] = "16"
-
-analysis_parser = create_analysis_parser(sampler="dynesty")
-cli_args = get_cli_args()
-input_args = analysis_parser.parse_args(args=cli_args)
-
-with open(input_args.data_dump, "rb") as file:
-    data_dump = pickle.load(file)
-
-ifo_list = data_dump["ifo_list"]
-waveform_generator = data_dump["waveform_generator"]
-waveform_generator.start_time = ifo_list[0].time_array[0]
-args = data_dump["args"]
-injection_parameters = data_dump.get("injection_parameters", None)
-
-args.weight_file = data_dump["meta_data"].get("weight_file", None)
-
-outdir = args.outdir
-if input_args.outdir is not None:
-    outdir = input_args.outdir
-label = args.label
-if input_args.label is not None:
-    label = input_args.label
-
-priors = bilby.gw.prior.PriorDict.from_json(data_dump["prior_file"])
-
-logger.setLevel(logging.WARNING)
-likelihood = setup_likelihood(
-    interferometers=ifo_list,
-    waveform_generator=waveform_generator,
-    priors=priors,
-    args=args,
-)
-priors.convert_floats_to_delta_functions()
-logger.setLevel(logging.INFO)
-
-
-def prior_transform_function(u_array):
+def _prior_transform_function(u_array, priors, sampling_keys):
     return priors.rescale(sampling_keys, u_array)
 
 
-def log_likelihood_function(v_array):
-    if input_args.bilby_zero_likelihood_mode:
+def _log_likelihood_function(v_array, zero_likelihood_mode, priors, sampling_keys, likelihood):
+    if zero_likelihood_mode:
         return 0
     parameters = {key: v for key, v in zip(sampling_keys, v_array)}
     if priors.evaluate_constraints(parameters) > 0:
@@ -245,307 +201,359 @@ def log_likelihood_function(v_array):
         return np.nan_to_num(-np.inf)
 
 
-def log_prior_function(v_array):
+def _log_prior_function(v_array, priors, sampling_keys):
     params = {key: t for key, t in zip(sampling_keys, v_array)}
     return priors.ln_prob(params)
 
 
-sampling_keys = []
-for p in priors:
-    if isinstance(priors[p], bilby.core.prior.Constraint):
-        continue
-    elif priors[p].is_fixed:
-        likelihood.parameters[p] = priors[p].peak
-    else:
-        sampling_keys.append(p)
+def main():
+    os.environ["OMP_NUM_THREADS"] = "1"
+    os.environ["MKL_NUM_THREADS"] = "1"
+    os.environ["MKL_DYNAMIC"] = "0"
+    os.environ["MPI_PER_NODE"] = "16"
 
-periodic = []
-reflective = []
-for ii, key in enumerate(sampling_keys):
-    if priors[key].boundary == "periodic":
-        logger.debug(f"Setting periodic boundary for {key}")
-        periodic.append(ii)
-    elif priors[key].boundary == "reflective":
-        logger.debug(f"Setting reflective boundary for {key}")
-        reflective.append(ii)
+    analysis_parser = create_analysis_parser(sampler="dynesty")
+    cli_args = get_cli_args()
+    input_args = analysis_parser.parse_args(args=cli_args)
 
-if input_args.dynesty_sample == "rwalk":
-    logger.debug("Using the bilby-implemented rwalk sample method")
-    dynesty.dynesty._SAMPLING["rwalk"] = bilby.core.sampler.dynesty.sample_rwalk_bilby
-    dynesty.nestedsamplers._SAMPLING[
-        "rwalk"
-    ] = bilby.core.sampler.dynesty.sample_rwalk_bilby
-elif input_args.dynesty_sample == "rwalk_dynesty":
-    logger.debug("Using the dynesty-implemented rwalk sample method")
-    input_args.dynesty_sample = "rwalk"
-else:
-    logger.debug(
-        f"Using the dynesty-implemented {input_args.dynesty_sample} sample method"
+    with open(input_args.data_dump, "rb") as file:
+        data_dump = pickle.load(file)
+
+    ifo_list = data_dump["ifo_list"]
+    waveform_generator = data_dump["waveform_generator"]
+    waveform_generator.start_time = ifo_list[0].time_array[0]
+    args = data_dump["args"]
+    injection_parameters = data_dump.get("injection_parameters", None)
+
+    args.weight_file = data_dump["meta_data"].get("weight_file", None)
+
+    outdir = args.outdir
+    if input_args.outdir is not None:
+        outdir = input_args.outdir
+    label = args.label
+    if input_args.label is not None:
+        label = input_args.label
+
+    priors = bilby.gw.prior.PriorDict.from_json(data_dump["prior_file"])
+
+    logger.setLevel(logging.WARNING)
+    likelihood = setup_likelihood(
+        interferometers=ifo_list,
+        waveform_generator=waveform_generator,
+        priors=priors,
+        args=args,
     )
+    priors.convert_floats_to_delta_functions()
+    logger.setLevel(logging.INFO)
 
-t0 = datetime.datetime.now()
-sampling_time = 0
-with MPIPool(
-    parallel_comms=input_args.fast_mpi,
-    time_mpi=input_args.mpi_timing,
-    timing_interval=input_args.mpi_timing_interval,
-) as pool:
-    if pool.is_master():
-        POOL_SIZE = pool.size
-
-        logger.info(f"Setting sampling seed = {input_args.sampling_seed}")
-        np.random.seed(input_args.sampling_seed)
-
-        logger.info(f"sampling_keys={sampling_keys}")
-        logger.info(f"Periodic keys: {[sampling_keys[ii] for ii in periodic]}")
-        logger.info(f"Reflective keys: {[sampling_keys[ii] for ii in reflective]}")
-        logger.info("Using priors:")
-        for key in priors:
-            logger.info(f"{key}: {priors[key]}")
-
-        filename_trace = f"{outdir}/{label}_checkpoint_trace.png"
-        resume_file = f"{outdir}/{label}_checkpoint_resume.pickle"
-        samples_file = f"{outdir}/{label}_samples.dat"
-
-        dynesty_sample = input_args.dynesty_sample
-        dynesty_bound = input_args.dynesty_bound
-        nlive = input_args.nlive
-        walks = input_args.walks
-        maxmcmc = input_args.maxmcmc
-        nact = input_args.nact
-        facc = input_args.facc
-        min_eff = input_args.min_eff
-        vol_dec = input_args.vol_dec
-        vol_check = input_args.vol_check
-        enlarge = input_args.enlarge
-        nestcheck_flag = input_args.nestcheck
-
-        init_sampler_kwargs = dict(
-            nlive=nlive,
-            sample=dynesty_sample,
-            bound=dynesty_bound,
-            walks=walks,
-            maxmcmc=maxmcmc,
-            nact=nact,
-            facc=facc,
-            first_update=dict(min_eff=min_eff, min_ncall=2 * nlive),
-            vol_dec=vol_dec,
-            vol_check=vol_check,
-            enlarge=enlarge,
-            save_bounds=False,
-        )
-
-        ndim = len(sampling_keys)
-        sampler, sampling_time = read_saved_state(resume_file)
-
-        if sampler is False:
-            logger.info(f"Initializing sampling points with pool size={POOL_SIZE}")
-            live_points = get_initial_points_from_prior(
-                ndim,
-                nlive,
-                prior_transform_function,
-                log_prior_function,
-                log_likelihood_function,
-                pool,
-            )
-            logger.info(
-                f"Initialize NestedSampler with "
-                f"{json.dumps(init_sampler_kwargs, indent=1, sort_keys=True)}"
-            )
-            sampler = NestedSampler(
-                log_likelihood_function,
-                prior_transform_function,
-                ndim,
-                pool=pool,
-                queue_size=POOL_SIZE,
-                print_func=dynesty.results.print_fn_fallback,
-                periodic=periodic,
-                reflective=reflective,
-                live_points=live_points,
-                use_pool=dict(
-                    update_bound=True,
-                    propose_point=True,
-                    prior_transform=True,
-                    loglikelihood=True,
-                ),
-                **init_sampler_kwargs,
-            )
+    sampling_keys = []
+    for p in priors:
+        if isinstance(priors[p], bilby.core.prior.Constraint):
+            continue
+        elif priors[p].is_fixed:
+            likelihood.parameters[p] = priors[p].peak
         else:
-            # Reinstate the pool and map (not saved in the pickle)
-            logger.info(f"Read in resume file with sampling_time = {sampling_time}")
-            sampler.pool = pool
-            sampler.M = pool.map
+            sampling_keys.append(p)
 
-        logger.info(
-            f"Starting sampling for job {label}, with pool size={POOL_SIZE} "
-            f"and check_point_deltaT={input_args.check_point_deltaT}"
+    periodic = []
+    reflective = []
+    for ii, key in enumerate(sampling_keys):
+        if priors[key].boundary == "periodic":
+            logger.debug(f"Setting periodic boundary for {key}")
+            periodic.append(ii)
+        elif priors[key].boundary == "reflective":
+            logger.debug(f"Setting reflective boundary for {key}")
+            reflective.append(ii)
+
+    if input_args.dynesty_sample == "rwalk":
+        logger.debug("Using the bilby-implemented rwalk sample method")
+        dynesty.dynesty._SAMPLING["rwalk"] = bilby.core.sampler.dynesty.sample_rwalk_bilby
+        dynesty.nestedsamplers._SAMPLING[
+            "rwalk"
+        ] = bilby.core.sampler.dynesty.sample_rwalk_bilby
+    elif input_args.dynesty_sample == "rwalk_dynesty":
+        logger.debug("Using the dynesty-implemented rwalk sample method")
+        input_args.dynesty_sample = "rwalk"
+    else:
+        logger.debug(
+            f"Using the dynesty-implemented {input_args.dynesty_sample} sample method"
         )
 
-        sampler_kwargs = dict(
-            n_effective=input_args.n_effective,
-            dlogz=input_args.dlogz,
-            save_bounds=not input_args.do_not_save_bounds_in_resume,
-        )
-        logger.info(f"Run criteria: {json.dumps(sampler_kwargs)}")
+    prior_transform_function = partial(_prior_transform_function,
+                                        priors=priors,
+                                        sampling_keys=sampling_keys)
+    log_likelihood_function = partial(_log_likelihood_function,
+                                        zero_likelihood_mode=input_args.bilby_zero_likelihood_mode,
+                                        priors=priors,
+                                        sampling_keys=sampling_keys,
+                                        likelihood=likelihood)
+    log_prior_function = partial(_log_prior_function,
+                                        priors=priors,
+                                        sampling_keys=sampling_keys)
 
-        run_time = 0
+    t0 = datetime.datetime.now()
+    sampling_time = 0
+    with MPIPool(
+        parallel_comms=input_args.fast_mpi,
+        time_mpi=input_args.mpi_timing,
+        timing_interval=input_args.mpi_timing_interval,
+    ) as pool:
+        if pool.is_master():
+            POOL_SIZE = pool.size
 
-        for it, res in enumerate(sampler.sample(**sampler_kwargs)):
+            logger.info(f"Setting sampling seed = {input_args.sampling_seed}")
+            np.random.seed(input_args.sampling_seed)
 
-            (
-                worst,
-                ustar,
-                vstar,
-                loglstar,
-                logvol,
-                logwt,
-                logz,
-                logzvar,
-                h,
-                nc,
-                worst_it,
-                boundidx,
-                bounditer,
-                eff,
-                delta_logz,
-            ) = res
+            logger.info(f"sampling_keys={sampling_keys}")
+            logger.info(f"Periodic keys: {[sampling_keys[ii] for ii in periodic]}")
+            logger.info(f"Reflective keys: {[sampling_keys[ii] for ii in reflective]}")
+            logger.info("Using priors:")
+            for key in priors:
+                logger.info(f"{key}: {priors[key]}")
 
-            i = it - 1
-            dynesty.results.print_fn_fallback(
-                res, i, sampler.ncall, dlogz=input_args.dlogz
+            filename_trace = f"{outdir}/{label}_checkpoint_trace.png"
+            resume_file = f"{outdir}/{label}_checkpoint_resume.pickle"
+            samples_file = f"{outdir}/{label}_samples.dat"
+
+            dynesty_sample = input_args.dynesty_sample
+            dynesty_bound = input_args.dynesty_bound
+            nlive = input_args.nlive
+            walks = input_args.walks
+            maxmcmc = input_args.maxmcmc
+            nact = input_args.nact
+            facc = input_args.facc
+            min_eff = input_args.min_eff
+            vol_dec = input_args.vol_dec
+            vol_check = input_args.vol_check
+            enlarge = input_args.enlarge
+            nestcheck_flag = input_args.nestcheck
+
+            init_sampler_kwargs = dict(
+                nlive=nlive,
+                sample=dynesty_sample,
+                bound=dynesty_bound,
+                walks=walks,
+                maxmcmc=maxmcmc,
+                nact=nact,
+                facc=facc,
+                first_update=dict(min_eff=min_eff, min_ncall=2 * nlive),
+                vol_dec=vol_dec,
+                vol_check=vol_check,
+                enlarge=enlarge,
+                save_bounds=False,
             )
 
-            if (
-                it == 0 or it % input_args.n_check_point != 0
-            ) and it != input_args.max_its:
-                continue
+            ndim = len(sampling_keys)
+            sampler, sampling_time = read_saved_state(resume_file)
 
-            iteration_time = (datetime.datetime.now() - t0).total_seconds()
-            t0 = datetime.datetime.now()
-
-            sampling_time += iteration_time
-            run_time += iteration_time
-
-            if os.path.isfile(resume_file):
-                last_checkpoint_s = time.time() - os.path.getmtime(resume_file)
-            else:
-                last_checkpoint_s = np.inf
-
-            if (
-                last_checkpoint_s > input_args.check_point_deltaT
-                or it == input_args.max_its
-                or run_time > input_args.max_run_time
-            ):
-                write_current_state(
-                    sampler, resume_file, sampling_time, input_args.rotate_checkpoints
+            if sampler is False:
+                logger.info(f"Initializing sampling points with pool size={POOL_SIZE}")
+                live_points = get_initial_points_from_prior(
+                    ndim,
+                    nlive,
+                    prior_transform_function,
+                    log_prior_function,
+                    log_likelihood_function,
+                    pool,
                 )
-                write_sample_dump(sampler, samples_file, sampling_keys)
-                if input_args.no_plot is False:
-                    plot_current_state(sampler, sampling_keys, outdir, label)
+                logger.info(
+                    f"Initialize NestedSampler with "
+                    f"{json.dumps(init_sampler_kwargs, indent=1, sort_keys=True)}"
+                )
+                sampler = NestedSampler(
+                    log_likelihood_function,
+                    prior_transform_function,
+                    ndim,
+                    pool=pool,
+                    queue_size=POOL_SIZE,
+                    print_func=dynesty.results.print_fn_fallback,
+                    periodic=periodic,
+                    reflective=reflective,
+                    live_points=live_points,
+                    use_pool=dict(
+                        update_bound=True,
+                        propose_point=True,
+                        prior_transform=True,
+                        loglikelihood=True,
+                    ),
+                    **init_sampler_kwargs,
+                )
+            else:
+                # Reinstate the pool and map (not saved in the pickle)
+                logger.info(f"Read in resume file with sampling_time = {sampling_time}")
+                sampler.pool = pool
+                sampler.M = pool.map
 
-                if it == input_args.max_its:
-                    logger.info(f"Max iterations ({it}) reached; stopping sampling.")
-                    sys.exit(0)
+            logger.info(
+                f"Starting sampling for job {label}, with pool size={POOL_SIZE} "
+                f"and check_point_deltaT={input_args.check_point_deltaT}"
+            )
 
-                if run_time > input_args.max_run_time:
-                    logger.info(
-                        f"Max run time ({input_args.max_run_time}) reached; stopping sampling."
+            sampler_kwargs = dict(
+                n_effective=input_args.n_effective,
+                dlogz=input_args.dlogz,
+                save_bounds=not input_args.do_not_save_bounds_in_resume,
+            )
+            logger.info(f"Run criteria: {json.dumps(sampler_kwargs)}")
+
+            run_time = 0
+
+            for it, res in enumerate(sampler.sample(**sampler_kwargs)):
+
+                (
+                    worst,
+                    ustar,
+                    vstar,
+                    loglstar,
+                    logvol,
+                    logwt,
+                    logz,
+                    logzvar,
+                    h,
+                    nc,
+                    worst_it,
+                    boundidx,
+                    bounditer,
+                    eff,
+                    delta_logz,
+                ) = res
+
+                i = it - 1
+                dynesty.results.print_fn_fallback(
+                    res, i, sampler.ncall, dlogz=input_args.dlogz
+                )
+
+                if (
+                    it == 0 or it % input_args.n_check_point != 0
+                ) and it != input_args.max_its:
+                    continue
+
+                iteration_time = (datetime.datetime.now() - t0).total_seconds()
+                t0 = datetime.datetime.now()
+
+                sampling_time += iteration_time
+                run_time += iteration_time
+
+                if os.path.isfile(resume_file):
+                    last_checkpoint_s = time.time() - os.path.getmtime(resume_file)
+                else:
+                    last_checkpoint_s = np.inf
+
+                if (
+                    last_checkpoint_s > input_args.check_point_deltaT
+                    or it == input_args.max_its
+                    or run_time > input_args.max_run_time
+                ):
+                    write_current_state(
+                        sampler, resume_file, sampling_time, input_args.rotate_checkpoints
                     )
-                    sys.exit(0)
+                    write_sample_dump(sampler, samples_file, sampling_keys)
+                    if input_args.no_plot is False:
+                        plot_current_state(sampler, sampling_keys, outdir, label)
 
-        # Adding the final set of live points.
-        for it_final, res in enumerate(sampler.add_live_points()):
-            pass
+                    if it == input_args.max_its:
+                        logger.info(f"Max iterations ({it}) reached; stopping sampling.")
+                        sys.exit(0)
 
-        # Create a final checkpoint and set of plots
-        write_current_state(
-            sampler, resume_file, sampling_time, input_args.rotate_checkpoints
-        )
-        write_sample_dump(sampler, samples_file, sampling_keys)
-        if input_args.no_plot is False:
-            plot_current_state(sampler, sampling_keys, outdir, label)
+                    if run_time > input_args.max_run_time:
+                        logger.info(
+                            f"Max run time ({input_args.max_run_time}) reached; stopping sampling."
+                        )
+                        sys.exit(0)
 
-        sampling_time += (datetime.datetime.now() - t0).total_seconds()
+            # Adding the final set of live points.
+            for it_final, res in enumerate(sampler.add_live_points()):
+                pass
 
-        out = sampler.results
+            # Create a final checkpoint and set of plots
+            write_current_state(
+                sampler, resume_file, sampling_time, input_args.rotate_checkpoints
+            )
+            write_sample_dump(sampler, samples_file, sampling_keys)
+            if input_args.no_plot is False:
+                plot_current_state(sampler, sampling_keys, outdir, label)
 
-        if nestcheck_flag is True:
-            logger.info("Creating nestcheck files")
-            ns_run = nestcheck.data_processing.process_dynesty_run(out)
-            nestcheck_path = os.path.join(outdir, "Nestcheck")
-            bilby.core.utils.check_directory_exists_and_if_not_mkdir(nestcheck_path)
-            nestcheck_result = f"{nestcheck_path}/{label}_nestcheck.pickle"
+            sampling_time += (datetime.datetime.now() - t0).total_seconds()
 
-            with open(nestcheck_result, "wb") as file_nest:
-                pickle.dump(ns_run, file_nest)
+            out = sampler.results
 
-        weights = np.exp(out["logwt"] - out["logz"][-1])
-        nested_samples = DataFrame(out.samples, columns=sampling_keys)
-        nested_samples["weights"] = weights
-        nested_samples["log_likelihood"] = out.logl
+            if nestcheck_flag is True:
+                logger.info("Creating nestcheck files")
+                ns_run = nestcheck.data_processing.process_dynesty_run(out)
+                nestcheck_path = os.path.join(outdir, "Nestcheck")
+                bilby.core.utils.check_directory_exists_and_if_not_mkdir(nestcheck_path)
+                nestcheck_result = f"{nestcheck_path}/{label}_nestcheck.pickle"
 
-        result = bilby.core.result.Result(
-            label=label, outdir=outdir, search_parameter_keys=sampling_keys
-        )
-        result.priors = priors
-        result.samples = dynesty.utils.resample_equal(out.samples, weights)
-        result.nested_samples = nested_samples
-        result.meta_data = data_dump["meta_data"]
-        result.meta_data["command_line_args"] = vars(input_args)
-        result.meta_data["command_line_args"]["sampler"] = "parallel_bilby"
-        result.meta_data["config_file"] = vars(args)
-        result.meta_data["data_dump"] = input_args.data_dump
-        result.meta_data["likelihood"] = likelihood.meta_data
-        result.meta_data["sampler_kwargs"] = init_sampler_kwargs
-        result.meta_data["run_sampler_kwargs"] = sampler_kwargs
-        result.meta_data["injection_parameters"] = injection_parameters
-        result.injection_parameters = injection_parameters
+                with open(nestcheck_result, "wb") as file_nest:
+                    pickle.dump(ns_run, file_nest)
 
-        result.log_likelihood_evaluations = reorder_loglikelihoods(
-            unsorted_loglikelihoods=out.logl,
-            unsorted_samples=out.samples,
-            sorted_samples=result.samples,
-        )
+            weights = np.exp(out["logwt"] - out["logz"][-1])
+            nested_samples = DataFrame(out.samples, columns=sampling_keys)
+            nested_samples["weights"] = weights
+            nested_samples["log_likelihood"] = out.logl
 
-        result.log_evidence = out.logz[-1] + likelihood.noise_log_likelihood()
-        result.log_evidence_err = out.logzerr[-1]
-        result.log_noise_evidence = likelihood.noise_log_likelihood()
-        result.log_bayes_factor = result.log_evidence - result.log_noise_evidence
-        result.sampling_time = sampling_time
+            result = bilby.core.result.Result(
+                label=label, outdir=outdir, search_parameter_keys=sampling_keys
+            )
+            result.priors = priors
+            result.samples = dynesty.utils.resample_equal(out.samples, weights)
+            result.nested_samples = nested_samples
+            result.meta_data = data_dump["meta_data"]
+            result.meta_data["command_line_args"] = vars(input_args)
+            result.meta_data["command_line_args"]["sampler"] = "parallel_bilby"
+            result.meta_data["config_file"] = vars(args)
+            result.meta_data["data_dump"] = input_args.data_dump
+            result.meta_data["likelihood"] = likelihood.meta_data
+            result.meta_data["sampler_kwargs"] = init_sampler_kwargs
+            result.meta_data["run_sampler_kwargs"] = sampler_kwargs
+            result.meta_data["injection_parameters"] = injection_parameters
+            result.injection_parameters = injection_parameters
 
-        result.samples_to_posterior()
+            result.log_likelihood_evaluations = reorder_loglikelihoods(
+                unsorted_loglikelihoods=out.logl,
+                unsorted_samples=out.samples,
+                sorted_samples=result.samples,
+            )
 
-        posterior = result.posterior
+            result.log_evidence = out.logz[-1] + likelihood.noise_log_likelihood()
+            result.log_evidence_err = out.logzerr[-1]
+            result.log_noise_evidence = likelihood.noise_log_likelihood()
+            result.log_bayes_factor = result.log_evidence - result.log_noise_evidence
+            result.sampling_time = sampling_time
 
-        nsamples = len(posterior)
-        logger.info(f"Using {nsamples} samples")
+            result.samples_to_posterior()
 
-        posterior = conversion.fill_from_fixed_priors(posterior, priors)
+            posterior = result.posterior
 
-        logger.info(
-            "Generating posterior from marginalized parameters for"
-            f" nsamples={len(posterior)}, POOL={pool.size}"
-        )
-        fill_args = [(ii, row, likelihood) for ii, row in posterior.iterrows()]
-        samples = pool.map(fill_sample, fill_args)
-        result.posterior = pd.DataFrame(samples)
+            nsamples = len(posterior)
+            logger.info(f"Using {nsamples} samples")
 
-        logger.debug("Updating prior to the actual prior")
-        for par, name in zip(
-            ["distance", "phase", "time"],
-            ["luminosity_distance", "phase", "geocent_time"],
-        ):
-            if getattr(likelihood, f"{par}_marginalization", False):
-                priors[name] = likelihood.priors[name]
-        result.priors = priors
+            posterior = conversion.fill_from_fixed_priors(posterior, priors)
 
-        if args.convert_to_flat_in_component_mass:
-            try:
-                result = bilby.gw.prior.convert_to_flat_in_component_mass_prior(result)
-            except Exception as e:
-                logger.warning(f"Unable to convert to the LALInference prior: {e}")
+            logger.info(
+                "Generating posterior from marginalized parameters for"
+                f" nsamples={len(posterior)}, POOL={pool.size}"
+            )
+            fill_args = [(ii, row, likelihood) for ii, row in posterior.iterrows()]
+            samples = pool.map(fill_sample, fill_args)
+            result.posterior = pd.DataFrame(samples)
 
-        logger.info(f"Saving result to {outdir}/{label}_result.json")
-        result.save_to_file(extension="json")
-        print(f"Sampling time = {datetime.timedelta(seconds=result.sampling_time)}s")
-        print(result)
+            logger.debug("Updating prior to the actual prior")
+            for par, name in zip(
+                ["distance", "phase", "time"],
+                ["luminosity_distance", "phase", "geocent_time"],
+            ):
+                if getattr(likelihood, f"{par}_marginalization", False):
+                    priors[name] = likelihood.priors[name]
+            result.priors = priors
+
+            if args.convert_to_flat_in_component_mass:
+                try:
+                    result = bilby.gw.prior.convert_to_flat_in_component_mass_prior(result)
+                except Exception as e:
+                    logger.warning(f"Unable to convert to the LALInference prior: {e}")
+
+            logger.info(f"Saving result to {outdir}/{label}_result.json")
+            result.save_to_file(extension="json")
+            print(f"Sampling time = {datetime.timedelta(seconds=result.sampling_time)}s")
+            print(result)
