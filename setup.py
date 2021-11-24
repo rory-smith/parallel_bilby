@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 # check that python version is 3.5 or above
 python_version = sys.version_info
@@ -81,8 +81,7 @@ setup(
     author_email="gregory.ashton@ligo.org",
     license="MIT",
     version=VERSION,
-    packages=["parallel_bilby"],
-    package_dir={"parallel_bilby": "parallel_bilby"},
+    packages=find_packages(exclude=["*tests.*", "*tests"]),
     package_data={"parallel_bilby": [version_file]},
     install_requires=[
         "future",
