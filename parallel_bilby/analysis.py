@@ -479,7 +479,6 @@ with MPIPool(
             vol_check=vol_check,
             enlarge=enlarge,
             save_bounds=False,
-            rstate=np.random.RandomState(seed=input_args.sampling_seed),
         )
 
         ndim = len(sampling_keys)
@@ -510,6 +509,7 @@ with MPIPool(
                 periodic=periodic,
                 reflective=reflective,
                 live_points=live_points,
+                rstate=np.random.RandomState(seed=input_args.sampling_seed),
                 use_pool=dict(
                     update_bound=True,
                     propose_point=True,
