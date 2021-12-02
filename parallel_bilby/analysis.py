@@ -325,7 +325,6 @@ def read_saved_state(resume_file, continuing=True):
             if sampler.added_live and continuing:
                 sampler._remove_live_points()
             sampler.nqueue = -1
-            sampler.rstate = np.random
             sampling_time = sampler.kwargs.pop("sampling_time")
         return sampler, sampling_time
     else:
@@ -480,6 +479,7 @@ with MPIPool(
             vol_check=vol_check,
             enlarge=enlarge,
             save_bounds=False,
+            rstate=np.random.RandomState(seed=input_args.sampling_seed),
         )
 
         ndim = len(sampling_keys)
