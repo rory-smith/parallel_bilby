@@ -437,8 +437,10 @@ with MPIPool(
     if pool.is_master():
         POOL_SIZE = pool.size
 
-        logger.info("Setting sampling seed = {}".format(input_args.sampling_seed))
-        np.random.seed(input_args.sampling_seed)
+        rstate = np.random.RandomState(input_args.sampling_seed)
+        logger.info(
+            "Setting rstate with seed {} = {}".format(input_args.sampling_seed, rstate)
+        )
 
         logger.info(f"sampling_keys={sampling_keys}")
         logger.info("Periodic keys: {}".format([sampling_keys[ii] for ii in periodic]))
@@ -509,7 +511,7 @@ with MPIPool(
                 periodic=periodic,
                 reflective=reflective,
                 live_points=live_points,
-                rstate=np.random.RandomState(seed=input_args.sampling_seed),
+                rstate=rstate,
                 use_pool=dict(
                     update_bound=True,
                     propose_point=True,
