@@ -10,6 +10,7 @@ import os
 import pickle
 import sys
 import time
+from functools import partial
 from importlib import import_module
 
 import bilby
@@ -18,27 +19,16 @@ import dynesty
 import nestcheck.data_processing
 import numpy as np
 import pandas as pd
-from bilby.gw import conversion
 from bilby.core.utils import logger
+from bilby.gw import conversion
 from dynesty import NestedSampler
-from functools import partial
 from pandas import DataFrame
-
-
-from .plotting import plot_current_state
-from .read_write import (
-    read_saved_state,
-    write_current_state,
-    write_sample_dump
-)
 
 from ..parser import create_analysis_parser
 from ..schwimmbad_fast import MPIPoolFast as MPIPool
-from ..utils import (
-    fill_sample,
-    get_cli_args,
-    get_initial_points_from_prior,
-)
+from ..utils import fill_sample, get_cli_args, get_initial_points_from_prior
+from .plotting import plot_current_state
+from .read_write import read_saved_state, write_current_state, write_sample_dump
 
 
 def roq_likelihood_kwargs(args):
@@ -190,7 +180,9 @@ def _prior_transform_function(u_array, priors, sampling_keys):
     return priors.rescale(sampling_keys, u_array)
 
 
-def _log_likelihood_function(v_array, zero_likelihood_mode, priors, sampling_keys, likelihood):
+def _log_likelihood_function(
+    v_array, zero_likelihood_mode, priors, sampling_keys, likelihood
+):
     if zero_likelihood_mode:
         return 0
     parameters = {key: v for key, v in zip(sampling_keys, v_array)}
@@ -230,6 +222,7 @@ def main():
     outdir = args.outdir
     if input_args.outdir is not None:
         outdir = input_args.outdir
+        os.makedirs(outdir, exist_ok=True)
     label = args.label
     if input_args.label is not None:
         label = input_args.label
@@ -267,7 +260,9 @@ def main():
 
     if input_args.dynesty_sample == "rwalk":
         logger.debug("Using the bilby-implemented rwalk sample method")
-        dynesty.dynesty._SAMPLING["rwalk"] = bilby.core.sampler.dynesty.sample_rwalk_bilby
+        dynesty.dynesty._SAMPLING[
+            "rwalk"
+        ] = bilby.core.sampler.dynesty.sample_rwalk_bilby
         dynesty.nestedsamplers._SAMPLING[
             "rwalk"
         ] = bilby.core.sampler.dynesty.sample_rwalk_bilby
@@ -279,17 +274,19 @@ def main():
             f"Using the dynesty-implemented {input_args.dynesty_sample} sample method"
         )
 
-    prior_transform_function = partial(_prior_transform_function,
-                                        priors=priors,
-                                        sampling_keys=sampling_keys)
-    log_likelihood_function = partial(_log_likelihood_function,
-                                        zero_likelihood_mode=input_args.bilby_zero_likelihood_mode,
-                                        priors=priors,
-                                        sampling_keys=sampling_keys,
-                                        likelihood=likelihood)
-    log_prior_function = partial(_log_prior_function,
-                                        priors=priors,
-                                        sampling_keys=sampling_keys)
+    prior_transform_function = partial(
+        _prior_transform_function, priors=priors, sampling_keys=sampling_keys
+    )
+    log_likelihood_function = partial(
+        _log_likelihood_function,
+        zero_likelihood_mode=input_args.bilby_zero_likelihood_mode,
+        priors=priors,
+        sampling_keys=sampling_keys,
+        likelihood=likelihood,
+    )
+    log_prior_function = partial(
+        _log_prior_function, priors=priors, sampling_keys=sampling_keys
+    )
 
     t0 = datetime.datetime.now()
     sampling_time = 0
@@ -301,8 +298,9 @@ def main():
         if pool.is_master():
             POOL_SIZE = pool.size
 
-            logger.info(f"Setting sampling seed = {input_args.sampling_seed}")
-            np.random.seed(input_args.sampling_seed)
+            sampling_seed = input_args.sampling_seed
+            rstate = np.random.RandomState(seed=sampling_seed)
+            logger.info(f"Setting random state = {rstate} (seed={sampling_seed})")
 
             logger.info(f"sampling_keys={sampling_keys}")
             logger.info(f"Periodic keys: {[sampling_keys[ii] for ii in periodic]}")
@@ -355,6 +353,7 @@ def main():
                     log_prior_function,
                     log_likelihood_function,
                     pool,
+                    rstate,
                 )
                 logger.info(
                     f"Initialize NestedSampler with "
@@ -370,6 +369,7 @@ def main():
                     periodic=periodic,
                     reflective=reflective,
                     live_points=live_points,
+                    rstate=rstate,
                     use_pool=dict(
                         update_bound=True,
                         propose_point=True,
@@ -445,14 +445,19 @@ def main():
                     or run_time > input_args.max_run_time
                 ):
                     write_current_state(
-                        sampler, resume_file, sampling_time, input_args.rotate_checkpoints
+                        sampler,
+                        resume_file,
+                        sampling_time,
+                        input_args.rotate_checkpoints,
                     )
                     write_sample_dump(sampler, samples_file, sampling_keys)
                     if input_args.no_plot is False:
                         plot_current_state(sampler, sampling_keys, outdir, label)
 
                     if it == input_args.max_its:
-                        logger.info(f"Max iterations ({it}) reached; stopping sampling.")
+                        logger.info(
+                            f"Max iterations ({it}) reached; stopping sampling."
+                        )
                         sys.exit(0)
 
                     if run_time > input_args.max_run_time:
@@ -549,11 +554,15 @@ def main():
 
             if args.convert_to_flat_in_component_mass:
                 try:
-                    result = bilby.gw.prior.convert_to_flat_in_component_mass_prior(result)
+                    result = bilby.gw.prior.convert_to_flat_in_component_mass_prior(
+                        result
+                    )
                 except Exception as e:
                     logger.warning(f"Unable to convert to the LALInference prior: {e}")
 
             logger.info(f"Saving result to {outdir}/{label}_result.json")
             result.save_to_file(extension="json")
-            print(f"Sampling time = {datetime.timedelta(seconds=result.sampling_time)}s")
+            print(
+                f"Sampling time = {datetime.timedelta(seconds=result.sampling_time)}s"
+            )
             print(result)
