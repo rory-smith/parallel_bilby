@@ -6,3 +6,4 @@ mpi4py.rc.recv_mprobe = False
 del mpi4py
 
 from .analysis import main
+from .analysis import analysis_runner

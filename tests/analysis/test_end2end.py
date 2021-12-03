@@ -1,50 +1,31 @@
 import os
 import pickle
 import unittest
-
+from mpi4py import MPI
 import mock
 
-DATA_DUMP = "tests/test_files/out_GW150914/data/GW150914_data_dump.pickle"
-GW150914_ROOT = "examples/GW150914_IMRPhenomPv2"
-GW150914_INI = f"{GW150914_ROOT}/GW150914.ini"
-GW150914_PRIOR = f"{GW150914_ROOT}/GW150914.prior"
-GW150914_PSD = (
-    "{H1=examples/GW150914_IMRPhenomPv2/raw_data/h1_psd.txt, "
-    "L1=examples/GW150914_IMRPhenomPv2/raw_data/l1_psd.txt}"
-)
-GW150914_TABLE = "tests/test_files/out_GW150914/.distance_marginalization_lookup.npz"
+from parallel_bilby import analysis, generation
 
+def mpi_master(func):
+    def wrapper(*args, **kwargs):
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            return func(*args, **kwargs)
+    return wrapper
 
 class AnalysisTest(unittest.TestCase):
+    @mpi_master
     def setUp(self):
-        self.outdir = "tests/test_files/out_GW150914/"
-        os.makedirs(self.outdir, exist_ok=True)
-        self.data_dump = self.get_datadump()
+        self.outdir = "tests/test_files/out_fast/"
+        generation.generate_runner(['tests/test_files/fast_test.ini', '--outdir', self.outdir])
 
-    def get_datadump(self):
-        with open(DATA_DUMP, "rb") as file:
-            data_dump = pickle.load(file)
-        data_dump["args"].outdir = self.outdir
-        data_dump["args"].distance_marginalisation = True
-        data_dump["args"].distance_marginalization_lookup_table = GW150914_TABLE
-        data_dump["args"].reference_frame = "sky"
-        data_dump["args"].time_reference = "geocent"
-        return data_dump
-
-    @mock.patch("pickle.load")
-    @mock.patch("parallel_bilby.utils.get_cli_args")
-    def test_analysis(self, get_args, pickle_load):
-        get_args.return_value = [DATA_DUMP]
-        pickle_load.return_value = self.data_dump
-
-        with self.assertRaises(ValueError):
-            # ValueError: Tried to create an MPI pool,
-            # but there was only one MPI process available.
-            # Need at least two.
-            from parallel_bilby import analysis
-
-            analysis.main()
-
-
-if __name__ == "__main__":
-    unittest.main()
+    def test_analysis(self):
+        analysis.analysis_runner([
+            'tests/test_files/out_fast/data/fast_injection_data_dump.pickle',
+            '--nlive', '5',
+            '--dlogz', '10.0',
+            '--nact', '1',
+            '--n-check-point', '10000',
+            '--label', 'fast_injection_0',
+            '--outdir', 'tests/test_files/out_fast/result',
+            '--sampling-seed', '0',
+        ])
