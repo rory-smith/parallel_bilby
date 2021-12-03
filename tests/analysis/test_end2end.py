@@ -2,7 +2,7 @@ import os
 import pickle
 import unittest
 from mpi4py import MPI
-import mock
+import shutil
 
 from parallel_bilby import analysis, generation
 
@@ -17,6 +17,10 @@ class AnalysisTest(unittest.TestCase):
     def setUp(self):
         self.outdir = "tests/test_files/out_fast/"
         generation.generate_runner(['tests/test_files/fast_test.ini', '--outdir', self.outdir])
+
+    @mpi_master
+    def tearDown(self):
+        shutil.rmtree(self.outdir)
 
     def test_analysis(self):
         analysis.analysis_runner([
