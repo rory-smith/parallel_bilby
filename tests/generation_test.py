@@ -3,7 +3,6 @@ import pickle
 import shutil
 import unittest
 
-import mock
 from parallel_bilby import generation
 
 GW150914_ROOT = "examples/GW150914_IMRPhenomPv2"
@@ -35,18 +34,15 @@ class GenerationTest(unittest.TestCase):
         if os.path.exists(self.outdir):
             shutil.rmtree(self.outdir)
 
-    @mock.patch("parallel_bilby.generation.get_cli_args")
-    @mock.patch("parallel_bilby.slurm.get_cli_args")
-    def test_generation(self, slurm_cli, generation_cli):
-        generation_cli.return_value = [
+    def test_generation(self):
+        generation_cli = [
             self.ini,
             "--outdir",
             self.outdir,
             "--label",
             "GW150914",
         ]
-        slurm_cli.return_value = [self.ini]
-        generation.main()
+        generation.generate_runner(generation_cli)
         files = [
             "GW150914_config_complete.ini",
             "data/GW150914_data_dump.pickle",
