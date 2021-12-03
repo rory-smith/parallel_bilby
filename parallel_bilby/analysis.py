@@ -495,6 +495,7 @@ with MPIPool(
                 log_prior_function,
                 log_likelihood_function,
                 pool,
+                rstate=rstate,
             )
             logger.info(
                 "Initialize NestedSampler with {}".format(

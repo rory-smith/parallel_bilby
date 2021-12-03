@@ -60,10 +60,11 @@ def get_initial_point_from_prior(args):
         log_likelihood_function,
         ndim,
         calculate_likelihood,
+        rstate,
     ) = args
     bad_values = [np.inf, np.nan_to_num(np.inf), np.nan]
     while True:
-        unit = np.random.rand(ndim)
+        unit = rstate.rand(ndim)
         theta = prior_transform_function(unit)
         if abs(log_prior_function(theta)) not in bad_values:
             if calculate_likelihood:
@@ -81,6 +82,7 @@ def get_initial_points_from_prior(
     log_prior_function,
     log_likelihood_function,
     pool,
+    rstate,
     calculate_likelihood=True,
 ):
     args_list = [
@@ -90,8 +92,9 @@ def get_initial_points_from_prior(
             log_likelihood_function,
             ndim,
             calculate_likelihood,
+            rstate,
         )
-        for i in range(npoints)
+        for _ in range(npoints)
     ]
     initial_points = pool.map(get_initial_point_from_prior, args_list)
     u_list = [point[0] for point in initial_points]
