@@ -4,6 +4,7 @@ import unittest
 from mpi4py import MPI
 import shutil
 import bilby
+from pytest import approx
 
 from parallel_bilby import analysis, generation
 
@@ -48,5 +49,7 @@ class AnalysisTest(unittest.TestCase):
     def check_result(self):
         # Read file and check result
         b = bilby.gw.result.CBCResult.from_json(os.path.join(self.outdir, 'result/fast_injection_0_result.json'))
-        result = b.log_evidence
-        print(result)
+
+        # Does not currently work because pbilby gives different results each time
+        # Adjust this once the seed problem has been fixed
+        assert b.log_evidence == approx(-5.859617796042926, abs=1e-12)
