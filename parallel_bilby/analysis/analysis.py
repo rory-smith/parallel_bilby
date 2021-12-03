@@ -3,18 +3,13 @@
 Module to run parallel bilby using MPI
 """
 import datetime
-import inspect
 import json
-import logging
 import os
 import pickle
 import sys
 import time
-from functools import partial
-from importlib import import_module
 
 import bilby
-import bilby_pipe
 import dynesty
 import nestcheck.data_processing
 import numpy as np
@@ -29,115 +24,7 @@ from ..schwimmbad_fast import MPIPoolFast as MPIPool
 from ..utils import fill_sample, get_cli_args, get_initial_points_from_prior
 from .plotting import plot_current_state
 from .read_write import read_saved_state, write_current_state, write_sample_dump
-
-
-def roq_likelihood_kwargs(args):
-    """Return the kwargs required for the ROQ setup
-
-    Parameters
-    ----------
-    args: Namespace
-        The parser arguments
-
-    Returns
-    -------
-    kwargs: dict
-        A dictionary of the required kwargs
-
-    """
-    if hasattr(args, "likelihood_roq_params"):
-        params = args.likelihood_roq_params
-    else:
-        params = np.genfromtxt(args.roq_folder + "/params.dat", names=True)
-
-    if hasattr(args, "likelihood_roq_weights"):
-        weights = args.likelihood_roq_weights
-    else:
-        weights = args.weight_file
-        logger.info(f"Loading ROQ weights from {weights}")
-
-    return dict(
-        weights=weights, roq_params=params, roq_scale_factor=args.roq_scale_factor
-    )
-
-
-def setup_likelihood(interferometers, waveform_generator, priors, args):
-    """Takes the kwargs and sets up and returns  either an ROQ GW or GW likelihood.
-
-    Parameters
-    ----------
-    interferometers: bilby.gw.detectors.InterferometerList
-        The pre-loaded bilby IFO
-    waveform_generator: bilby.gw.waveform_generator.WaveformGenerator
-        The waveform generation
-    priors: dict
-        The priors, used for setting up marginalization
-    args: Namespace
-        The parser arguments
-
-
-    Returns
-    -------
-    likelihood: bilby.gw.likelihood.GravitationalWaveTransient
-        The likelihood (either GravitationalWaveTransient or ROQGravitationalWaveTransient)
-
-    """
-
-    likelihood_kwargs = dict(
-        interferometers=interferometers,
-        waveform_generator=waveform_generator,
-        priors=priors,
-        phase_marginalization=args.phase_marginalization,
-        distance_marginalization=args.distance_marginalization,
-        distance_marginalization_lookup_table=args.distance_marginalization_lookup_table,
-        time_marginalization=args.time_marginalization,
-        reference_frame=args.reference_frame,
-        time_reference=args.time_reference,
-    )
-
-    if args.likelihood_type == "GravitationalWaveTransient":
-        Likelihood = bilby.gw.likelihood.GravitationalWaveTransient
-        likelihood_kwargs.update(jitter_time=args.jitter_time)
-
-    elif args.likelihood_type == "ROQGravitationalWaveTransient":
-        Likelihood = bilby.gw.likelihood.ROQGravitationalWaveTransient
-
-        if args.time_marginalization:
-            logger.warning(
-                "Time marginalization not implemented for "
-                "ROQGravitationalWaveTransient: option ignored"
-            )
-
-        likelihood_kwargs.pop("time_marginalization", None)
-        likelihood_kwargs.pop("jitter_time", None)
-        likelihood_kwargs.update(roq_likelihood_kwargs(args))
-    elif "." in args.likelihood_type:
-        split_path = args.likelihood_type.split(".")
-        module = ".".join(split_path[:-1])
-        likelihood_class = split_path[-1]
-        Likelihood = getattr(import_module(module), likelihood_class)
-        likelihood_kwargs.update(
-            bilby_pipe.utils.convert_string_to_dict(args.extra_likelihood_kwargs)
-        )
-        if "roq" in args.likelihood_type.lower():
-            likelihood_kwargs.pop("time_marginalization", None)
-            likelihood_kwargs.pop("jitter_time", None)
-            likelihood_kwargs.update(args.roq_likelihood_kwargs)
-    else:
-        raise ValueError("Unknown Likelihood class {}")
-
-    likelihood_kwargs = {
-        key: likelihood_kwargs[key]
-        for key in likelihood_kwargs
-        if key in inspect.getfullargspec(Likelihood.__init__).args
-    }
-
-    logger.info(
-        f"Initialise likelihood {Likelihood} with kwargs: \n{likelihood_kwargs}"
-    )
-
-    likelihood = Likelihood(**likelihood_kwargs)
-    return likelihood
+from .run import AnalysisRun
 
 
 def reorder_loglikelihoods(unsorted_loglikelihoods, unsorted_samples, sorted_samples):
@@ -176,111 +63,25 @@ def reorder_loglikelihoods(unsorted_loglikelihoods, unsorted_samples, sorted_sam
     return unsorted_loglikelihoods[idxs]
 
 
-def _prior_transform_function(u_array, priors, sampling_keys):
-    return priors.rescale(sampling_keys, u_array)
-
-
-def _log_likelihood_function(
-    v_array, zero_likelihood_mode, priors, sampling_keys, likelihood
-):
-    if zero_likelihood_mode:
-        return 0
-    parameters = {key: v for key, v in zip(sampling_keys, v_array)}
-    if priors.evaluate_constraints(parameters) > 0:
-        likelihood.parameters.update(parameters)
-        return likelihood.log_likelihood() - likelihood.noise_log_likelihood()
-    else:
-        return np.nan_to_num(-np.inf)
-
-
-def _log_prior_function(v_array, priors, sampling_keys):
-    params = {key: t for key, t in zip(sampling_keys, v_array)}
-    return priors.ln_prob(params)
-
-
 def analysis_runner(cli_args):
+
+    # Parse command line arguments
     analysis_parser = create_analysis_parser(sampler="dynesty")
-    input_args = analysis_parser.parse_args(args=cli_args)
+    input_args      = analysis_parser.parse_args(args=cli_args)
 
-    with open(input_args.data_dump, "rb") as file:
-        data_dump = pickle.load(file)
+    run = AnalysisRun(input_args)
 
-    ifo_list = data_dump["ifo_list"]
-    waveform_generator = data_dump["waveform_generator"]
-    waveform_generator.start_time = ifo_list[0].time_array[0]
-    args = data_dump["args"]
-    injection_parameters = data_dump.get("injection_parameters", None)
-
-    args.weight_file = data_dump["meta_data"].get("weight_file", None)
-
-    outdir = args.outdir
-    if input_args.outdir is not None:
-        outdir = input_args.outdir
-        os.makedirs(outdir, exist_ok=True)
-    label = args.label
-    if input_args.label is not None:
-        label = input_args.label
-
-    priors = bilby.gw.prior.PriorDict.from_json(data_dump["prior_file"])
-
-    logger.setLevel(logging.WARNING)
-    likelihood = setup_likelihood(
-        interferometers=ifo_list,
-        waveform_generator=waveform_generator,
-        priors=priors,
-        args=args,
-    )
-    priors.convert_floats_to_delta_functions()
-    logger.setLevel(logging.INFO)
-
-    sampling_keys = []
-    for p in priors:
-        if isinstance(priors[p], bilby.core.prior.Constraint):
-            continue
-        elif priors[p].is_fixed:
-            likelihood.parameters[p] = priors[p].peak
-        else:
-            sampling_keys.append(p)
-
-    periodic = []
-    reflective = []
-    for ii, key in enumerate(sampling_keys):
-        if priors[key].boundary == "periodic":
-            logger.debug(f"Setting periodic boundary for {key}")
-            periodic.append(ii)
-        elif priors[key].boundary == "reflective":
-            logger.debug(f"Setting reflective boundary for {key}")
-            reflective.append(ii)
-
-    if input_args.dynesty_sample == "rwalk":
-        logger.debug("Using the bilby-implemented rwalk sample method")
-        dynesty.dynesty._SAMPLING[
-            "rwalk"
-        ] = bilby.core.sampler.dynesty.sample_rwalk_bilby
-        dynesty.nestedsamplers._SAMPLING[
-            "rwalk"
-        ] = bilby.core.sampler.dynesty.sample_rwalk_bilby
-    elif input_args.dynesty_sample == "rwalk_dynesty":
-        logger.debug("Using the dynesty-implemented rwalk sample method")
-        input_args.dynesty_sample = "rwalk"
-    else:
-        logger.debug(
-            f"Using the dynesty-implemented {input_args.dynesty_sample} sample method"
-        )
-
-    prior_transform_function = partial(
-        _prior_transform_function, priors=priors, sampling_keys=sampling_keys
-    )
-    log_likelihood_function = partial(
-        _log_likelihood_function,
-        zero_likelihood_mode=input_args.bilby_zero_likelihood_mode,
-        priors=priors,
-        sampling_keys=sampling_keys,
-        likelihood=likelihood,
-    )
-    log_prior_function = partial(
-        _log_prior_function, priors=priors, sampling_keys=sampling_keys
-    )
+    outdir               = run.outdir
+    label                = run.label
+    data_dump            = run.data_dump
+    priors               = run.priors
+    sampling_keys        = run.sampling_keys
+    likelihood           = run.likelihood
+    periodic             = run.periodic
+    reflective           = run.reflective
+    args                 = run.args
+    injection_parameters = run.injection_parameters
+    init_sampler_kwargs  = run.init_sampler_kwargs
 
     t0 = datetime.datetime.now()
     sampling_time = 0
@@ -306,34 +107,6 @@ def analysis_runner(cli_args):
             resume_file = f"{outdir}/{label}_checkpoint_resume.pickle"
             samples_file = f"{outdir}/{label}_samples.dat"
 
-            dynesty_sample = input_args.dynesty_sample
-            dynesty_bound = input_args.dynesty_bound
-            nlive = input_args.nlive
-            walks = input_args.walks
-            maxmcmc = input_args.maxmcmc
-            nact = input_args.nact
-            facc = input_args.facc
-            min_eff = input_args.min_eff
-            vol_dec = input_args.vol_dec
-            vol_check = input_args.vol_check
-            enlarge = input_args.enlarge
-            nestcheck_flag = input_args.nestcheck
-
-            init_sampler_kwargs = dict(
-                nlive=nlive,
-                sample=dynesty_sample,
-                bound=dynesty_bound,
-                walks=walks,
-                maxmcmc=maxmcmc,
-                nact=nact,
-                facc=facc,
-                first_update=dict(min_eff=min_eff, min_ncall=2 * nlive),
-                vol_dec=vol_dec,
-                vol_check=vol_check,
-                enlarge=enlarge,
-                save_bounds=False,
-            )
-
             ndim = len(sampling_keys)
             sampler, sampling_time = read_saved_state(resume_file)
 
@@ -341,10 +114,10 @@ def analysis_runner(cli_args):
                 logger.info(f"Initializing sampling points with pool size={POOL_SIZE}")
                 live_points = get_initial_points_from_prior(
                     ndim,
-                    nlive,
-                    prior_transform_function,
-                    log_prior_function,
-                    log_likelihood_function,
+                    input_args.nlive,
+                    run.prior_transform_function,
+                    run.log_prior_function,
+                    run.log_likelihood_function,
                     pool,
                     rstate,
                 )
@@ -353,17 +126,17 @@ def analysis_runner(cli_args):
                     f"{json.dumps(init_sampler_kwargs, indent=1, sort_keys=True)}"
                 )
                 sampler = NestedSampler(
-                    log_likelihood_function,
-                    prior_transform_function,
+                    run.log_likelihood_function,
+                    run.prior_transform_function,
                     ndim,
-                    pool=pool,
-                    queue_size=POOL_SIZE,
-                    print_func=dynesty.results.print_fn_fallback,
-                    periodic=periodic,
-                    reflective=reflective,
-                    live_points=live_points,
-                    rstate=rstate,
-                    use_pool=dict(
+                    pool        = pool,
+                    queue_size  = POOL_SIZE,
+                    print_func  = dynesty.results.print_fn_fallback,
+                    periodic    = periodic,
+                    reflective  = reflective,
+                    live_points = live_points,
+                    rstate      = rstate,
+                    use_pool    = dict(
                         update_bound=True,
                         propose_point=True,
                         prior_transform=True,
@@ -403,10 +176,10 @@ def analysis_runner(cli_args):
                     continue
 
                 iteration_time = (datetime.datetime.now() - t0).total_seconds()
-                t0 = datetime.datetime.now()
+                t0             = datetime.datetime.now()
 
                 sampling_time += iteration_time
-                run_time += iteration_time
+                run_time      += iteration_time
 
                 if os.path.isfile(resume_file):
                     last_checkpoint_s = time.time() - os.path.getmtime(resume_file)
@@ -456,7 +229,7 @@ def analysis_runner(cli_args):
 
             out = sampler.results
 
-            if nestcheck_flag is True:
+            if input_args.nestcheck is True:
                 logger.info("Creating nestcheck files")
                 ns_run = nestcheck.data_processing.process_dynesty_run(out)
                 nestcheck_path = os.path.join(outdir, "Nestcheck")
@@ -500,8 +273,8 @@ def analysis_runner(cli_args):
                 "Generating posterior from marginalized parameters for"
                 f" nsamples={len(posterior)}, POOL={pool.size}"
             )
-            fill_args = [(ii, row, likelihood) for ii, row in posterior.iterrows()]
-            samples = pool.map(fill_sample, fill_args)
+            fill_args        = [(ii, row, likelihood) for ii, row in posterior.iterrows()]
+            samples          = pool.map(fill_sample, fill_args)
             result.posterior = pd.DataFrame(samples)
 
             logger.debug("Updating prior to the actual prior")
@@ -532,6 +305,7 @@ def analysis_runner(cli_args):
 def main():
     cli_args = get_cli_args()
     analysis_runner(cli_args)
+
 
 def format_result(
     label,
