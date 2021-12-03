@@ -533,6 +533,7 @@ def main():
     cli_args = get_cli_args()
     analysis_runner(cli_args)
 
+
 def format_result(
     label,
     outdir,
