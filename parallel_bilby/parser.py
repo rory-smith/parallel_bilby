@@ -323,13 +323,13 @@ def _add_slurm_settings_to_parser(parser):
         "--mem-per-cpu",
         type=str,
         default=None,
-        help="Memory per CPU (defaults to None)",
+        help="Memory per CPU (defaults to None, suggested is 2GB)",
     )
     slurm_group.add_argument(
         "--extra-lines",
         type=str,
         default=None,
-        help="Additional lines, separated by ';', use for setting up conda env ",
+        help="Additional lines, separated by ';', use for setting up conda env or module imports",
     )
     slurm_group.add_argument(
         "--slurm-extra-lines",

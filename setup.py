@@ -98,6 +98,7 @@ setup(
         "pandas",
         "nestcheck",
         "mpi4py>3.0.0",
+        "jinja2",
     ],
     entry_points={
         "console_scripts": [
