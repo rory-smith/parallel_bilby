@@ -3,13 +3,19 @@ import pickle
 import unittest
 from mpi4py import MPI
 import shutil
+import bilby
 
 from parallel_bilby import analysis, generation
 
 def mpi_master(func):
     def wrapper(*args, **kwargs):
-        if MPI.COMM_WORLD.Get_rank() == 0:
-            return func(*args, **kwargs)
+        comm = MPI.COMM_WORLD
+        if comm.Get_rank() == 0:
+            f = func(*args, **kwargs)
+        else:
+            f = None
+        comm.Barrier()
+        return f
     return wrapper
 
 class AnalysisTest(unittest.TestCase):
@@ -23,6 +29,7 @@ class AnalysisTest(unittest.TestCase):
         shutil.rmtree(self.outdir)
 
     def test_analysis(self):
+        # Run analysis
         analysis.analysis_runner([
             'tests/test_files/out_fast/data/fast_injection_data_dump.pickle',
             '--nlive', '5',
@@ -33,3 +40,13 @@ class AnalysisTest(unittest.TestCase):
             '--outdir', 'tests/test_files/out_fast/result',
             '--sampling-seed', '0',
         ])
+
+        # Check result in master task only
+        self.check_result()
+
+    @mpi_master
+    def check_result(self):
+        # Read file and check result
+        b = bilby.gw.result.CBCResult.from_json(os.path.join(self.outdir, 'result/fast_injection_0_result.json'))
+        result = b.log_evidence
+        print(result)
