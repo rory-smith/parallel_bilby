@@ -4,7 +4,8 @@ import unittest
 from mpi4py import MPI
 import shutil
 import bilby
-from pytest import approx
+import pytest
+
 
 from parallel_bilby import analysis, generation
 
@@ -29,6 +30,7 @@ class AnalysisTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.outdir)
 
+    @pytest.mark.mpi
     def test_analysis(self):
         # Run analysis
         analysis.analysis_runner([
@@ -52,4 +54,4 @@ class AnalysisTest(unittest.TestCase):
 
         # Does not currently work because pbilby gives different results each time
         # Adjust this once the seed problem has been fixed
-        assert b.log_evidence == approx(-5.859617796042926, abs=1e-12)
+        assert b.log_evidence == pytest.approx(-5.481032741270155, abs=1e-12)
