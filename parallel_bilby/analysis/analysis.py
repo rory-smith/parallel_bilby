@@ -309,7 +309,6 @@ def main():
             for key in priors:
                 logger.info(f"{key}: {priors[key]}")
 
-            filename_trace = f"{outdir}/{label}_checkpoint_trace.png"
             resume_file = f"{outdir}/{label}_checkpoint_resume.pickle"
             samples_file = f"{outdir}/{label}_samples.dat"
 
