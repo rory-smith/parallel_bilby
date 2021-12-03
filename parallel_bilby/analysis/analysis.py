@@ -399,25 +399,6 @@ def main():
             run_time = 0
 
             for it, res in enumerate(sampler.sample(**sampler_kwargs)):
-
-                (
-                    worst,
-                    ustar,
-                    vstar,
-                    loglstar,
-                    logvol,
-                    logwt,
-                    logz,
-                    logzvar,
-                    h,
-                    nc,
-                    worst_it,
-                    boundidx,
-                    bounditer,
-                    eff,
-                    delta_logz,
-                ) = res
-
                 i = it - 1
                 dynesty.results.print_fn_fallback(
                     res, i, sampler.ncall, dlogz=input_args.dlogz
