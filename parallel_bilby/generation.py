@@ -133,8 +133,7 @@ class ParallelBilbyDataGenerationInput(bilby_pipe.data_generation.DataGeneration
         self.save_data_dump()
 
 
-def main():
-    cli_args = get_cli_args()
+def generate_runner(cli_args):
     generation_parser = create_generation_parser()
     args = generation_parser.parse_args(args=cli_args)
     args = add_extra_args_from_bilby_pipe_namespace(args)
@@ -163,3 +162,8 @@ def main():
         subprocess.run([f"bash {bash_file}"], shell=True)
     else:
         logger.info(f"Setup complete, now run:\n $ bash {bash_file}")
+
+
+def main():
+    cli_args = get_cli_args()
+    generate_runner(cli_args)
