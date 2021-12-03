@@ -11,20 +11,7 @@ stages:
 cache:
   paths:
     - .pip37
-    - .pip36
-
-# test install on python 3.6
-install-on-python-3.6:
-  stage: install
-  tags:
-    - cit
-  image: bilbydev/bilby_pipe-test-suite-python36
-  script:
-    - conda install -c conda-forge schwimmbad
-    - mkdir -p .pip36
-    - pip install --upgrade pip
-    - pip --cache-dir=.pip36 install --upgrade bilby
-    - pip --cache-dir=.pip36 install .
+ .
 
 # test install on python 3.7
 install-on-python-3.7:
