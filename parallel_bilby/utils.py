@@ -60,6 +60,7 @@ def get_initial_point_from_prior(args):
         log_likelihood_function,
         ndim,
         calculate_likelihood,
+        rstate,
     ) = args
     bad_values = [np.inf, np.nan_to_num(np.inf), np.nan]
     while True:
@@ -81,6 +82,7 @@ def get_initial_points_from_prior(
     log_prior_function,
     log_likelihood_function,
     pool,
+    rstate,
     calculate_likelihood=True,
 ):
     args_list = [
@@ -90,6 +92,7 @@ def get_initial_points_from_prior(
             log_likelihood_function,
             ndim,
             calculate_likelihood,
+            rstate,
         )
         for i in range(npoints)
     ]
