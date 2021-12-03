@@ -2,8 +2,8 @@ import dynesty.plotting as dyplot
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-
 from bilby.core.utils import logger
+
 from ..utils import stopwatch
 
 matplotlib.use("Agg")

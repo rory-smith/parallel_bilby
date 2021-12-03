@@ -1,7 +1,21 @@
+import os
+from argparse import Namespace
 from os.path import abspath
 
-from .parser import create_analysis_parser
-from .utils import get_cli_args
+import jinja2
+from parallel_bilby.parser import create_analysis_parser
+from parallel_bilby.utils import get_cli_args
+
+DIR = os.path.dirname(__file__)
+TEMPLATE_SLURM = "template_slurm.sh"
+TEMPLATE_SUBMIT = "template_runner.sh"
+
+
+def load_template(template_file: str):
+    template_loader = jinja2.FileSystemLoader(searchpath=DIR)
+    template_env = jinja2.Environment(loader=template_loader)
+    template = template_env.get_template(template_file)
+    return template
 
 
 def setup_submit(data_dump_file, inputs, args):
@@ -36,33 +50,45 @@ def setup_submit(data_dump_file, inputs, args):
 
 
 class BaseNode(object):
-    def get_lines(self):
-        lines = ["#!/bin/bash"]
-        lines.append(f"#SBATCH --job-name={self.job_name}")
-        if self.nodes > 1:
-            lines.append(f"#SBATCH --nodes={self.nodes}")
-        if self.ntasks_per_node > 1:
-            lines.append(f"#SBATCH --ntasks-per-node={self.ntasks_per_node}")
-        lines.append(f"#SBATCH --time={self.time}")
-        if self.args.mem_per_cpu is not None:
-            lines.append(f"#SBATCH --mem-per-cpu={self.mem_per_cpu}")
-        lines.append(f"#SBATCH --output={self.logs}/{self.job_name}.log")
-        if self.args.slurm_extra_lines is not None:
-            slurm_extra_lines = " ".join(
-                [f"--{lin}" for lin in self.args.slurm_extra_lines.split()]
-            )
-            for line in slurm_extra_lines.split():
-                lines.append(f"#SBATCH {line}")
-        lines.append("")
-        if self.args.extra_lines:
-            for line in self.args.extra_lines.split(";"):
-                lines.append(line.strip())
-        lines.append("")
-        return lines
+    def __init__(self, inputs: Namespace, args: Namespace):
+        self.inputs = inputs
+        self.args = args
 
-    def get_contents(self):
-        lines = self.get_lines()
-        return "\n".join(lines)
+        self.nodes = self.args.nodes
+        self.ntasks_per_node = self.args.ntasks_per_node
+        self.time = self.args.time
+        self.mem_per_cpu = self.args.mem_per_cpu
+
+    def get_contents(self, command):
+        template = load_template(TEMPLATE_SLURM)
+        log_file = f"{self.logs}/{self.job_name}_%j.log"
+
+        if self.args.slurm_extra_lines is not None:
+            slurm_extra_lines = "\n".join(
+                [f"#SBATCH --{lin}" for lin in self.args.slurm_extra_lines.split()]
+            )
+        else:
+            slurm_extra_lines = ""
+
+        if self.args.extra_lines:
+            bash_extra_lines = self.args.extra_lines.split(";")
+            bash_extra_lines = [line.strip() for line in bash_extra_lines]
+        else:
+            bash_extra_lines = ""
+
+        file_contents = template.render(
+            job_name=self.job_name,
+            nodes=self.nodes,
+            ntasks_per_node=self.ntasks_per_node,
+            time=self.time,
+            log_file=log_file,
+            mem_per_cpu=self.mem_per_cpu,
+            slurm_extra_lines=slurm_extra_lines,
+            bash_extra_lines=bash_extra_lines,
+            command=command,
+        )
+
+        return file_contents
 
     def write(self):
         content = self.get_contents()
@@ -72,26 +98,20 @@ class BaseNode(object):
 
 class AnalysisNode(BaseNode):
     def __init__(self, data_dump_file, inputs, idx, args):
+        super().__init__(inputs, args)
+        print(f"NTASKS PER NODE {self.ntasks_per_node}")
         self.data_dump_file = data_dump_file
-        self.inputs = inputs
-        self.args = args
+
         self.idx = idx
         self.filename = (
             f"{self.inputs.submit_directory}/"
             f"analysis_{self.inputs.label}_{self.idx}.sh"
         )
         self.job_name = f"{self.idx}_{self.inputs.label}"
-        self.nodes = self.args.nodes
-        self.ntasks_per_node = self.args.ntasks_per_node
-        self.time = self.args.time
-        self.mem_per_cpu = self.args.mem_per_cpu
         self.logs = self.inputs.data_analysis_log_directory
 
-        # This are the defaults: used only to figure out which arguments to use
         analysis_parser = create_analysis_parser(sampler=self.args.sampler)
         self.analysis_args, _ = analysis_parser.parse_known_args(args=get_cli_args())
-        # hack -- in the above the parse_known_arg sets the position param (ini) as
-        # the data dump
         self.analysis_args.data_dump = self.data_dump_file
 
     @property
@@ -116,16 +136,8 @@ class AnalysisNode(BaseNode):
         )
 
     def get_contents(self):
-        lines = self.get_lines()
-        lines.append('export MKL_NUM_THREADS="1"')
-        lines.append('export MKL_DYNAMIC="FALSE"')
-        lines.append("export OMP_NUM_THREADS=1")
-        lines.append(f"export MPI_PER_NODE={self.args.ntasks_per_node}")
-        lines.append("")
-
-        run_string = self.get_run_string()
-        lines.append(f"mpirun {self.executable} {run_string}")
-        return "\n".join(lines)
+        command = f"mpirun {self.executable} {self.get_run_string()}"
+        return super().get_contents(command=command)
 
     def get_run_string(self):
         run_list = [f"{self.data_dump_file}"]
@@ -141,25 +153,22 @@ class AnalysisNode(BaseNode):
                     run_list.append(f"--{key.replace('_', '-')} {input_val}")
 
         run_list.append(f"--label {self.label}")
-        run_list.append(f"--outdir {abspath(self.inputs.result_directory)}")
         run_list.append(f"--sampling-seed {self.inputs.sampling_seed + self.idx}")
+        run_list.append(f"--outdir {abspath(self.inputs.result_directory)}")
 
         return " ".join(run_list)
 
 
 class MergeNodes(BaseNode):
     def __init__(self, analysis_nodes, inputs, args):
+        super().__init__(inputs, args)
         self.analysis_nodes = analysis_nodes
-
-        self.inputs = inputs
-        self.args = args
         self.job_name = f"merge_{self.inputs.label}"
         self.nodes = 1
         self.ntasks_per_node = 1
         self.time = "1:00:00"
         self.mem_per_cpu = "16GB"
         self.logs = self.inputs.data_analysis_log_directory
-
         self.filename = f"{self.inputs.submit_directory}/merge_{self.inputs.label}.sh"
 
     @property
@@ -171,11 +180,10 @@ class MergeNodes(BaseNode):
         return f"{self.inputs.label}_merged"
 
     def get_contents(self):
-        lines = self.get_lines()
-        lines.append(
-            f"bilby_result -r {self.file_list} "
-            f"--merge "
-            f"--label {self.merged_result_label} "
-            f"--outdir {self.inputs.result_directory}"
-        )
-        return "\n".join(lines)
+        command = []
+        command.append(f"bilby_result -r {self.file_list}")
+        command.append("--merge")
+        command.append(f"--label {self.merged_result_label}")
+        command.append(f"--outdir {self.inputs.result_directory}")
+        command = " ".join(command)
+        return self.get_contents(command=command)

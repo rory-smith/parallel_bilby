@@ -4,10 +4,10 @@ import shutil
 import bilby
 import dill
 import numpy as np
+from bilby.core.utils import logger
 from pandas import DataFrame
 
-from bilby.core.utils import logger
-from ..utils import stopwatch, safe_file_dump
+from ..utils import safe_file_dump, stopwatch
 
 
 @stopwatch

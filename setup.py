@@ -5,14 +5,14 @@ import subprocess
 import sys
 from pathlib import Path
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 # check that python version is 3.5 or above
 python_version = sys.version_info
 print("Running Python version %s.%s.%s" % python_version[:3])
-if python_version < (3, 5):
-    sys.exit("Python < 3.5 is not supported, aborting setup")
-print("Confirmed Python version 3.5.0 or above")
+if python_version < (3, 7):
+    sys.exit("Python < 3.7 is not supported, aborting setup")
+print("Confirmed Python version 3.7.0 or above")
 
 
 def write_version_file(version):
@@ -85,7 +85,7 @@ setup(
     package_data={"parallel_bilby": [version_file]},
     install_requires=[
         "future",
-        "bilby>=1.1.1",
+        "bilby>=1.1.4",
         "bilby_pipe>=1.0.3",
         "scipy>=1.2.0",
         "gwpy",
@@ -98,6 +98,7 @@ setup(
         "pandas",
         "nestcheck",
         "mpi4py>3.0.0",
+        "jinja2",
     ],
     entry_points={
         "console_scripts": [
@@ -107,8 +108,6 @@ setup(
         ]
     },
     classifiers=[
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "License :: OSI Approved :: MIT License",
         "Operating System :: MacOS :: MacOS X",
