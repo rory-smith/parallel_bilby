@@ -32,18 +32,18 @@ def get_version_info():
     )
 
 
-def add_extra_args_from_bilby_pipe_namespace(args):
+def add_extra_args_from_bilby_pipe_namespace(cli_args, parallel_bilby_args):
     """
     :param args: args from parallel_bilby
     :return: Namespace argument object
     """
     pipe_args, _ = bilby_pipe.data_generation.parse_args(
-        get_cli_args(), bilby_pipe.data_generation.create_generation_parser()
+        cli_args, bilby_pipe.data_generation.create_generation_parser()
     )
     for key, val in vars(pipe_args).items():
-        if key not in args:
-            setattr(args, key, val)
-    return args
+        if key not in parallel_bilby_args:
+            setattr(parallel_bilby_args, key, val)
+    return parallel_bilby_args
 
 
 def write_complete_config_file(parser, args, inputs):
@@ -136,7 +136,7 @@ class ParallelBilbyDataGenerationInput(bilby_pipe.data_generation.DataGeneration
 def generate_runner(cli_args):
     generation_parser = create_generation_parser()
     args = generation_parser.parse_args(args=cli_args)
-    args = add_extra_args_from_bilby_pipe_namespace(args)
+    args = add_extra_args_from_bilby_pipe_namespace(cli_args, args)
     logger = create_generation_logger(outdir=args.outdir, label=args.label)
     for package, version in get_version_info().items():
         logger.info(f"{package} version: {version}")
