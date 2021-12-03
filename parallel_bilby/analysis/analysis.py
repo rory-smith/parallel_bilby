@@ -197,12 +197,8 @@ def _log_prior_function(v_array, priors, sampling_keys):
     params = {key: t for key, t in zip(sampling_keys, v_array)}
     return priors.ln_prob(params)
 
-def analysis_runner(cli_args):
-    os.environ["OMP_NUM_THREADS"] = "1"
-    os.environ["MKL_NUM_THREADS"] = "1"
-    os.environ["MKL_DYNAMIC"] = "0"
-    os.environ["MPI_PER_NODE"] = "16"
 
+def analysis_runner(cli_args):
     analysis_parser = create_analysis_parser(sampler="dynesty")
     input_args = analysis_parser.parse_args(args=cli_args)
 
