@@ -1,0 +1,41 @@
+# make + upload documentation to https://lscsoft.docs.ligo.org/parallel_bilby/
+
+docs:
+  stage: docs
+  tags:
+    - cit
+  image: bilbydev/bilby_pipe-test-suite-python37
+  script:
+    - source activate python37
+    - mkdir -p .pip37
+    - pip --cache-dir=.pip37 install .
+    # Make the documentation
+    - apt-get update
+    - apt-get -y install graphviz
+    - cd docs
+    - pip install -r requirements.txt
+    - make clean
+    - make html
+  artifacts:
+    paths:
+      - docs/_build/html/
+
+pages:
+  stage: deploy
+  tags:
+    - cit
+  dependencies:
+    - docs
+    - pytest
+  script:
+    - ls
+    - mkdir public/
+    - mv docs/_build/html/* public/
+    - mv htmlcov/ public/
+    - mv coverage_badge.svg public/
+  artifacts:
+    paths:
+      - public
+    expire_in: 30 days
+  only:
+    - master

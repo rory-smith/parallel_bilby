@@ -1,5 +1,20 @@
 # All notable changes will be documented in this file
 
+## v1.0.1 : 2021-05-24
+- Adjust input parsing to handle sampling seed (!102)
+- Normalise string-formats to f-strings (!101)
+- Update minimum supported bilby version (!100)
+- Fix use of delta function priors (!98)
+- Log package version (bilby, bilby_pipe, lalsim, etc) (!97)
+- Save generation logs (!96)
+- Resolve "pre-commit CI issues" (!94, !99)
+- Add mpi4py as dependency (!93)
+- Fix "Extra likelihood kwargs is a string and is not converted to dict" (!92)
+- Resolve "Matplotlib use 'agg' backend" (!89)
+- Make checkpoint backup before overwriting (!90)
+- Update docs with new install instructions and citations (1709d04d)
+- Add Conda badge (!87) 
+
 ## v1.0.0 : 2020-11-25
 - Update GW examples + add tutorial notebooks (e59e7068)
 - Add multiple injection example (!83)

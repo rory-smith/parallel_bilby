@@ -12,14 +12,24 @@ import subprocess
 
 import bilby
 import bilby_pipe
+import bilby_pipe.data_generation
 import dynesty
 import lalsimulation
-from bilby_pipe import data_generation as bilby_pipe_datagen
-from bilby_pipe.data_generation import parse_args
+import numpy as np
 
 from . import __version__, slurm
 from .parser import create_generation_parser
 from .utils import get_cli_args
+
+
+def get_version_info():
+    return dict(
+        bilby_version=bilby.__version__,
+        bilby_pipe_version=bilby_pipe.__version__,
+        parallel_bilby_version=__version__,
+        dynesty_version=dynesty.__version__,
+        lalsimulation_version=lalsimulation.__version__,
+    )
 
 
 def add_extra_args_from_bilby_pipe_namespace(args):
@@ -27,8 +37,8 @@ def add_extra_args_from_bilby_pipe_namespace(args):
     :param args: args from parallel_bilby
     :return: Namespace argument object
     """
-    pipe_args, _ = parse_args(
-        get_cli_args(), bilby_pipe_datagen.create_generation_parser()
+    pipe_args, _ = bilby_pipe.data_generation.parse_args(
+        get_cli_args(), bilby_pipe.data_generation.create_generation_parser()
     )
     for key, val in vars(pipe_args).items():
         if key not in args:
@@ -67,67 +77,89 @@ def create_generation_logger(outdir, label):
     return logger
 
 
+class ParallelBilbyDataGenerationInput(bilby_pipe.data_generation.DataGenerationInput):
+    def __init__(self, args, unknown_args):
+        super().__init__(args, unknown_args)
+        self.args = args
+        self.sampling_seed = args.sampling_seed
+        self.data_dump_file = f"{self.data_directory}/{self.label}_data_dump.pickle"
+        self.setup_inputs()
+
+    @property
+    def sampling_seed(self):
+        return self._samplng_seed
+
+    @sampling_seed.setter
+    def sampling_seed(self, sampling_seed):
+        if sampling_seed is None:
+            sampling_seed = np.random.randint(1, 1e6)
+        self._samplng_seed = sampling_seed
+        np.random.seed(sampling_seed)
+
+    def save_data_dump(self):
+        with open(self.data_dump_file, "wb+") as file:
+            data_dump = dict(
+                waveform_generator=self.waveform_generator,
+                ifo_list=self.interferometers,
+                prior_file=self.prior_file,
+                args=self.args,
+                data_dump_file=self.data_dump_file,
+                meta_data=self.meta_data,
+                injection_parameters=self.injection_parameters,
+            )
+            pickle.dump(data_dump, file)
+
+    def setup_inputs(self):
+        if self.likelihood_type == "ROQGravitationalWaveTransient":
+            self.save_roq_weights()
+        self.interferometers.plot_data(outdir=self.data_directory, label=self.label)
+
+        # This is done before instantiating the likelihood so that it is the full prior
+        self.priors.to_json(outdir=self.data_directory, label=self.label)
+        self.prior_file = f"{self.data_directory}/{self.label}_prior.json"
+
+        # We build the likelihood here to ensure the distance marginalization exist
+        # before sampling
+        self.likelihood
+
+        self.meta_data.update(
+            dict(
+                config_file=self.ini,
+                data_dump_file=self.data_dump_file,
+                **get_version_info(),
+            )
+        )
+
+        self.save_data_dump()
+
+
 def main():
     cli_args = get_cli_args()
     generation_parser = create_generation_parser()
     args = generation_parser.parse_args(args=cli_args)
     args = add_extra_args_from_bilby_pipe_namespace(args)
     logger = create_generation_logger(outdir=args.outdir, label=args.label)
-    version_info = dict(
-        bilby_version=bilby.__version__,
-        bilby_pipe_version=bilby_pipe.__version__,
-        parallel_bilby_version=__version__,
-        dynesty_version=dynesty.__version__,
-        lalsimulation_version=lalsimulation.__version__,
-    )
-    for package, version in version_info.items():
+    for package, version in get_version_info().items():
         logger.info(f"{package} version: {version}")
-
-    inputs = bilby_pipe_datagen.DataGenerationInput(args, [])
-    if inputs.likelihood_type == "ROQGravitationalWaveTransient":
-        inputs.save_roq_weights()
-    inputs.interferometers.plot_data(outdir=inputs.data_directory, label=inputs.label)
+    inputs = ParallelBilbyDataGenerationInput(args, [])
     logger.info(
         "Setting up likelihood with marginalizations: "
-        f"distance={args.distance_marginalization} "
-        f"time={args.time_marginalization} "
-        f"phase={args.phase_marginalization} "
+        f"distance={inputs.distance_marginalization}, "
+        f"time={inputs.time_marginalization}, "
+        f"phase={inputs.phase_marginalization}."
     )
-
-    # This is done before instantiating the likelihood so that it is the full prior
-    prior_file = f"{inputs.data_directory}/{inputs.label}_prior.json"
-    inputs.priors.to_json(outdir=inputs.data_directory, label=inputs.label)
-
-    # We build the likelihood here to ensure the distance marginalization exist
-    # before sampling
-    inputs.likelihood
-
-    data_dump_file = f"{inputs.data_directory}/{inputs.label}_data_dump.pickle"
-
-    meta_data = inputs.meta_data
-    meta_data.update(
-        dict(config_file=args.ini, data_dump_file=data_dump_file, **version_info)
+    logger.info(f"Setting sampling-seed={inputs.sampling_seed}")
+    logger.info(f"prior-file save at {inputs.prior_file}")
+    logger.info(
+        f"Initial meta_data ="
+        f"{bilby_pipe.utils.pretty_print_dictionary(inputs.meta_data)}"
     )
-    logger.info("Initial meta_data = {}".format(meta_data))
-
-    data_dump = dict(
-        waveform_generator=inputs.waveform_generator,
-        ifo_list=inputs.interferometers,
-        prior_file=prior_file,
-        args=args,
-        data_dump_file=data_dump_file,
-        meta_data=meta_data,
-        injection_parameters=inputs.injection_parameters,
-    )
-
-    with open(data_dump_file, "wb+") as file:
-        pickle.dump(data_dump, file)
 
     write_complete_config_file(parser=generation_parser, args=args, inputs=inputs)
     logger.info(f"Complete ini written: {inputs.complete_ini_file}")
 
-    bash_file = slurm.setup_submit(data_dump_file, inputs, args)
+    bash_file = slurm.setup_submit(inputs.data_dump_file, inputs, args)
     if args.submit:
-        subprocess.run(["bash {}".format(bash_file)], shell=True)
+        subprocess.run([f"bash {bash_file}"], shell=True)
     else:
-        logger.info("Setup complete, now run:\n $ bash {}".format(bash_file))
+        logger.info(f"Setup complete, now run:\n $ bash {bash_file}")

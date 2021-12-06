@@ -1,15 +1,8 @@
-# This script is an edited version of the example found at
-# https://git.ligo.org/lscsoft/example-ci-project/blob/python/.gitlab-ci.yml
-# Each 0th-indendation level is a job that will be run within GitLab CI
-# The only exception are a short list of reserved keywords
-#
+# Main CI file
 # https://docs.gitlab.com/ee/ci/yaml/#gitlab-ci-yml
 
-# stages is a reserved keyword that defines job dependencies and
-# parallelization. each stage runs in parallel but must complete
-# before the next stage begins
-
 stages:
+  - install
   - test
   - docs
   - deploy
@@ -20,40 +13,24 @@ cache:
     - .pip37
     - .pip36
 
-precommits-py3.7:
-  stage: test
-  image: bilbydev/bilby_pipe-test-suite-python37
-  script:
-    - source activate python37
-    - mkdir -p .pip37
-    - pip install --upgrade pip
-    - pip --cache-dir=.pip37 install --upgrade bilby
-    - pip --cache-dir=.pip37 install .
-    - pip --cache-dir=.pip37 install pre-commit
-
-    # Run precommits (black, flake8, spellcheck, isort, no merge conflicts, etc)
-    - pre-commit run --all-files --verbose --show-diff-on-failure
-
-
-
 # test install on python 3.6
-python-3.6:
-  stage: test
+install-on-python-3.6:
+  stage: install
+  tags:
+    - cit
   image: bilbydev/bilby_pipe-test-suite-python36
   script:
     - conda install -c conda-forge schwimmbad
-    - python -m pip install .
+    - mkdir -p .pip36
+    - pip install --upgrade pip
+    - pip --cache-dir=.pip36 install --upgrade bilby
+    - pip --cache-dir=.pip36 install .
 
 # test install on python 3.7
-python-3.7:
-  stage: test
-  image: bilbydev/bilby_pipe-test-suite-python37
-  script:
-    - conda install -c conda-forge schwimmbad
-    - python -m pip install .
-
-pytest:
-  stage: test
+install-on-python-3.7:
+  stage: install
+  tags:
+    - cit
   image: bilbydev/bilby_pipe-test-suite-python37
   script:
     - conda install -c conda-forge schwimmbad
@@ -61,64 +38,11 @@ pytest:
     - pip install --upgrade pip
     - pip --cache-dir=.pip37 install --upgrade bilby
     - pip --cache-dir=.pip37 install .
-    # Run tests and collect coverage data
-    - pytest --cov parallel_bilby
-    - coverage html
-    - coverage-badge -o coverage_badge.svg -f
 
-  artifacts:
-    paths:
-      - htmlcov/
-      - coverage_badge.svg
 
-docs:
-  stage: docs
-  image: bilbydev/bilby_pipe-test-suite-python37
-  script:
-    - source activate python37
-    - mkdir -p .pip37
-    - pip --cache-dir=.pip37 install .
-
-    # Make the documentation
-    - apt-get update
-    - apt-get -y install graphviz
-    - cd docs
-    - pip install -r requirements.txt
-    - make clean
-    - make html
-  artifacts:
-    paths:
-      - docs/_build/html/
-
-pages:
-  stage: deploy
-  dependencies:
-    - docs
-    - pytest
-  script:
-    - ls
-    - mkdir public/
-    - mv docs/_build/html/* public/
-    - mv htmlcov/ public/
-    - mv coverage_badge.svg public/
-  artifacts:
-    paths:
-      - public
-    expire_in: 30 days
-  only:
-    - master
-
-deploy_release:
-  stage: deploy
-  image: bilbydev/bilby_pipe-test-suite-python37
-  variables:
-    TWINE_USERNAME: $PYPI_USERNAME
-    TWINE_PASSWORD: $PYPI_PASSWORD
-  before_script:
-    - pip install twine
-    - python setup.py sdist
-  script:
-    - twine upload dist/*
-  only:
-  - tags
-
+# Include the additional CI tasks
+include:
+    - local: "/ci_workflows/tests.yml"
+    - local: "/ci_workflows/make_docs.yml"
+    - local: "/ci_workflows/pypi_deploy.yml"
+    - local: "/ci_workflows/end_to_end_analysis.yml"

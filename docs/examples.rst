@@ -10,7 +10,8 @@ The steps to analyse data with :code:`Parallel Bilby` are:
 
 #. Ini Creation:
 
-    Create an :code:`ini` with paths to the `prior`, `PSD` and `data` files, along with other `kwargs`.
+    Create an :code:`ini` with paths to the `prior`, `PSD` and `data` files, along with other kwargs
+    (see :doc:`data_generation` for a list of all the required kwargs).
 
 #. Parallel Bilby Generation:
 
@@ -57,7 +58,7 @@ The folder has three examples:
 `GW150914`_
 ~~~~~~~~~~~
 To analyse GW150914 with Parallel Bilby you may use the following :code:`ini` file.
-An explaination of the :code:`ini` file's contents are presented in the `GW150914 tutorial.ipynb`_.
+An explanation of the :code:`ini` file's contents are presented in the `GW150914 tutorial.ipynb`_.
 
 .. include:: ../examples/GW150914_IMRPhenomPv2/GW150914.ini
     :code: INI
@@ -74,13 +75,14 @@ To analyse GW170817 with Parallel Bilby you may use the following :code:`ini` fi
     :code: INI
 
 In this example we require the user to manually download the data for analysis.
-The priors are contained in a separate file for this analysis.
 
-Again, an explaination of the :code:`ini` file's contents are presented in the `GW170817 tutorial.ipynb`_,
+The priors are contained in a separate :code:`prior` file for this analysis:
+
+.. include:: ../examples/GW170817_IMRPhenomPv2_NRTidal/GW170817.prior
+    :code: python
+
+Again, an explanation of the :code:`ini` file's contents are presented in the `GW170817 tutorial.ipynb`_,
 along with commands needed to download the analysis data.
-
-.. include:: ../examples/GW170817_IMRPhenomPv2_NRTidal/GW170817.ini
-    :code: jupyter no
 
 
 `Multiple Injections`_
