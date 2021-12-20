@@ -41,7 +41,7 @@ def plot_current_state(sampler, search_parameter_keys, outdir, label):
         filename = f"{outdir}/{label}_checkpoint_stats.png"
         fig, axs = plt.subplots(nrows=3, sharex=True)
         for ax, name in zip(axs, ["boundidx", "nc", "scale"]):
-            ax.plot(getattr(sampler, f"saved_{name}"), color="C0")
+            ax.plot(sampler.saved_run.D[name], color="C0")
             ax.set_ylabel(name)
         axs[-1].set_xlabel("iteration")
         fig.tight_layout()
