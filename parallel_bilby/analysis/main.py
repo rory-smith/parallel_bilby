@@ -30,7 +30,7 @@ from .read_write import (
     write_current_state,
     write_sample_dump,
 )
-from .sample_space import fill_sample, get_initial_points_from_prior
+from .sample_space import fill_sample
 
 
 def analysis_runner(cli_args):
@@ -63,10 +63,6 @@ def analysis_runner(cli_args):
         if pool.is_master():
             POOL_SIZE = pool.size
 
-            sampling_seed = input_args.sampling_seed
-            rstate = np.random.Generator(np.random.PCG64(sampling_seed))
-            logger.info(f"Setting random state = {rstate} (seed={sampling_seed})")
-
             logger.info(f"sampling_keys={sampling_keys}")
             logger.info(f"Periodic keys: {[sampling_keys[ii] for ii in periodic]}")
             logger.info(f"Reflective keys: {[sampling_keys[ii] for ii in reflective]}")
@@ -82,15 +78,7 @@ def analysis_runner(cli_args):
 
             if sampler is False:
                 logger.info(f"Initializing sampling points with pool size={POOL_SIZE}")
-                live_points = get_initial_points_from_prior(
-                    ndim,
-                    input_args.nlive,
-                    run.prior_transform_function,
-                    run.log_prior_function,
-                    run.log_likelihood_function,
-                    pool,
-                    rstate,
-                )
+                live_points = run.get_initial_points_from_prior(ndim, pool)
                 logger.info(
                     f"Initialize NestedSampler with "
                     f"{json.dumps(init_sampler_kwargs, indent=1, sort_keys=True)}"
@@ -105,7 +93,7 @@ def analysis_runner(cli_args):
                     periodic=periodic,
                     reflective=reflective,
                     live_points=live_points,
-                    rstate=rstate,
+                    rstate=run.rstate,
                     use_pool=dict(
                         update_bound=True,
                         propose_point=True,

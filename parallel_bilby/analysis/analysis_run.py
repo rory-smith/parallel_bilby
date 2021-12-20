@@ -97,6 +97,12 @@ class AnalysisRun(object):
             save_bounds=False,
         )
 
+        self.sampling_seed = input_args.sampling_seed
+        self.rstate = np.random.Generator(np.random.PCG64(self.sampling_seed))
+        logger.debug(
+            f"Setting random state = {self.rstate} (seed={self.sampling_seed})"
+        )
+
         self.outdir = outdir
         self.label = label
         self.data_dump = data_dump
@@ -108,6 +114,7 @@ class AnalysisRun(object):
         self.reflective = reflective
         self.args = args
         self.injection_parameters = injection_parameters
+        self.nlive = input_args.nlive
 
     def prior_transform_function(self, u_array):
         return self.priors.rescale(self.sampling_keys, u_array)
@@ -128,3 +135,62 @@ class AnalysisRun(object):
     def log_prior_function(self, v_array):
         params = {key: t for key, t in zip(self.sampling_keys, v_array)}
         return self.priors.ln_prob(params)
+
+    def get_initial_points_from_prior(self, ndim, pool, calculate_likelihood=True):
+
+        # Create a new rstate for each point, otherwise each task will generate
+        # the same random number, and the rstate on master will not be incremented
+        sg = np.random.SeedSequence(self.rstate.integers(9223372036854775807))
+        map_rstates = [
+            np.random.Generator(np.random.PCG64(n)) for n in sg.spawn(self.nlive)
+        ]
+
+        args_list = [
+            (
+                self.prior_transform_function,
+                self.log_prior_function,
+                self.log_likelihood_function,
+                ndim,
+                calculate_likelihood,
+                map_rstates[i],
+            )
+            for i in range(self.nlive)
+        ]
+        initial_points = pool.map(self.get_initial_point_from_prior, args_list)
+        u_list = [point[0] for point in initial_points]
+        v_list = [point[1] for point in initial_points]
+        l_list = [point[2] for point in initial_points]
+
+        return np.array(u_list), np.array(v_list), np.array(l_list)
+
+    @staticmethod
+    def get_initial_point_from_prior(args):
+        """
+        Draw initial points from the prior subject to constraints applied both to
+        the prior and the likelihood.
+
+        We remove any points where the likelihood or prior is infinite or NaN.
+
+        The `log_likelihood_function` often converts infinite values to large
+        finite values so we catch those.
+        """
+        (
+            prior_transform_function,
+            log_prior_function,
+            log_likelihood_function,
+            ndim,
+            calculate_likelihood,
+            rstate,
+        ) = args
+        bad_values = [np.inf, np.nan_to_num(np.inf), np.nan]
+        while True:
+            unit = rstate.random(ndim)
+            theta = prior_transform_function(unit)
+
+            if abs(log_prior_function(theta)) not in bad_values:
+                if calculate_likelihood:
+                    logl = log_likelihood_function(theta)
+                    if abs(logl) not in bad_values:
+                        return unit, theta, logl
+                else:
+                    return unit, theta, np.nan
