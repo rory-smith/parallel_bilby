@@ -21,67 +21,36 @@ from pandas import DataFrame
 
 from ..parser import create_analysis_parser
 from ..schwimmbad_fast import MPIPoolFast as MPIPool
-from ..utils import fill_sample, get_cli_args, get_initial_points_from_prior
+from ..utils import (
+    fill_sample,
+    format_result,
+    get_cli_args,
+    get_initial_points_from_prior,
+)
 from .plotting import plot_current_state
 from .read_write import read_saved_state, write_current_state, write_sample_dump
 from .run import AnalysisRun
-
-
-def reorder_loglikelihoods(unsorted_loglikelihoods, unsorted_samples, sorted_samples):
-    """Reorders the stored log-likelihood after they have been reweighted
-
-    This creates a sorting index by matching the reweights `result.samples`
-    against the raw samples, then uses this index to sort the
-    loglikelihoods
-
-    Parameters
-    ----------
-    sorted_samples, unsorted_samples: array-like
-        Sorted and unsorted values of the samples. These should be of the
-        same shape and contain the same sample values, but in different
-        orders
-    unsorted_loglikelihoods: array-like
-        The loglikelihoods corresponding to the unsorted_samples
-
-    Returns
-    -------
-    sorted_loglikelihoods: array-like
-        The loglikelihoods reordered to match that of the sorted_samples
-
-
-    """
-
-    idxs = []
-    for ii in range(len(unsorted_loglikelihoods)):
-        idx = np.where(np.all(sorted_samples[ii] == unsorted_samples, axis=1))[0]
-        if len(idx) > 1:
-            print(
-                "Multiple likelihood matches found between sorted and "
-                "unsorted samples. Taking the first match."
-            )
-        idxs.append(idx[0])
-    return unsorted_loglikelihoods[idxs]
 
 
 def analysis_runner(cli_args):
 
     # Parse command line arguments
     analysis_parser = create_analysis_parser(sampler="dynesty")
-    input_args      = analysis_parser.parse_args(args=cli_args)
+    input_args = analysis_parser.parse_args(args=cli_args)
 
     run = AnalysisRun(input_args)
 
-    outdir               = run.outdir
-    label                = run.label
-    data_dump            = run.data_dump
-    priors               = run.priors
-    sampling_keys        = run.sampling_keys
-    likelihood           = run.likelihood
-    periodic             = run.periodic
-    reflective           = run.reflective
-    args                 = run.args
+    outdir = run.outdir
+    label = run.label
+    data_dump = run.data_dump
+    priors = run.priors
+    sampling_keys = run.sampling_keys
+    likelihood = run.likelihood
+    periodic = run.periodic
+    reflective = run.reflective
+    args = run.args
     injection_parameters = run.injection_parameters
-    init_sampler_kwargs  = run.init_sampler_kwargs
+    init_sampler_kwargs = run.init_sampler_kwargs
 
     t0 = datetime.datetime.now()
     sampling_time = 0
@@ -129,14 +98,14 @@ def analysis_runner(cli_args):
                     run.log_likelihood_function,
                     run.prior_transform_function,
                     ndim,
-                    pool        = pool,
-                    queue_size  = POOL_SIZE,
-                    print_func  = dynesty.results.print_fn_fallback,
-                    periodic    = periodic,
-                    reflective  = reflective,
-                    live_points = live_points,
-                    rstate      = rstate,
-                    use_pool    = dict(
+                    pool=pool,
+                    queue_size=POOL_SIZE,
+                    print_func=dynesty.results.print_fn_fallback,
+                    periodic=periodic,
+                    reflective=reflective,
+                    live_points=live_points,
+                    rstate=rstate,
+                    use_pool=dict(
                         update_bound=True,
                         propose_point=True,
                         prior_transform=True,
@@ -176,10 +145,10 @@ def analysis_runner(cli_args):
                     continue
 
                 iteration_time = (datetime.datetime.now() - t0).total_seconds()
-                t0             = datetime.datetime.now()
+                t0 = datetime.datetime.now()
 
                 sampling_time += iteration_time
-                run_time      += iteration_time
+                run_time += iteration_time
 
                 if os.path.isfile(resume_file):
                     last_checkpoint_s = time.time() - os.path.getmtime(resume_file)
@@ -273,8 +242,8 @@ def analysis_runner(cli_args):
                 "Generating posterior from marginalized parameters for"
                 f" nsamples={len(posterior)}, POOL={pool.size}"
             )
-            fill_args        = [(ii, row, likelihood) for ii, row in posterior.iterrows()]
-            samples          = pool.map(fill_sample, fill_args)
+            fill_args = [(ii, row, likelihood) for ii, row in posterior.iterrows()]
+            samples = pool.map(fill_sample, fill_args)
             result.posterior = pd.DataFrame(samples)
 
             logger.debug("Updating prior to the actual prior")
@@ -305,53 +274,3 @@ def analysis_runner(cli_args):
 def main():
     cli_args = get_cli_args()
     analysis_runner(cli_args)
-
-
-def format_result(
-    label,
-    outdir,
-    sampling_keys,
-    priors,
-    out,
-    weights,
-    nested_samples,
-    data_dump,
-    input_args,
-    args,
-    likelihood,
-    init_sampler_kwargs,
-    sampler_kwargs,
-    injection_parameters,
-    sampling_time,
-):
-    result = bilby.core.result.Result(
-        label=label, outdir=outdir, search_parameter_keys=sampling_keys
-    )
-    result.priors = priors
-    result.samples = dynesty.utils.resample_equal(out.samples, weights)
-    result.nested_samples = nested_samples
-    result.meta_data = data_dump["meta_data"]
-    result.meta_data["command_line_args"] = vars(input_args)
-    result.meta_data["command_line_args"]["sampler"] = "parallel_bilby"
-    result.meta_data["config_file"] = vars(args)
-    result.meta_data["data_dump"] = input_args.data_dump
-    result.meta_data["likelihood"] = likelihood.meta_data
-    result.meta_data["sampler_kwargs"] = init_sampler_kwargs
-    result.meta_data["run_sampler_kwargs"] = sampler_kwargs
-    result.meta_data["injection_parameters"] = injection_parameters
-    result.injection_parameters = injection_parameters
-
-    result.log_likelihood_evaluations = reorder_loglikelihoods(
-        unsorted_loglikelihoods=out.logl,
-        unsorted_samples=out.samples,
-        sorted_samples=result.samples,
-    )
-
-    result.log_evidence = out.logz[-1] + likelihood.noise_log_likelihood()
-    result.log_evidence_err = out.logzerr[-1]
-    result.log_noise_evidence = likelihood.noise_log_likelihood()
-    result.log_bayes_factor = result.log_evidence - result.log_noise_evidence
-    result.sampling_time = sampling_time
-
-    result.samples_to_posterior()
-    return result
