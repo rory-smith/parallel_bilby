@@ -16,7 +16,6 @@ import numpy as np
 import pandas as pd
 from bilby.core.utils import logger
 from bilby.gw import conversion
-from dynesty import NestedSampler
 from pandas import DataFrame
 
 from ..parser import create_analysis_parser
@@ -74,25 +73,7 @@ def analysis_runner(cli_args):
                     f"Initialize NestedSampler with "
                     f"{json.dumps(run.init_sampler_kwargs, indent=1, sort_keys=True)}"
                 )
-                sampler = NestedSampler(
-                    run.log_likelihood_function,
-                    run.prior_transform_function,
-                    len(run.sampling_keys),
-                    pool=pool,
-                    queue_size=POOL_SIZE,
-                    print_func=dynesty.results.print_fn_fallback,
-                    periodic=run.periodic,
-                    reflective=run.reflective,
-                    live_points=live_points,
-                    rstate=run.rstate,
-                    use_pool=dict(
-                        update_bound=True,
-                        propose_point=True,
-                        prior_transform=True,
-                        loglikelihood=True,
-                    ),
-                    **run.init_sampler_kwargs,
-                )
+                sampler = run.get_nested_sampler(live_points, pool, POOL_SIZE)
             else:
                 # Reinstate the pool and map (not saved in the pickle)
                 logger.info(f"Read in resume file with sampling_time = {sampling_time}")

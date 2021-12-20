@@ -195,3 +195,27 @@ class AnalysisRun(object):
                         return unit, theta, logl
                 else:
                     return unit, theta, np.nan
+
+    def get_nested_sampler(self, live_points, pool, pool_size):
+        ndim = len(self.sampling_keys)
+        sampler = dynesty.NestedSampler(
+            self.log_likelihood_function,
+            self.prior_transform_function,
+            ndim,
+            pool=pool,
+            queue_size=pool_size,
+            print_func=dynesty.results.print_fn_fallback,
+            periodic=self.periodic,
+            reflective=self.reflective,
+            live_points=live_points,
+            rstate=self.rstate,
+            use_pool=dict(
+                update_bound=True,
+                propose_point=True,
+                prior_transform=True,
+                loglikelihood=True,
+            ),
+            **self.init_sampler_kwargs,
+        )
+
+        return sampler
