@@ -220,12 +220,7 @@ def analysis_runner(cli_args):
                 sampling_time,
             )
 
-            posterior = result.posterior
-
-            nsamples = len(posterior)
-            logger.info(f"Using {nsamples} samples")
-
-            posterior = conversion.fill_from_fixed_priors(posterior, priors)
+            posterior = conversion.fill_from_fixed_priors(result.posterior, priors)
 
             logger.info(
                 "Generating posterior from marginalized parameters for"
