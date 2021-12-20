@@ -21,7 +21,7 @@ from pandas import DataFrame
 
 from ..parser import create_analysis_parser
 from ..schwimmbad_fast import MPIPoolFast as MPIPool
-from ..utils import fill_sample, get_cli_args, get_initial_points_from_prior
+from ..utils import get_cli_args
 from .analysis_run import AnalysisRun
 from .plotting import plot_current_state
 from .read_write import (
@@ -30,6 +30,7 @@ from .read_write import (
     write_current_state,
     write_sample_dump,
 )
+from .sample_space import fill_sample, get_initial_points_from_prior
 
 
 def analysis_runner(cli_args):
