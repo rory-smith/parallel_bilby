@@ -41,18 +41,6 @@ def analysis_runner(cli_args):
 
     run = AnalysisRun(input_args)
 
-    outdir = run.outdir
-    label = run.label
-    data_dump = run.data_dump
-    priors = run.priors
-    sampling_keys = run.sampling_keys
-    likelihood = run.likelihood
-    periodic = run.periodic
-    reflective = run.reflective
-    args = run.args
-    injection_parameters = run.injection_parameters
-    init_sampler_kwargs = run.init_sampler_kwargs
-
     t0 = datetime.datetime.now()
     sampling_time = 0
     with MPIPool(
@@ -63,17 +51,21 @@ def analysis_runner(cli_args):
         if pool.is_master():
             POOL_SIZE = pool.size
 
-            logger.info(f"sampling_keys={sampling_keys}")
-            logger.info(f"Periodic keys: {[sampling_keys[ii] for ii in periodic]}")
-            logger.info(f"Reflective keys: {[sampling_keys[ii] for ii in reflective]}")
+            logger.info(f"sampling_keys={run.sampling_keys}")
+            logger.info(
+                f"Periodic keys: {[run.sampling_keys[ii] for ii in run.periodic]}"
+            )
+            logger.info(
+                f"Reflective keys: {[run.sampling_keys[ii] for ii in run.reflective]}"
+            )
             logger.info("Using priors:")
-            for key in priors:
-                logger.info(f"{key}: {priors[key]}")
+            for key in run.priors:
+                logger.info(f"{key}: {run.priors[key]}")
 
-            resume_file = f"{outdir}/{label}_checkpoint_resume.pickle"
-            samples_file = f"{outdir}/{label}_samples.dat"
+            resume_file = f"{run.outdir}/{run.label}_checkpoint_resume.pickle"
+            samples_file = f"{run.outdir}/{run.label}_samples.dat"
 
-            ndim = len(sampling_keys)
+            ndim = len(run.sampling_keys)
             sampler, sampling_time = read_saved_state(resume_file)
 
             if sampler is False:
@@ -81,7 +73,7 @@ def analysis_runner(cli_args):
                 live_points = run.get_initial_points_from_prior(ndim, pool)
                 logger.info(
                     f"Initialize NestedSampler with "
-                    f"{json.dumps(init_sampler_kwargs, indent=1, sort_keys=True)}"
+                    f"{json.dumps(run.init_sampler_kwargs, indent=1, sort_keys=True)}"
                 )
                 sampler = NestedSampler(
                     run.log_likelihood_function,
@@ -90,8 +82,8 @@ def analysis_runner(cli_args):
                     pool=pool,
                     queue_size=POOL_SIZE,
                     print_func=dynesty.results.print_fn_fallback,
-                    periodic=periodic,
-                    reflective=reflective,
+                    periodic=run.periodic,
+                    reflective=run.reflective,
                     live_points=live_points,
                     rstate=run.rstate,
                     use_pool=dict(
@@ -100,7 +92,7 @@ def analysis_runner(cli_args):
                         prior_transform=True,
                         loglikelihood=True,
                     ),
-                    **init_sampler_kwargs,
+                    **run.init_sampler_kwargs,
                 )
             else:
                 # Reinstate the pool and map (not saved in the pickle)
@@ -109,7 +101,7 @@ def analysis_runner(cli_args):
                 sampler.M = pool.map
 
             logger.info(
-                f"Starting sampling for job {label}, with pool size={POOL_SIZE} "
+                f"Starting sampling for job {run.label}, with pool size={POOL_SIZE} "
                 f"and check_point_deltaT={input_args.check_point_deltaT}"
             )
 
@@ -155,9 +147,11 @@ def analysis_runner(cli_args):
                         sampling_time,
                         input_args.rotate_checkpoints,
                     )
-                    write_sample_dump(sampler, samples_file, sampling_keys)
+                    write_sample_dump(sampler, samples_file, run.sampling_keys)
                     if input_args.no_plot is False:
-                        plot_current_state(sampler, sampling_keys, outdir, label)
+                        plot_current_state(
+                            sampler, run.sampling_keys, run.outdir, run.label
+                        )
 
                     if it == input_args.max_its:
                         logger.info(
@@ -179,9 +173,9 @@ def analysis_runner(cli_args):
             write_current_state(
                 sampler, resume_file, sampling_time, input_args.rotate_checkpoints
             )
-            write_sample_dump(sampler, samples_file, sampling_keys)
+            write_sample_dump(sampler, samples_file, run.sampling_keys)
             if input_args.no_plot is False:
-                plot_current_state(sampler, sampling_keys, outdir, label)
+                plot_current_state(sampler, run.sampling_keys, run.outdir, run.label)
 
             sampling_time += (datetime.datetime.now() - t0).total_seconds()
 
@@ -190,43 +184,43 @@ def analysis_runner(cli_args):
             if input_args.nestcheck is True:
                 logger.info("Creating nestcheck files")
                 ns_run = nestcheck.data_processing.process_dynesty_run(out)
-                nestcheck_path = os.path.join(outdir, "Nestcheck")
+                nestcheck_path = os.path.join(run.outdir, "Nestcheck")
                 bilby.core.utils.check_directory_exists_and_if_not_mkdir(nestcheck_path)
-                nestcheck_result = f"{nestcheck_path}/{label}_nestcheck.pickle"
+                nestcheck_result = f"{nestcheck_path}/{run.label}_nestcheck.pickle"
 
                 with open(nestcheck_result, "wb") as file_nest:
                     pickle.dump(ns_run, file_nest)
 
             weights = np.exp(out["logwt"] - out["logz"][-1])
-            nested_samples = DataFrame(out.samples, columns=sampling_keys)
+            nested_samples = DataFrame(out.samples, columns=run.sampling_keys)
             nested_samples["weights"] = weights
             nested_samples["log_likelihood"] = out.logl
 
             result = format_result(
-                label,
-                outdir,
-                sampling_keys,
-                priors,
+                run.label,
+                run.outdir,
+                run.sampling_keys,
+                run.priors,
                 out,
                 weights,
                 nested_samples,
-                data_dump,
+                run.data_dump,
                 input_args,
-                args,
-                likelihood,
-                init_sampler_kwargs,
+                run.args,
+                run.likelihood,
+                run.init_sampler_kwargs,
                 sampler_kwargs,
-                injection_parameters,
+                run.injection_parameters,
                 sampling_time,
             )
 
-            posterior = conversion.fill_from_fixed_priors(result.posterior, priors)
+            posterior = conversion.fill_from_fixed_priors(result.posterior, run.priors)
 
             logger.info(
                 "Generating posterior from marginalized parameters for"
                 f" nsamples={len(posterior)}, POOL={pool.size}"
             )
-            fill_args = [(ii, row, likelihood) for ii, row in posterior.iterrows()]
+            fill_args = [(ii, row, run.likelihood) for ii, row in posterior.iterrows()]
             samples = pool.map(fill_sample, fill_args)
             result.posterior = pd.DataFrame(samples)
 
@@ -235,11 +229,11 @@ def analysis_runner(cli_args):
                 ["distance", "phase", "time"],
                 ["luminosity_distance", "phase", "geocent_time"],
             ):
-                if getattr(likelihood, f"{par}_marginalization", False):
-                    priors[name] = likelihood.priors[name]
-            result.priors = priors
+                if getattr(run.likelihood, f"{par}_marginalization", False):
+                    run.priors[name] = run.likelihood.run.priors[name]
+            result.priors = run.priors
 
-            if args.convert_to_flat_in_component_mass:
+            if run.args.convert_to_flat_in_component_mass:
                 try:
                     result = bilby.gw.prior.convert_to_flat_in_component_mass_prior(
                         result
@@ -247,7 +241,7 @@ def analysis_runner(cli_args):
                 except Exception as e:
                     logger.warning(f"Unable to convert to the LALInference prior: {e}")
 
-            logger.info(f"Saving result to {outdir}/{label}_result.json")
+            logger.info(f"Saving result to {run.outdir}/{run.label}_result.json")
             result.save_to_file(extension="json")
             print(
                 f"Sampling time = {datetime.timedelta(seconds=result.sampling_time)}s"
