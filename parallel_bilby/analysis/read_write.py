@@ -48,9 +48,9 @@ def write_sample_dump(sampler, samples_file, search_parameter_keys):
         The sampler object itself
     """
 
-    ln_weights = sampler.saved_logwt - sampler.saved_logz[-1]
+    ln_weights = sampler.saved_run.D['logwt'] - sampler.saved_run.D['logz'][-1]
     weights = np.exp(ln_weights)
-    samples = bilby.core.result.rejection_sample(np.array(sampler.saved_v), weights)
+    samples = bilby.core.result.rejection_sample(np.array(sampler.saved_run.D['v']), weights)
     nsamples = len(samples)
 
     # If we don't have enough samples, don't dump them

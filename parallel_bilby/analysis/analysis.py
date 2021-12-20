@@ -94,7 +94,7 @@ def analysis_runner(cli_args):
             POOL_SIZE = pool.size
 
             sampling_seed = input_args.sampling_seed
-            rstate = np.random.RandomState(seed=sampling_seed)
+            rstate = np.random.Generator(np.random.PCG64(sampling_seed))
             logger.info(f"Setting random state = {rstate} (seed={sampling_seed})")
 
             logger.info(f"sampling_keys={sampling_keys}")
