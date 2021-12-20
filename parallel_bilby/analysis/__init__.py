@@ -1,6 +1,6 @@
 import mpi4py
 
-from .analysis import analysis_runner, main
+from .main import analysis_runner, main
 
 mpi4py.rc.threads = False
 mpi4py.rc.recv_mprobe = False
