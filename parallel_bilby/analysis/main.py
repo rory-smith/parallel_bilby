@@ -209,7 +209,7 @@ def analysis_runner(cli_args):
                 ["luminosity_distance", "phase", "geocent_time"],
             ):
                 if getattr(run.likelihood, f"{par}_marginalization", False):
-                    run.priors[name] = run.likelihood.run.priors[name]
+                    run.priors[name] = run.likelihood.priors[name]
             result.priors = run.priors
 
             if run.args.convert_to_flat_in_component_mass:
