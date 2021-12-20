@@ -1,14 +1,14 @@
-import pickle
+import inspect
+import logging
 import os
+import pickle
+from importlib import import_module
+
 import bilby
 import bilby_pipe
 import dynesty
-import inspect
-import logging
 import numpy as np
-
 from bilby.core.utils import logger
-from importlib import import_module
 
 
 def roq_likelihood_kwargs(args):
@@ -191,18 +191,20 @@ class AnalysisRun(object):
             )
 
         self.init_sampler_kwargs = dict(
-            nlive        = input_args.nlive,
-            sample       = input_args.dynesty_sample,
-            bound        = input_args.dynesty_bound,
-            walks        = input_args.walks,
-            maxmcmc      = input_args.maxmcmc,
-            nact         = input_args.nact,
-            facc         = input_args.facc,
-            first_update = dict(min_eff=input_args.min_eff, min_ncall=2 * input_args.nlive),
-            vol_dec      = input_args.vol_dec,
-            vol_check    = input_args.vol_check,
-            enlarge      = input_args.enlarge,
-            save_bounds  = False,
+            nlive=input_args.nlive,
+            sample=input_args.dynesty_sample,
+            bound=input_args.dynesty_bound,
+            walks=input_args.walks,
+            maxmcmc=input_args.maxmcmc,
+            nact=input_args.nact,
+            facc=input_args.facc,
+            first_update=dict(
+                min_eff=input_args.min_eff, min_ncall=2 * input_args.nlive
+            ),
+            vol_dec=input_args.vol_dec,
+            vol_check=input_args.vol_check,
+            enlarge=input_args.enlarge,
+            save_bounds=False,
         )
 
         self.outdir = outdir
@@ -226,7 +228,10 @@ class AnalysisRun(object):
         parameters = {key: v for key, v in zip(self.sampling_keys, v_array)}
         if self.priors.evaluate_constraints(parameters) > 0:
             self.likelihood.parameters.update(parameters)
-            return self.likelihood.log_likelihood() - self.likelihood.noise_log_likelihood()
+            return (
+                self.likelihood.log_likelihood()
+                - self.likelihood.noise_log_likelihood()
+            )
         else:
             return np.nan_to_num(-np.inf)
 
