@@ -21,14 +21,14 @@ from pandas import DataFrame
 
 from ..parser import create_analysis_parser
 from ..schwimmbad_fast import MPIPoolFast as MPIPool
-from ..utils import (
-    fill_sample,
-    format_result,
-    get_cli_args,
-    get_initial_points_from_prior,
-)
+from ..utils import fill_sample, get_cli_args, get_initial_points_from_prior
 from .plotting import plot_current_state
-from .read_write import read_saved_state, write_current_state, write_sample_dump
+from .read_write import (
+    format_result,
+    read_saved_state,
+    write_current_state,
+    write_sample_dump,
+)
 from .run import AnalysisRun
 
 
