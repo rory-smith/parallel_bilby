@@ -64,8 +64,9 @@ def get_initial_point_from_prior(args):
     ) = args
     bad_values = [np.inf, np.nan_to_num(np.inf), np.nan]
     while True:
-        unit = np.random.rand(ndim)
+        unit = rstate.random(ndim)
         theta = prior_transform_function(unit)
+
         if abs(log_prior_function(theta)) not in bad_values:
             if calculate_likelihood:
                 logl = log_likelihood_function(theta)
@@ -85,6 +86,12 @@ def get_initial_points_from_prior(
     rstate,
     calculate_likelihood=True,
 ):
+
+    # Create a new rstate for each point, otherwise each task will generate
+    # the same random number, and the rstate on master will not be incremented
+    sg = np.random.SeedSequence(rstate.integers(9223372036854775807))
+    map_rstates = [np.random.Generator(np.random.PCG64(n)) for n in sg.spawn(npoints)]
+
     args_list = [
         (
             prior_transform_function,
@@ -92,7 +99,7 @@ def get_initial_points_from_prior(
             log_likelihood_function,
             ndim,
             calculate_likelihood,
-            rstate,
+            map_rstates[i],
         )
         for i in range(npoints)
     ]
