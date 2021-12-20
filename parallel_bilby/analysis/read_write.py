@@ -48,9 +48,11 @@ def write_sample_dump(sampler, samples_file, search_parameter_keys):
         The sampler object itself
     """
 
-    ln_weights = sampler.saved_run.D['logwt'] - sampler.saved_run.D['logz'][-1]
+    ln_weights = sampler.saved_run.D["logwt"] - sampler.saved_run.D["logz"][-1]
     weights = np.exp(ln_weights)
-    samples = bilby.core.result.rejection_sample(np.array(sampler.saved_run.D['v']), weights)
+    samples = bilby.core.result.rejection_sample(
+        np.array(sampler.saved_run.D["v"]), weights
+    )
     nsamples = len(samples)
 
     # If we don't have enough samples, don't dump them
@@ -92,7 +94,12 @@ def read_saved_state(resume_file, continuing=True):
             if sampler.added_live and continuing:
                 sampler._remove_live_points()
             sampler.nqueue = -1
-            sampler.rstate = np.random
+
+            # TODO: Seed should be saved into and read from checkpoint file
+            # or passed in as an argument.
+            seed = 42
+            sampler.rstate = np.random.Generator(np.random.PCG64(seed))
+
             sampling_time = sampler.kwargs.pop("sampling_time")
         return sampler, sampling_time
     else:
