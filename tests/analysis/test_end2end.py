@@ -82,7 +82,6 @@ class AnalysisTest(unittest.TestCase):
         values = list(answer.values())
         avg = np.mean(values)
         std = np.std(values)
-        std = 0.0
 
         comm = MPI.COMM_WORLD
         if comm.size not in answer:
