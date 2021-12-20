@@ -93,6 +93,7 @@ def analysis_runner(cli_args):
             logger.info(f"Run criteria: {json.dumps(sampler_kwargs)}")
 
             run_time = 0
+            early_stop = False
 
             for it, res in enumerate(sampler.sample(**sampler_kwargs)):
                 i = it - 1
@@ -137,13 +138,19 @@ def analysis_runner(cli_args):
                         logger.info(
                             f"Max iterations ({it}) reached; stopping sampling."
                         )
-                        sys.exit(0)
+                        early_stop = True
+                        break
 
                     if run_time > input_args.max_run_time:
                         logger.info(
                             f"Max run time ({input_args.max_run_time}) reached; stopping sampling."
                         )
-                        sys.exit(0)
+                        early_stop = True
+                        break
+
+            if early_stop:
+                pool.close()
+                sys.exit(0)
 
             # Adding the final set of live points.
             for it_final, res in enumerate(sampler.add_live_points()):
