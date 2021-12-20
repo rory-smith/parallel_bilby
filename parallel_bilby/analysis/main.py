@@ -184,20 +184,12 @@ def analysis_runner(cli_args):
             nested_samples["log_likelihood"] = out.logl
 
             result = format_result(
-                run.label,
-                run.outdir,
-                run.sampling_keys,
-                run.priors,
+                run,
+                input_args,
                 out,
                 weights,
                 nested_samples,
-                run.data_dump,
-                input_args,
-                run.args,
-                run.likelihood,
-                run.init_sampler_kwargs,
                 sampler_kwargs,
-                run.injection_parameters,
                 sampling_time,
             )
 

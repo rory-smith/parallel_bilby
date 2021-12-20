@@ -110,38 +110,25 @@ def read_saved_state(resume_file, continuing=True):
 
 
 def format_result(
-    label,
-    outdir,
-    sampling_keys,
-    priors,
-    out,
-    weights,
-    nested_samples,
-    data_dump,
-    input_args,
-    args,
-    likelihood,
-    init_sampler_kwargs,
-    sampler_kwargs,
-    injection_parameters,
-    sampling_time,
+    run, input_args, out, weights, nested_samples, sampler_kwargs, sampling_time
 ):
+
     result = bilby.core.result.Result(
-        label=label, outdir=outdir, search_parameter_keys=sampling_keys
+        label=run.label, outdir=run.outdir, search_parameter_keys=run.sampling_keys
     )
-    result.priors = priors
+    result.priors = run.priors
     result.samples = dynesty.utils.resample_equal(out.samples, weights)
     result.nested_samples = nested_samples
-    result.meta_data = data_dump["meta_data"]
+    result.meta_data = run.data_dump["meta_data"]
     result.meta_data["command_line_args"] = vars(input_args)
     result.meta_data["command_line_args"]["sampler"] = "parallel_bilby"
-    result.meta_data["config_file"] = vars(args)
+    result.meta_data["config_file"] = vars(run.args)
     result.meta_data["data_dump"] = input_args.data_dump
-    result.meta_data["likelihood"] = likelihood.meta_data
-    result.meta_data["sampler_kwargs"] = init_sampler_kwargs
+    result.meta_data["likelihood"] = run.likelihood.meta_data
+    result.meta_data["sampler_kwargs"] = run.init_sampler_kwargs
     result.meta_data["run_sampler_kwargs"] = sampler_kwargs
-    result.meta_data["injection_parameters"] = injection_parameters
-    result.injection_parameters = injection_parameters
+    result.meta_data["injection_parameters"] = run.injection_parameters
+    result.injection_parameters = run.injection_parameters
 
     result.log_likelihood_evaluations = reorder_loglikelihoods(
         unsorted_loglikelihoods=out.logl,
@@ -149,9 +136,9 @@ def format_result(
         sorted_samples=result.samples,
     )
 
-    result.log_evidence = out.logz[-1] + likelihood.noise_log_likelihood()
+    result.log_evidence = out.logz[-1] + run.likelihood.noise_log_likelihood()
     result.log_evidence_err = out.logzerr[-1]
-    result.log_noise_evidence = likelihood.noise_log_likelihood()
+    result.log_noise_evidence = run.likelihood.noise_log_likelihood()
     result.log_bayes_factor = result.log_evidence - result.log_noise_evidence
     result.sampling_time = sampling_time
 
