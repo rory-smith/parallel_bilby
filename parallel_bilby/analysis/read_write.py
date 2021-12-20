@@ -9,7 +9,7 @@ from bilby.core.utils import logger
 from pandas import DataFrame
 
 from ..utils import safe_file_dump, stopwatch
-from .utils import reorder_loglikelihoods
+from .likelihood import reorder_loglikelihoods
 
 
 @stopwatch
