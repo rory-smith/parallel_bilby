@@ -136,7 +136,7 @@ class AnalysisRun(object):
         params = {key: t for key, t in zip(self.sampling_keys, v_array)}
         return self.priors.ln_prob(params)
 
-    def get_initial_points_from_prior(self, ndim, pool, calculate_likelihood=True):
+    def get_initial_points_from_prior(self, pool, calculate_likelihood=True):
 
         # Create a new rstate for each point, otherwise each task will generate
         # the same random number, and the rstate on master will not be incremented
@@ -144,6 +144,7 @@ class AnalysisRun(object):
         map_rstates = [
             np.random.Generator(np.random.PCG64(n)) for n in sg.spawn(self.nlive)
         ]
+        ndim = len(self.sampling_keys)
 
         args_list = [
             (

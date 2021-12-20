@@ -65,12 +65,11 @@ def analysis_runner(cli_args):
             resume_file = f"{run.outdir}/{run.label}_checkpoint_resume.pickle"
             samples_file = f"{run.outdir}/{run.label}_samples.dat"
 
-            ndim = len(run.sampling_keys)
             sampler, sampling_time = read_saved_state(resume_file)
 
             if sampler is False:
                 logger.info(f"Initializing sampling points with pool size={POOL_SIZE}")
-                live_points = run.get_initial_points_from_prior(ndim, pool)
+                live_points = run.get_initial_points_from_prior(pool)
                 logger.info(
                     f"Initialize NestedSampler with "
                     f"{json.dumps(run.init_sampler_kwargs, indent=1, sort_keys=True)}"
@@ -78,7 +77,7 @@ def analysis_runner(cli_args):
                 sampler = NestedSampler(
                     run.log_likelihood_function,
                     run.prior_transform_function,
-                    ndim,
+                    len(run.sampling_keys),
                     pool=pool,
                     queue_size=POOL_SIZE,
                     print_func=dynesty.results.print_fn_fallback,
