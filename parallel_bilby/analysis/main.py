@@ -32,20 +32,63 @@ from .read_write import (
 from .sample_space import fill_sample
 
 
-def analysis_runner(cli_args):
+def analysis_runner(
+        data_dump,
+        outdir,
+        label = None,
+        dynesty_sample = "rwalk",
+        nlive = 5,
+        dynesty_bound = 'multi',
+        walks = 100,
+        maxmcmc = 5000,
+        nact = 1,
+        facc = 0.5,
+        min_eff = 10,
+        vol_dec = 0.5,
+        vol_check = 8,
+        enlarge = 1.5,
+        sampling_seed = 0,
+        bilby_zero_likelihood_mode = False,
+        #
+        fast_mpi = False,
+        mpi_timing = False,
+        mpi_timing_interval = 0,
+        check_point_deltaT = 3600,
+        n_effective = np.inf,
+        dlogz = 10,
+        do_not_save_bounds_in_resume = False,
+        n_check_point = 1e4,
+        max_its = 1e10,
+        max_run_time = 1e10,
+        rotate_checkpoints = False,
+        no_plot = False,
+        nestcheck = False,
+        **kwargs
+    ):
 
-    # Parse command line arguments
-    analysis_parser = create_analysis_parser(sampler="dynesty")
-    input_args = analysis_parser.parse_args(args=cli_args)
-
-    run = AnalysisRun(input_args)
+    run = AnalysisRun(data_dump,
+        outdir,
+        label,
+        dynesty_sample,
+        nlive,
+        dynesty_bound,
+        walks,
+        maxmcmc,
+        nact,
+        facc,
+        min_eff,
+        vol_dec,
+        vol_check,
+        enlarge,
+        sampling_seed,
+        bilby_zero_likelihood_mode)
 
     t0 = datetime.datetime.now()
     sampling_time = 0
     with MPIPool(
-        parallel_comms=input_args.fast_mpi,
-        time_mpi=input_args.mpi_timing,
-        timing_interval=input_args.mpi_timing_interval,
+        parallel_comms=fast_mpi,
+        time_mpi=mpi_timing,
+        timing_interval=mpi_timing_interval,
     ) as pool:
         if pool.is_master():
             POOL_SIZE = pool.size
@@ -82,13 +125,13 @@ def analysis_runner(cli_args):
 
             logger.info(
                 f"Starting sampling for job {run.label}, with pool size={POOL_SIZE} "
-                f"and check_point_deltaT={input_args.check_point_deltaT}"
+                f"and check_point_deltaT={check_point_deltaT}"
             )
 
             sampler_kwargs = dict(
-                n_effective=input_args.n_effective,
-                dlogz=input_args.dlogz,
-                save_bounds=not input_args.do_not_save_bounds_in_resume,
+                n_effective=n_effective,
+                dlogz=dlogz,
+                save_bounds=not do_not_save_bounds_in_resume,
             )
             logger.info(f"Run criteria: {json.dumps(sampler_kwargs)}")
 
@@ -98,12 +141,12 @@ def analysis_runner(cli_args):
             for it, res in enumerate(sampler.sample(**sampler_kwargs)):
                 i = it - 1
                 dynesty.results.print_fn_fallback(
-                    res, i, sampler.ncall, dlogz=input_args.dlogz
+                    res, i, sampler.ncall, dlogz=dlogz
                 )
 
                 if (
-                    it == 0 or it % input_args.n_check_point != 0
-                ) and it != input_args.max_its:
+                    it == 0 or it % n_check_point != 0
+                ) and it != max_its:
                     continue
 
                 iteration_time = (datetime.datetime.now() - t0).total_seconds()
@@ -118,32 +161,32 @@ def analysis_runner(cli_args):
                     last_checkpoint_s = np.inf
 
                 if (
-                    last_checkpoint_s > input_args.check_point_deltaT
-                    or it == input_args.max_its
-                    or run_time > input_args.max_run_time
+                    last_checkpoint_s > check_point_deltaT
+                    or it == max_its
+                    or run_time > max_run_time
                 ):
                     write_current_state(
                         sampler,
                         resume_file,
                         sampling_time,
-                        input_args.rotate_checkpoints,
+                        rotate_checkpoints,
                     )
                     write_sample_dump(sampler, samples_file, run.sampling_keys)
-                    if input_args.no_plot is False:
+                    if no_plot is False:
                         plot_current_state(
                             sampler, run.sampling_keys, run.outdir, run.label
                         )
 
-                    if it == input_args.max_its:
+                    if it == max_its:
                         logger.info(
                             f"Max iterations ({it}) reached; stopping sampling."
                         )
                         early_stop = True
                         break
 
-                    if run_time > input_args.max_run_time:
+                    if run_time > max_run_time:
                         logger.info(
-                            f"Max run time ({input_args.max_run_time}) reached; stopping sampling."
+                            f"Max run time ({max_run_time}) reached; stopping sampling."
                         )
                         early_stop = True
                         break
@@ -158,17 +201,17 @@ def analysis_runner(cli_args):
 
             # Create a final checkpoint and set of plots
             write_current_state(
-                sampler, resume_file, sampling_time, input_args.rotate_checkpoints
+                sampler, resume_file, sampling_time, rotate_checkpoints
             )
             write_sample_dump(sampler, samples_file, run.sampling_keys)
-            if input_args.no_plot is False:
+            if no_plot is False:
                 plot_current_state(sampler, run.sampling_keys, run.outdir, run.label)
 
             sampling_time += (datetime.datetime.now() - t0).total_seconds()
 
             out = sampler.results
 
-            if input_args.nestcheck is True:
+            if nestcheck is True:
                 logger.info("Creating nestcheck files")
                 ns_run = nestcheck.data_processing.process_dynesty_run(out)
                 nestcheck_path = os.path.join(run.outdir, "Nestcheck")
@@ -185,7 +228,7 @@ def analysis_runner(cli_args):
 
             result = format_result(
                 run,
-                input_args,
+                data_dump,
                 out,
                 weights,
                 nested_samples,
@@ -230,4 +273,10 @@ def analysis_runner(cli_args):
 
 def main():
     cli_args = get_cli_args()
-    analysis_runner(cli_args)
+
+    # Parse command line arguments
+    analysis_parser = create_analysis_parser(sampler="dynesty")
+    input_args = analysis_parser.parse_args(args=cli_args)
+
+    # Run the analysis
+    analysis_runner(**vars(input_args))

@@ -30,31 +30,17 @@ class AnalysisTest(unittest.TestCase):
             ["tests/test_files/fast_test.ini", "--outdir", self.outdir]
         )
 
-    @mpi_master
-    def tearDown(self):
-        shutil.rmtree(self.outdir)
+    # @mpi_master
+    # def tearDown(self):
+    #     shutil.rmtree(self.outdir)
 
     @pytest.mark.mpi
     def test_analysis(self):
         # Run analysis
         analysis.analysis_runner(
-            [
-                "tests/test_files/out_fast/data/fast_injection_data_dump.pickle",
-                "--nlive",
-                "5",
-                "--dlogz",
-                "10.0",
-                "--nact",
-                "1",
-                "--n-check-point",
-                "10000",
-                "--label",
-                "fast_injection_0",
-                "--outdir",
-                "tests/test_files/out_fast/result",
-                "--sampling-seed",
-                "0",
-            ]
+                data_dump="tests/test_files/out_fast/data/fast_injection_data_dump.pickle",
+                outdir="tests/test_files/out_fast/result",
+                label="fast_injection_0",
         )
 
         # Check result in master task only

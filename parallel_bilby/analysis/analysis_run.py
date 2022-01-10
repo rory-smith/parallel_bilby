@@ -11,10 +11,27 @@ from .likelihood import setup_likelihood
 
 
 class AnalysisRun(object):
-    def __init__(self, input_args):
+    def __init__(self,
+        data_dump,
+        outdir,
+        label = None,
+        dynesty_sample = "rwalk",
+        nlive = 5,
+        dynesty_bound = 'multi',
+        walks = 100,
+        maxmcmc = 5000,
+        nact = 1,
+        facc = 0.5,
+        min_eff = 10,
+        vol_dec = 0.5,
+        vol_check = 8,
+        enlarge = 1.5,
+        sampling_seed = 0,
+        bilby_zero_likelihood_mode = False,
+    ):
 
         # Get data_dump
-        with open(input_args.data_dump, "rb") as file:
+        with open(data_dump, "rb") as file:
             data_dump = pickle.load(file)
 
         ifo_list = data_dump["ifo_list"]
@@ -25,13 +42,12 @@ class AnalysisRun(object):
 
         args.weight_file = data_dump["meta_data"].get("weight_file", None)
 
-        outdir = args.outdir
-        if input_args.outdir is not None:
-            outdir = input_args.outdir
-            os.makedirs(outdir, exist_ok=True)
-        label = args.label
-        if input_args.label is not None:
-            label = input_args.label
+        if outdir is None:
+            outdir = args.outdir
+        os.makedirs(outdir, exist_ok=True)
+
+        if label is None:
+            label = args.label
 
         priors = bilby.gw.prior.PriorDict.from_json(data_dump["prior_file"])
 
@@ -64,7 +80,7 @@ class AnalysisRun(object):
                 logger.debug(f"Setting reflective boundary for {key}")
                 reflective.append(ii)
 
-        if input_args.dynesty_sample == "rwalk":
+        if dynesty_sample == "rwalk":
             logger.debug("Using the bilby-implemented rwalk sample method")
             dynesty.dynesty._SAMPLING[
                 "rwalk"
@@ -72,32 +88,32 @@ class AnalysisRun(object):
             dynesty.nestedsamplers._SAMPLING[
                 "rwalk"
             ] = bilby.core.sampler.dynesty.sample_rwalk_bilby
-        elif input_args.dynesty_sample == "rwalk_dynesty":
+        elif dynesty_sample == "rwalk_dynesty":
             logger.debug("Using the dynesty-implemented rwalk sample method")
-            input_args.dynesty_sample = "rwalk"
+            dynesty_sample = "rwalk"
         else:
             logger.debug(
-                f"Using the dynesty-implemented {input_args.dynesty_sample} sample method"
+                f"Using the dynesty-implemented {dynesty_sample} sample method"
             )
 
         self.init_sampler_kwargs = dict(
-            nlive=input_args.nlive,
-            sample=input_args.dynesty_sample,
-            bound=input_args.dynesty_bound,
-            walks=input_args.walks,
-            maxmcmc=input_args.maxmcmc,
-            nact=input_args.nact,
-            facc=input_args.facc,
+            nlive=nlive,
+            sample=dynesty_sample,
+            bound=dynesty_bound,
+            walks=walks,
+            maxmcmc=maxmcmc,
+            nact=nact,
+            facc=facc,
             first_update=dict(
-                min_eff=input_args.min_eff, min_ncall=2 * input_args.nlive
+                min_eff=min_eff, min_ncall=2 * nlive
             ),
-            vol_dec=input_args.vol_dec,
-            vol_check=input_args.vol_check,
-            enlarge=input_args.enlarge,
+            vol_dec=vol_dec,
+            vol_check=vol_check,
+            enlarge=enlarge,
             save_bounds=False,
         )
 
-        self.sampling_seed = input_args.sampling_seed
+        self.sampling_seed = sampling_seed
         self.rstate = np.random.Generator(np.random.PCG64(self.sampling_seed))
         logger.debug(
             f"Setting random state = {self.rstate} (seed={self.sampling_seed})"
@@ -109,12 +125,12 @@ class AnalysisRun(object):
         self.priors = priors
         self.sampling_keys = sampling_keys
         self.likelihood = likelihood
-        self.zero_likelihood_mode = input_args.bilby_zero_likelihood_mode
+        self.zero_likelihood_mode = bilby_zero_likelihood_mode
         self.periodic = periodic
         self.reflective = reflective
         self.args = args
         self.injection_parameters = injection_parameters
-        self.nlive = input_args.nlive
+        self.nlive = nlive
 
     def prior_transform_function(self, u_array):
         return self.priors.rescale(self.sampling_keys, u_array)
