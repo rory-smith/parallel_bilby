@@ -157,7 +157,7 @@ def generate_runner(cli_args):
     write_complete_config_file(parser=generation_parser, args=args, inputs=inputs)
     logger.info(f"Complete ini written: {inputs.complete_ini_file}")
 
-    bash_file = slurm.setup_submit(inputs.data_dump_file, inputs, args)
+    bash_file = slurm.setup_submit(inputs.data_dump_file, inputs, args, cli_args)
     if args.submit:
         subprocess.run([f"bash {bash_file}"], shell=True)
     else:

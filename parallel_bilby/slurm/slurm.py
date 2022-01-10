@@ -18,11 +18,11 @@ def load_template(template_file: str):
     return template
 
 
-def setup_submit(data_dump_file, inputs, args):
+def setup_submit(data_dump_file, inputs, args, cli_args):
     # Create analysis nodes
     analysis_nodes = []
     for idx in range(args.n_parallel):
-        node = AnalysisNode(data_dump_file, inputs, idx, args)
+        node = AnalysisNode(data_dump_file, inputs, idx, args, cli_args)
         node.write()
         analysis_nodes.append(node)
 
@@ -97,7 +97,7 @@ class BaseNode(object):
 
 
 class AnalysisNode(BaseNode):
-    def __init__(self, data_dump_file, inputs, idx, args):
+    def __init__(self, data_dump_file, inputs, idx, args, cli_args):
         super().__init__(inputs, args)
         print(f"NTASKS PER NODE {self.ntasks_per_node}")
         self.data_dump_file = data_dump_file
@@ -111,7 +111,7 @@ class AnalysisNode(BaseNode):
         self.logs = self.inputs.data_analysis_log_directory
 
         analysis_parser = create_analysis_parser(sampler=self.args.sampler)
-        self.analysis_args, _ = analysis_parser.parse_known_args(args=get_cli_args())
+        self.analysis_args, _ = analysis_parser.parse_known_args(args=cli_args)
         self.analysis_args.data_dump = self.data_dump_file
 
     @property
