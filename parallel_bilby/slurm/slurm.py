@@ -4,7 +4,6 @@ from os.path import abspath
 
 import jinja2
 from parallel_bilby.parser import create_analysis_parser
-from parallel_bilby.utils import get_cli_args
 
 DIR = os.path.dirname(__file__)
 TEMPLATE_SLURM = "template_slurm.sh"

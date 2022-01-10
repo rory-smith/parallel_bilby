@@ -11,23 +11,24 @@ from .likelihood import setup_likelihood
 
 
 class AnalysisRun(object):
-    def __init__(self,
+    def __init__(
+        self,
         data_dump,
-        outdir = None,
-        label = None,
-        dynesty_sample = "rwalk",
-        nlive = 5,
-        dynesty_bound = 'multi',
-        walks = 100,
-        maxmcmc = 5000,
-        nact = 1,
-        facc = 0.5,
-        min_eff = 10,
-        vol_dec = 0.5,
-        vol_check = 8,
-        enlarge = 1.5,
-        sampling_seed = 0,
-        bilby_zero_likelihood_mode = False,
+        outdir=None,
+        label=None,
+        dynesty_sample="rwalk",
+        nlive=5,
+        dynesty_bound="multi",
+        walks=100,
+        maxmcmc=5000,
+        nact=1,
+        facc=0.5,
+        min_eff=10,
+        vol_dec=0.5,
+        vol_check=8,
+        enlarge=1.5,
+        sampling_seed=0,
+        bilby_zero_likelihood_mode=False,
     ):
 
         # Get data_dump
@@ -105,9 +106,7 @@ class AnalysisRun(object):
             maxmcmc=maxmcmc,
             nact=nact,
             facc=facc,
-            first_update=dict(
-                min_eff=min_eff, min_ncall=2 * nlive
-            ),
+            first_update=dict(min_eff=min_eff, min_ncall=2 * nlive),
             vol_dec=vol_dec,
             vol_check=vol_check,
             enlarge=enlarge,

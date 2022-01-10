@@ -38,9 +38,9 @@ class AnalysisTest(unittest.TestCase):
     def test_analysis(self):
         # Run analysis
         analysis.analysis_runner(
-                data_dump="tests/test_files/out_fast/data/fast_injection_data_dump.pickle",
-                outdir="tests/test_files/out_fast/result",
-                label="fast_injection_0",
+            data_dump="tests/test_files/out_fast/data/fast_injection_data_dump.pickle",
+            outdir="tests/test_files/out_fast/result",
+            label="fast_injection_0",
         )
 
         # Check result in master task only

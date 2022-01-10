@@ -11,11 +11,11 @@ import time
 
 import bilby
 import dynesty
-import nestcheck.data_processing
 import numpy as np
 import pandas as pd
 from bilby.core.utils import logger
 from bilby.gw import conversion
+from nestcheck import data_processing
 from pandas import DataFrame
 
 from ..parser import create_analysis_parser
@@ -33,40 +33,41 @@ from .sample_space import fill_sample
 
 
 def analysis_runner(
-        data_dump,
-        outdir = None,
-        label = None,
-        dynesty_sample = "rwalk",
-        nlive = 5,
-        dynesty_bound = 'multi',
-        walks = 100,
-        maxmcmc = 5000,
-        nact = 1,
-        facc = 0.5,
-        min_eff = 10,
-        vol_dec = 0.5,
-        vol_check = 8,
-        enlarge = 1.5,
-        sampling_seed = 0,
-        bilby_zero_likelihood_mode = False,
-        #
-        fast_mpi = False,
-        mpi_timing = False,
-        mpi_timing_interval = 0,
-        check_point_deltaT = 3600,
-        n_effective = np.inf,
-        dlogz = 10,
-        do_not_save_bounds_in_resume = False,
-        n_check_point = 1e4,
-        max_its = 1e10,
-        max_run_time = 1e10,
-        rotate_checkpoints = False,
-        no_plot = False,
-        nestcheck = False,
-        **kwargs
-    ):
+    data_dump,
+    outdir=None,
+    label=None,
+    dynesty_sample="rwalk",
+    nlive=5,
+    dynesty_bound="multi",
+    walks=100,
+    maxmcmc=5000,
+    nact=1,
+    facc=0.5,
+    min_eff=10,
+    vol_dec=0.5,
+    vol_check=8,
+    enlarge=1.5,
+    sampling_seed=0,
+    bilby_zero_likelihood_mode=False,
+    #
+    fast_mpi=False,
+    mpi_timing=False,
+    mpi_timing_interval=0,
+    check_point_deltaT=3600,
+    n_effective=np.inf,
+    dlogz=10,
+    do_not_save_bounds_in_resume=False,
+    n_check_point=1e4,
+    max_its=1e10,
+    max_run_time=1e10,
+    rotate_checkpoints=False,
+    no_plot=False,
+    nestcheck=False,
+    **kwargs,
+):
 
-    run = AnalysisRun(data_dump,
+    run = AnalysisRun(
+        data_dump,
         outdir,
         label,
         dynesty_sample,
@@ -81,7 +82,8 @@ def analysis_runner(
         vol_check,
         enlarge,
         sampling_seed,
-        bilby_zero_likelihood_mode)
+        bilby_zero_likelihood_mode,
+    )
 
     t0 = datetime.datetime.now()
     sampling_time = 0
@@ -140,13 +142,9 @@ def analysis_runner(
 
             for it, res in enumerate(sampler.sample(**sampler_kwargs)):
                 i = it - 1
-                dynesty.results.print_fn_fallback(
-                    res, i, sampler.ncall, dlogz=dlogz
-                )
+                dynesty.results.print_fn_fallback(res, i, sampler.ncall, dlogz=dlogz)
 
-                if (
-                    it == 0 or it % n_check_point != 0
-                ) and it != max_its:
+                if (it == 0 or it % n_check_point != 0) and it != max_its:
                     continue
 
                 iteration_time = (datetime.datetime.now() - t0).total_seconds()
@@ -200,9 +198,7 @@ def analysis_runner(
                 pass
 
             # Create a final checkpoint and set of plots
-            write_current_state(
-                sampler, resume_file, sampling_time, rotate_checkpoints
-            )
+            write_current_state(sampler, resume_file, sampling_time, rotate_checkpoints)
             write_sample_dump(sampler, samples_file, run.sampling_keys)
             if no_plot is False:
                 plot_current_state(sampler, run.sampling_keys, run.outdir, run.label)
@@ -213,7 +209,7 @@ def analysis_runner(
 
             if nestcheck is True:
                 logger.info("Creating nestcheck files")
-                ns_run = nestcheck.data_processing.process_dynesty_run(out)
+                ns_run = data_processing.process_dynesty_run(out)
                 nestcheck_path = os.path.join(run.outdir, "Nestcheck")
                 bilby.core.utils.check_directory_exists_and_if_not_mkdir(nestcheck_path)
                 nestcheck_result = f"{nestcheck_path}/{run.label}_nestcheck.pickle"
