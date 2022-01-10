@@ -69,22 +69,8 @@ class ParserTest(unittest.TestCase):
             walks=100,
             waveform_approximant="IMRPhenomPv2",
             waveform_generator="bilby.gw.waveform_generator.WaveformGenerator",
-            burn_in_nact=50.0,
             check_point_deltaT=3600,
-            frac_threshold=0.01,
-            max_iterations=100000,
-            min_tau=30,
-            ncheck=500,
-            nfrac=5,
-            nsamples=10000,
-            ntemps=20,
-            nwalkers=100,
-            safety=1.0,
             sampler="dynesty",
-            thin_by_nact=1.0,
-            Tmax=10000,
-            autocorr_c=5.0,
-            autocorr_tol=50.0,
         )
 
     def test_generation_parser(self):
