@@ -13,7 +13,7 @@ from .likelihood import setup_likelihood
 class AnalysisRun(object):
     def __init__(self,
         data_dump,
-        outdir,
+        outdir = None,
         label = None,
         dynesty_sample = "rwalk",
         nlive = 5,
@@ -42,6 +42,7 @@ class AnalysisRun(object):
 
         args.weight_file = data_dump["meta_data"].get("weight_file", None)
 
+        # Create run dir if it does not exist
         if outdir is None:
             outdir = args.outdir
         os.makedirs(outdir, exist_ok=True)

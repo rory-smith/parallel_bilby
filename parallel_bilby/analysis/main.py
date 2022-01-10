@@ -34,7 +34,7 @@ from .sample_space import fill_sample
 
 def analysis_runner(
         data_dump,
-        outdir,
+        outdir = None,
         label = None,
         dynesty_sample = "rwalk",
         nlive = 5,
