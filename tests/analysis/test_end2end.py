@@ -30,9 +30,9 @@ class AnalysisTest(unittest.TestCase):
             ["tests/test_files/fast_test.ini", "--outdir", self.outdir]
         )
 
-    # @mpi_master
-    # def tearDown(self):
-    #     shutil.rmtree(self.outdir)
+    @mpi_master
+    def tearDown(self):
+        shutil.rmtree(self.outdir)
 
     @pytest.mark.mpi
     def test_analysis(self):
