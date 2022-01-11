@@ -5,6 +5,7 @@ gw150914_analysis:
   tags:
     - openstack
   when: manual
+  timeout: 6 hours
 
   image: bilbydev/bilby_pipe-test-suite-python37
   script:
