@@ -26,7 +26,7 @@ pytest:
     - mkdir -p .pip37
     - pip --cache-dir=.pip37 install .
     # Install a functioning version of dynesty
-    - pip --cache-dir=.pip37 install git+git://github.com/joshspeagle/dynesty.git@d16e716e1791efab859349d0363aff9fd8af88fa
+    - pip --cache-dir=.pip37 install git+https://github.com/joshspeagle/dynesty.git@d16e716e1791efab859349d0363aff9fd8af88fa
     # Testing utils
     - pip --cache-dir=.pip37 install pytest-mpi
     - pip --cache-dir=.pip37 install deepdiff
