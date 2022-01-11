@@ -93,7 +93,7 @@ setup(
         "numpy",
         "tqdm",
         "corner",
-        "dynesty>=1.0.0",
+        "dynesty @ git+https://github.com/joshspeagle/dynesty.git@d16e716e1791efab859349d0363aff9fd8af88fa",
         "schwimmbad",
         "pandas",
         "nestcheck",
