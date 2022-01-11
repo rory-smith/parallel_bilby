@@ -1,11 +1,9 @@
 import os
-import pytest
+
 import numpy as np
 import pandas as pd
-
+import pytest
 from deepdiff import DeepDiff
-from deepdiff.helper import CannotCompare
-
 from parallel_bilby import generation
 from parallel_bilby.analysis import analysis_run
 from parallel_bilby.analysis.sample_space import fill_sample
@@ -106,13 +104,13 @@ def test_fill_sample():
         sample,
         reference_sample,
         number_format_notation="e",
-        significant_digits=15,
+        significant_digits=8,
         ignore_numeric_type_changes=True,
         exclude_types=[np.ndarray],
     )
 
     # Numpy comparison for 0-d arrays does not work with DeepDiff
-    # Handle them seperately.
+    # Handle them separately.
     for key in reference_sample:
         if type(reference_sample[key]) == np.ndarray:
             assert reference_sample[key] == pytest.approx(sample[key], abs=1e-15)
