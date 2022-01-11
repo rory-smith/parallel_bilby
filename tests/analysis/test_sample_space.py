@@ -104,7 +104,7 @@ def test_fill_sample():
         sample,
         reference_sample,
         number_format_notation="e",
-        significant_digits=7,
+        significant_digits=6,
         ignore_numeric_type_changes=True,
         exclude_types=[np.ndarray],
     )
