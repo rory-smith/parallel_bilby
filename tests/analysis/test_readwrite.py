@@ -18,7 +18,6 @@ def create_test_data():
     # Use same ini file as fast e2e test
     generation.generate_runner(["tests/test_files/fast_test.ini", "--outdir", outdir])
 
-    # analysis_runner(cli_args)
     run = analysis_run.AnalysisRun(
         data_dump=os.path.join(outdir, "data/fast_injection_data_dump.pickle"),
         outdir=outdir,
