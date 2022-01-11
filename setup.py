@@ -82,7 +82,7 @@ setup(
     license="MIT",
     version=VERSION,
     packages=find_packages(exclude=["*tests.*", "*tests"]),
-    package_data={"parallel_bilby": [version_file]},
+    package_data={"parallel_bilby": [version_file, "slurm/template_slurm.sh"]},
     install_requires=[
         "future",
         "bilby>=1.1.4",
