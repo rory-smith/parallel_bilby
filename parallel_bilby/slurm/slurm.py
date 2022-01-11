@@ -11,6 +11,7 @@ TEMPLATE_SUBMIT = "template_runner.sh"
 
 
 def load_template(template_file: str):
+    print("TEMPLATE DIR", DIR)
     template_loader = jinja2.FileSystemLoader(searchpath=DIR)
     template_env = jinja2.Environment(loader=template_loader)
     template = template_env.get_template(template_file)
