@@ -46,7 +46,8 @@ class AnalysisRun(object):
         # Create run dir if it does not exist
         if outdir is None:
             outdir = args.outdir
-        os.makedirs(outdir, exist_ok=True)
+        else:
+            os.makedirs(outdir, exist_ok=True)
 
         if label is None:
             label = args.label
