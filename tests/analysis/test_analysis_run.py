@@ -102,6 +102,7 @@ class AnalysisRunTest(unittest.TestCase):
         v_array = self.run.prior_transform_function([unit])
         assert pytest.approx(loglike) == self.run.log_likelihood_function(v_array)
 
+    @pytest.mark.mpi
     def test_get_nested_sampler(self):
         # Create a test pool
         with MPIPool() as pool:
