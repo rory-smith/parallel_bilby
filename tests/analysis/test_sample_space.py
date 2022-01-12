@@ -113,4 +113,4 @@ def test_fill_sample():
     # Handle them separately.
     for key in reference_sample:
         if type(reference_sample[key]) == np.ndarray:
-            assert reference_sample[key] == pytest.approx(sample[key], abs=1e-15)
+            assert reference_sample[key] == pytest.approx(sample[key], abs=1e-8)
