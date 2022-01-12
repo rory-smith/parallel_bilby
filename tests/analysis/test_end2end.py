@@ -7,19 +7,7 @@ import numpy as np
 import pytest
 from mpi4py import MPI
 from parallel_bilby import analysis, generation
-
-
-def mpi_master(func):
-    def wrapper(*args, **kwargs):
-        comm = MPI.COMM_WORLD
-        if comm.Get_rank() == 0:
-            f = func(*args, **kwargs)
-        else:
-            f = None
-        comm.Barrier()
-        return f
-
-    return wrapper
+from utils import mpi_master
 
 
 class AnalysisTest(unittest.TestCase):

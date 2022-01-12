@@ -6,9 +6,12 @@ import numpy as np
 import pytest
 from parallel_bilby import generation
 from parallel_bilby.analysis import analysis_run
+from parallel_bilby.schwimmbad_fast import MPIPoolFast as MPIPool
+from utils import mpi_master
 
 
 class AnalysisRunTest(unittest.TestCase):
+    @mpi_master
     def setUp(self):
         self.outdir = "tests/test_files/out_analysis_run_test/"
 
@@ -25,6 +28,7 @@ class AnalysisRunTest(unittest.TestCase):
         self.min_chirp_mass = self.run.priors["chirp_mass"].minimum
         self.max_chirp_mass = self.run.priors["chirp_mass"].maximum
 
+    @mpi_master
     def tearDown(self):
         shutil.rmtree(self.outdir)
 
@@ -55,6 +59,28 @@ class AnalysisRunTest(unittest.TestCase):
                 np.log(1 / (self.max_chirp_mass - self.min_chirp_mass))
             ) == self.run.log_prior_function(v_array)
 
+    @pytest.mark.mpi
+    def test_get_initial_points_from_prior(self):
+
+        # Create a test pool
+        with MPIPool() as pool:
+            if pool.is_master():
+                unit, theta, loglike = self.run.get_initial_points_from_prior(pool)
+
+                # Check arrays have correct length
+                assert len(unit) == self.run.nlive
+                assert len(theta) == self.run.nlive
+                assert len(loglike) == self.run.nlive
+
+                for i in range(self.run.nlive):
+                    # Check point is valid
+                    self._check_point_validity(unit[i], theta[i], loglike[i])
+
+                    # Check point is unique
+                    assert 1 == np.sum(np.isclose(unit[i], unit))
+                    assert 1 == np.sum(np.isclose(theta[i], theta))
+                    assert 1 == np.sum(np.isclose(loglike[i], loglike))
+
     def test_get_initial_point_from_prior(self):
         args = (
             self.run.prior_transform_function,
@@ -66,10 +92,18 @@ class AnalysisRunTest(unittest.TestCase):
         )
 
         unit, theta, loglike = self.run.get_initial_point_from_prior(args)
+        self._check_point_validity(unit[0], theta[0], loglike)
 
+    def _check_point_validity(self, unit, theta, loglike):
         # Check that the values are sensible
-        assert 0 <= unit[0] <= 1
-        assert self.min_chirp_mass <= theta[0] <= self.max_chirp_mass
+        assert 0 <= unit <= 1
+        assert self.min_chirp_mass <= theta <= self.max_chirp_mass
 
         v_array = self.run.prior_transform_function([unit])
         assert pytest.approx(loglike) == self.run.log_likelihood_function(v_array)
+
+    # def test_get_nested_sampler(self):
+    #     # Create a test pool
+    #     pool = multiprocessing.Pool(4)
+
+    #     self.run.get_nested_sampler()
