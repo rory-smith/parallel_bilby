@@ -54,3 +54,22 @@ class AnalysisRunTest(unittest.TestCase):
             assert pytest.approx(
                 np.log(1 / (self.max_chirp_mass - self.min_chirp_mass))
             ) == self.run.log_prior_function(v_array)
+
+    def test_get_initial_point_from_prior(self):
+        args = (
+            self.run.prior_transform_function,
+            self.run.log_prior_function,
+            self.run.log_likelihood_function,
+            len(self.run.sampling_keys),
+            True,
+            np.random.Generator(np.random.PCG64(1)),
+        )
+
+        unit, theta, loglike = self.run.get_initial_point_from_prior(args)
+
+        # Check that the values are sensible
+        assert 0 <= unit[0] <= 1
+        assert self.min_chirp_mass <= theta[0] <= self.max_chirp_mass
+
+        v_array = self.run.prior_transform_function([unit])
+        assert pytest.approx(loglike) == self.run.log_likelihood_function(v_array)
