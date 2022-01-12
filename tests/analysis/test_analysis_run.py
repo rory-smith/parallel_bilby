@@ -2,6 +2,7 @@ import os
 import shutil
 import unittest
 
+import dynesty
 import numpy as np
 import pytest
 from parallel_bilby import generation
@@ -61,7 +62,6 @@ class AnalysisRunTest(unittest.TestCase):
 
     @pytest.mark.mpi
     def test_get_initial_points_from_prior(self):
-
         # Create a test pool
         with MPIPool() as pool:
             if pool.is_master():
@@ -102,8 +102,11 @@ class AnalysisRunTest(unittest.TestCase):
         v_array = self.run.prior_transform_function([unit])
         assert pytest.approx(loglike) == self.run.log_likelihood_function(v_array)
 
-    # def test_get_nested_sampler(self):
-    #     # Create a test pool
-    #     pool = multiprocessing.Pool(4)
+    def test_get_nested_sampler(self):
+        # Create a test pool
+        with MPIPool() as pool:
+            if pool.is_master():
+                live_points = self.run.get_initial_points_from_prior(pool)
+                sampler = self.run.get_nested_sampler(live_points, pool, pool.size)
 
-    #     self.run.get_nested_sampler()
+                assert type(sampler) == dynesty.nestedsamplers.MultiEllipsoidSampler
