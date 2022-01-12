@@ -29,7 +29,7 @@ pytest:
     - pip --cache-dir=.pip37 install git+https://github.com/joshspeagle/dynesty.git@d16e716e1791efab859349d0363aff9fd8af88fa
     # Run tests and collect coverage data
     - pytest --cov parallel_bilby
-    - mpirun -n 4 python -m pytest -s --with-mpi
+    - mpirun -n 4 python -m pytest --with-mpi
     - coverage html
     - coverage-badge -o coverage_badge.svg -f
 
