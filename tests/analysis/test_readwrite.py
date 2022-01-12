@@ -53,16 +53,18 @@ def test_readwrite():
     filename = "readwrite_test_file"
     sampling_time_ref = 123.0
 
-    # Write to file
-    read_write.write_current_state(
-        sampler_ref, filename, sampling_time_ref, rotate=False
-    )
+    try:
+        # Write to file
+        read_write.write_current_state(
+            sampler_ref, filename, sampling_time_ref, rotate=False
+        )
 
-    # Read it again
-    sampler, sampling_time = read_write.read_saved_state(filename)
+        # Read it again
+        sampler, sampling_time = read_write.read_saved_state(filename)
 
-    # Delete file
-    os.remove(filename)
+    finally:
+        # Delete file
+        os.remove(filename)
 
     assert sampling_time == sampling_time_ref
 
