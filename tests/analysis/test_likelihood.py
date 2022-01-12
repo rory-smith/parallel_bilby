@@ -1,7 +1,9 @@
 import numpy as np
+import pytest
 from parallel_bilby.analysis.likelihood import reorder_loglikelihoods
 
 
+@pytest.mark.mpi_skip
 def test_reorder_loglikelihoods():
     sorted_s = np.array([[1, 2, 3, 4]]).T
     unsorted_s = np.array([[3, 1, 4, 2]]).T

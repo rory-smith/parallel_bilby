@@ -3,6 +3,7 @@ import os
 import shutil
 
 import dill
+import pytest
 from deepdiff import DeepDiff
 from parallel_bilby import generation
 from parallel_bilby.analysis import analysis_run, read_write
@@ -39,6 +40,7 @@ def create_test_data():
     shutil.rmtree(outdir)
 
 
+@pytest.mark.mpi_skip
 def test_readwrite():
     # Read reference data
     with open(reference_file, "rb") as dill_file:

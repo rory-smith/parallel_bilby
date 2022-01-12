@@ -33,6 +33,7 @@ class AnalysisRunTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.outdir)
 
+    @pytest.mark.mpi_skip
     def test_prior_transform_function(self):
         # Fast test only has one parameter: the chirp mass
         assert self.run.prior_transform_function([0])[0] == self.min_chirp_mass
@@ -41,6 +42,7 @@ class AnalysisRunTest(unittest.TestCase):
         )
         assert self.run.prior_transform_function([1])[0] == self.max_chirp_mass
 
+    @pytest.mark.mpi_skip
     def test_log_likelihood_function(self):
         v_array = self.run.prior_transform_function([0.5])
         assert pytest.approx(878.8714803944144) == self.run.log_likelihood_function(
@@ -53,6 +55,7 @@ class AnalysisRunTest(unittest.TestCase):
         self.run.zero_likelihood_mode = True
         assert 0 == self.run.log_likelihood_function(v_array)
 
+    @pytest.mark.mpi_skip
     def test_log_prior_function(self):
         for i in np.linspace(0, 1, 4):
             v_array = self.run.prior_transform_function([i])
@@ -81,6 +84,7 @@ class AnalysisRunTest(unittest.TestCase):
                     assert 1 == np.sum(np.isclose(theta[i], theta))
                     assert 1 == np.sum(np.isclose(loglike[i], loglike))
 
+    @pytest.mark.mpi_skip
     def test_get_initial_point_from_prior(self):
         args = (
             self.run.prior_transform_function,
@@ -94,6 +98,7 @@ class AnalysisRunTest(unittest.TestCase):
         unit, theta, loglike = self.run.get_initial_point_from_prior(args)
         self._check_point_validity(unit[0], theta[0], loglike)
 
+    @pytest.mark.mpi_skip
     def _check_point_validity(self, unit, theta, loglike):
         # Check that the values are sensible
         assert 0 <= unit <= 1

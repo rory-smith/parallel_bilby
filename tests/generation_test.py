@@ -3,6 +3,7 @@ import pickle
 import shutil
 import unittest
 
+import pytest
 from parallel_bilby import generation
 
 GW150914_ROOT = "examples/GW150914_IMRPhenomPv2"
@@ -34,6 +35,7 @@ class GenerationTest(unittest.TestCase):
         if os.path.exists(self.outdir):
             shutil.rmtree(self.outdir)
 
+    @pytest.mark.mpi_skip
     def test_generation(self):
         generation_cli = [
             self.ini,

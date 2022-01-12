@@ -28,6 +28,7 @@ class SampleSpaceTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.outdir)
 
+    @pytest.mark.mpi_skip
     def test_fill_sample(self):
         ii = 0
         row = pd.Series(
