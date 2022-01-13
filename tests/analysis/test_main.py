@@ -25,16 +25,14 @@ class MainTest(unittest.TestCase):
     def test_max_its(self):
         its = 5
         # Run analysis
-        try:
-            analysis.analysis_runner(
-                data_dump=os.path.join(OUTDIR, "data/fast_injection_data_dump.pickle"),
-                outdir=os.path.join(OUTDIR, "result"),
-                label="fast_injection_0",
-                max_its=its,
-            )
-        # sys.exit(0) is called when max_its is reached
-        except SystemExit as e:
-            assert e.code == 0
+        exit_reason = analysis.analysis_runner(
+            data_dump=os.path.join(OUTDIR, "data/fast_injection_data_dump.pickle"),
+            outdir=os.path.join(OUTDIR, "result"),
+            label="fast_injection_0",
+            max_its=its,
+        )
+
+        check_master_value(exit_reason, 1)
 
         with open(
             os.path.join(OUTDIR, "result/fast_injection_0_checkpoint_resume.pickle"),
@@ -44,3 +42,21 @@ class MainTest(unittest.TestCase):
 
         # The code runs 2 more iterations than specified
         assert resume_file.it == its + 2
+
+    @pytest.mark.mpi
+    def test_max_time(self):
+        time = 0.1
+        # Run analysis
+        exit_reason = analysis.analysis_runner(
+            data_dump=os.path.join(OUTDIR, "data/fast_injection_data_dump.pickle"),
+            outdir=os.path.join(OUTDIR, "result"),
+            label="fast_injection_0",
+            max_run_time=time,
+        )
+
+        check_master_value(exit_reason, 2)
+
+
+@mpi_master
+def check_master_value(test_value, expected_value):
+    assert test_value == expected_value
