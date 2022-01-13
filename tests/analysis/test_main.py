@@ -61,6 +61,25 @@ class MainTest(unittest.TestCase):
 
         check_master_value(exit_reason, 2)
 
+    @pytest.mark.mpi
+    def test_resume(self):
+        # Run analysis for 5 iterations
+        exit_reason = analysis.analysis_runner(
+            data_dump=os.path.join(OUTDIR, "data/fast_injection_data_dump.pickle"),
+            outdir=os.path.join(OUTDIR, "result"),
+            label="fast_injection_0",
+            max_its=5,
+        )
+        # Sanity check: make sure the run stopped because of max iterations
+        check_master_value(exit_reason, 1)
+
+        exit_reason = analysis.analysis_runner(
+            data_dump=os.path.join(OUTDIR, "data/fast_injection_data_dump.pickle"),
+            outdir=os.path.join(OUTDIR, "result"),
+            label="fast_injection_0",
+        )
+        check_master_value(exit_reason, 0)
+
 
 @mpi_master
 def check_master_value(test_value, expected_value):
