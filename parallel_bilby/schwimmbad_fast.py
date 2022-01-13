@@ -65,6 +65,7 @@ class MPIPoolFast(MPIPool):
         self.master = 0
         self.rank = self.comm.Get_rank()
 
+        self.pool_open = True
         atexit.register(lambda: MPIPool.close(self))
 
         # Option to enable parallel communication
@@ -189,8 +190,7 @@ class MPIPoolFast(MPIPool):
                 self.timer.start("compute")
                 func, arg = task
                 log.log(
-                    _VERBOSE,
-                    f"Worker {worker} got task {arg} with tag {status.tag}",
+                    _VERBOSE, f"Worker {worker} got task {arg} with tag {status.tag}",
                 )
 
                 result = func(arg)
@@ -317,8 +317,10 @@ class MPIPoolFast(MPIPool):
 
     def close(self):
         """When master task is done, tidy up."""
-
-        if self.is_master():
+        # Only kill workers if pool is open, otherwise a leftover
+        # MPI message will remain and kill the next pool that opens
+        if self.is_master() and self.pool_open:
+            self.pool_open = False
             self.kill_workers()
 
         if self.time_mpi:
