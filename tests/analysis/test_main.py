@@ -4,6 +4,7 @@ import unittest
 
 import dill
 import pytest
+from mpi4py import MPI
 from parallel_bilby import analysis, generation
 from utils import mpi_master
 
@@ -34,14 +35,18 @@ class MainTest(unittest.TestCase):
 
         check_master_value(exit_reason, 1)
 
-        with open(
-            os.path.join(OUTDIR, "result/fast_injection_0_checkpoint_resume.pickle"),
-            "rb",
-        ) as f:
-            resume_file = dill.load(f)
+        # Only check the pickle file on master
+        if MPI.COMM_WORLD.Get_rank() == 0:
+            with open(
+                os.path.join(
+                    OUTDIR, "result/fast_injection_0_checkpoint_resume.pickle"
+                ),
+                "rb",
+            ) as f:
+                resume_file = dill.load(f)
 
-        # The code runs 2 more iterations than specified
-        assert resume_file.it == its + 2
+            # The code runs 2 more iterations than specified
+            assert resume_file.it == its + 2
 
     @pytest.mark.mpi
     def test_max_time(self):
