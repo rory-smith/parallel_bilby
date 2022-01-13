@@ -320,8 +320,13 @@ class MPIPoolFast(MPIPool):
         """When master task is done, tidy up."""
         # Only kill workers if pool is open, otherwise a leftover
         # MPI message will remain and kill the next pool that opens
-        if self.is_master() and self.pool_open:
-            self.pool_open = False
+        if not self.pool_open:
+            raise RuntimeError(
+                "Attempting to close schwimmbad pool that has already been closed"
+            )
+
+        self.pool_open = False
+        if self.is_master():
             self.kill_workers()
 
         if self.time_mpi:
