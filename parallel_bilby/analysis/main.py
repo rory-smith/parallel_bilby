@@ -195,9 +195,7 @@ def analysis_runner(
                         early_stop = True
                         break
 
-            if early_stop:
-                pool.close()
-            else:
+            if not early_stop:
                 exit_reason = 0
                 # Adding the final set of live points.
                 for it_final, res in enumerate(sampler.add_live_points()):
