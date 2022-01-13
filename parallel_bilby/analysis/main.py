@@ -6,7 +6,6 @@ import datetime
 import json
 import os
 import pickle
-import sys
 import time
 
 import bilby
@@ -142,16 +141,24 @@ def analysis_runner(
 
             for it, res in enumerate(sampler.sample(**sampler_kwargs)):
                 i = it - 1
-                dynesty.results.print_fn_fallback(res, i, sampler.ncall, dlogz=dlogz)
 
-                if (it == 0 or it % n_check_point != 0) and it != max_its:
-                    continue
+                dynesty.results.print_fn_fallback(res, i, sampler.ncall, dlogz=dlogz)
 
                 iteration_time = (datetime.datetime.now() - t0).total_seconds()
                 t0 = datetime.datetime.now()
 
                 sampling_time += iteration_time
                 run_time += iteration_time
+
+                # If the criteria for writing a checkpoint is met,
+                # or the run needs to end, then continue is NOT called,
+                # causing the remaining code to run
+                if (
+                    (it == 0 or it % n_check_point != 0)
+                    and it != max_its
+                    and run_time < max_run_time
+                ):
+                    continue
 
                 if os.path.isfile(resume_file):
                     last_checkpoint_s = time.time() - os.path.getmtime(resume_file)
@@ -164,10 +171,7 @@ def analysis_runner(
                     or run_time > max_run_time
                 ):
                     write_current_state(
-                        sampler,
-                        resume_file,
-                        sampling_time,
-                        rotate_checkpoints,
+                        sampler, resume_file, sampling_time, rotate_checkpoints,
                     )
                     write_sample_dump(sampler, samples_file, run.sampling_keys)
                     if no_plot is False:
@@ -176,95 +180,112 @@ def analysis_runner(
                         )
 
                     if it == max_its:
+                        exit_reason = 1
                         logger.info(
-                            f"Max iterations ({it}) reached; stopping sampling."
+                            f"Max iterations ({it}) reached; stopping sampling (exit_reason={exit_reason})."
                         )
                         early_stop = True
                         break
 
                     if run_time > max_run_time:
+                        exit_reason = 2
                         logger.info(
-                            f"Max run time ({max_run_time}) reached; stopping sampling."
+                            f"Max run time ({max_run_time}) reached; stopping sampling (exit_reason={exit_reason})."
                         )
                         early_stop = True
                         break
 
             if early_stop:
                 pool.close()
-                sys.exit(0)
+            else:
+                exit_reason = 0
+                # Adding the final set of live points.
+                for it_final, res in enumerate(sampler.add_live_points()):
+                    pass
 
-            # Adding the final set of live points.
-            for it_final, res in enumerate(sampler.add_live_points()):
-                pass
-
-            # Create a final checkpoint and set of plots
-            write_current_state(sampler, resume_file, sampling_time, rotate_checkpoints)
-            write_sample_dump(sampler, samples_file, run.sampling_keys)
-            if no_plot is False:
-                plot_current_state(sampler, run.sampling_keys, run.outdir, run.label)
-
-            sampling_time += (datetime.datetime.now() - t0).total_seconds()
-
-            out = sampler.results
-
-            if nestcheck is True:
-                logger.info("Creating nestcheck files")
-                ns_run = data_processing.process_dynesty_run(out)
-                nestcheck_path = os.path.join(run.outdir, "Nestcheck")
-                bilby.core.utils.check_directory_exists_and_if_not_mkdir(nestcheck_path)
-                nestcheck_result = f"{nestcheck_path}/{run.label}_nestcheck.pickle"
-
-                with open(nestcheck_result, "wb") as file_nest:
-                    pickle.dump(ns_run, file_nest)
-
-            weights = np.exp(out["logwt"] - out["logz"][-1])
-            nested_samples = DataFrame(out.samples, columns=run.sampling_keys)
-            nested_samples["weights"] = weights
-            nested_samples["log_likelihood"] = out.logl
-
-            result = format_result(
-                run,
-                data_dump,
-                out,
-                weights,
-                nested_samples,
-                sampler_kwargs,
-                sampling_time,
-            )
-
-            posterior = conversion.fill_from_fixed_priors(result.posterior, run.priors)
-
-            logger.info(
-                "Generating posterior from marginalized parameters for"
-                f" nsamples={len(posterior)}, POOL={pool.size}"
-            )
-            fill_args = [(ii, row, run.likelihood) for ii, row in posterior.iterrows()]
-            samples = pool.map(fill_sample, fill_args)
-            result.posterior = pd.DataFrame(samples)
-
-            logger.debug("Updating prior to the actual prior")
-            for par, name in zip(
-                ["distance", "phase", "time"],
-                ["luminosity_distance", "phase", "geocent_time"],
-            ):
-                if getattr(run.likelihood, f"{par}_marginalization", False):
-                    run.priors[name] = run.likelihood.priors[name]
-            result.priors = run.priors
-
-            if run.args.convert_to_flat_in_component_mass:
-                try:
-                    result = bilby.gw.prior.convert_to_flat_in_component_mass_prior(
-                        result
+                # Create a final checkpoint and set of plots
+                write_current_state(
+                    sampler, resume_file, sampling_time, rotate_checkpoints
+                )
+                write_sample_dump(sampler, samples_file, run.sampling_keys)
+                if no_plot is False:
+                    plot_current_state(
+                        sampler, run.sampling_keys, run.outdir, run.label
                     )
-                except Exception as e:
-                    logger.warning(f"Unable to convert to the LALInference prior: {e}")
 
-            logger.info(f"Saving result to {run.outdir}/{run.label}_result.json")
-            result.save_to_file(extension="json")
-            print(
-                f"Sampling time = {datetime.timedelta(seconds=result.sampling_time)}s"
-            )
-            print(result)
+                sampling_time += (datetime.datetime.now() - t0).total_seconds()
+
+                out = sampler.results
+
+                if nestcheck is True:
+                    logger.info("Creating nestcheck files")
+                    ns_run = data_processing.process_dynesty_run(out)
+                    nestcheck_path = os.path.join(run.outdir, "Nestcheck")
+                    bilby.core.utils.check_directory_exists_and_if_not_mkdir(
+                        nestcheck_path
+                    )
+                    nestcheck_result = f"{nestcheck_path}/{run.label}_nestcheck.pickle"
+
+                    with open(nestcheck_result, "wb") as file_nest:
+                        pickle.dump(ns_run, file_nest)
+
+                weights = np.exp(out["logwt"] - out["logz"][-1])
+                nested_samples = DataFrame(out.samples, columns=run.sampling_keys)
+                nested_samples["weights"] = weights
+                nested_samples["log_likelihood"] = out.logl
+
+                result = format_result(
+                    run,
+                    data_dump,
+                    out,
+                    weights,
+                    nested_samples,
+                    sampler_kwargs,
+                    sampling_time,
+                )
+
+                posterior = conversion.fill_from_fixed_priors(
+                    result.posterior, run.priors
+                )
+
+                logger.info(
+                    "Generating posterior from marginalized parameters for"
+                    f" nsamples={len(posterior)}, POOL={pool.size}"
+                )
+                fill_args = [
+                    (ii, row, run.likelihood) for ii, row in posterior.iterrows()
+                ]
+                samples = pool.map(fill_sample, fill_args)
+                result.posterior = pd.DataFrame(samples)
+
+                logger.debug("Updating prior to the actual prior")
+                for par, name in zip(
+                    ["distance", "phase", "time"],
+                    ["luminosity_distance", "phase", "geocent_time"],
+                ):
+                    if getattr(run.likelihood, f"{par}_marginalization", False):
+                        run.priors[name] = run.likelihood.priors[name]
+                result.priors = run.priors
+
+                if run.args.convert_to_flat_in_component_mass:
+                    try:
+                        result = bilby.gw.prior.convert_to_flat_in_component_mass_prior(
+                            result
+                        )
+                    except Exception as e:
+                        logger.warning(
+                            f"Unable to convert to the LALInference prior: {e}"
+                        )
+
+                logger.info(f"Saving result to {run.outdir}/{run.label}_result.json")
+                result.save_to_file(extension="json")
+                print(
+                    f"Sampling time = {datetime.timedelta(seconds=result.sampling_time)}s"
+                )
+                print(result)
+        else:
+            exit_reason = -1
+        return exit_reason
 
 
 def main():
