@@ -171,7 +171,10 @@ def analysis_runner(
                     or run_time > max_run_time
                 ):
                     write_current_state(
-                        sampler, resume_file, sampling_time, rotate_checkpoints,
+                        sampler,
+                        resume_file,
+                        sampling_time,
+                        rotate_checkpoints,
                     )
                     write_sample_dump(sampler, samples_file, run.sampling_keys)
                     if no_plot is False:

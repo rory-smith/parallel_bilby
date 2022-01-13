@@ -190,7 +190,8 @@ class MPIPoolFast(MPIPool):
                 self.timer.start("compute")
                 func, arg = task
                 log.log(
-                    _VERBOSE, f"Worker {worker} got task {arg} with tag {status.tag}",
+                    _VERBOSE,
+                    f"Worker {worker} got task {arg} with tag {status.tag}",
                 )
 
                 result = func(arg)
