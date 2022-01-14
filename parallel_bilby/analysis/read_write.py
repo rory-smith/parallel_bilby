@@ -44,6 +44,9 @@ def write_current_state(sampler, resume_file, sampling_time, rotate=False):
     else:
         logger.warning("Cannot write pickle resume file!")
 
+    # Delete the random state so that the object is unchanged
+    del sampler.kwargs["random_state"]
+
 
 def write_sample_dump(sampler, samples_file, search_parameter_keys):
     """Writes a checkpoint file

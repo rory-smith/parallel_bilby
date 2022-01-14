@@ -3,6 +3,7 @@ import os
 import shutil
 
 import dill
+import numpy as np
 import pytest
 from deepdiff import DeepDiff
 from parallel_bilby import generation
@@ -33,6 +34,9 @@ def create_test_data():
     # Get sampler object and write reference pickle
     sampler = run.get_nested_sampler(live_points, pool=pool, pool_size=1)
 
+    # Save random state along with the file
+    sampler.kwargs["random_state"] = sampler.rstate.bit_generator.state
+
     with open(reference_file, "wb") as dill_file:
         dill.dump(sampler, dill_file)
 
@@ -48,7 +52,8 @@ def test_readwrite():
 
     # Dynesty strips these attributes but does not catch errors properly
     # if they are already missing, so we have to set them to None
-    sampler_ref.rstate = None
+    sampler_ref.rstate = np.random.Generator(np.random.PCG64())
+    sampler_ref.rstate.bit_generator.state = sampler_ref.kwargs.pop("random_state")
     sampler_ref.pool = None
     sampler_ref.loglikelihood.pool = None
 
