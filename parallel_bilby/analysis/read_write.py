@@ -99,7 +99,6 @@ def read_saved_state(resume_file, continuing=True):
             sampler = dill.load(file)
             if sampler.added_live and continuing:
                 sampler._remove_live_points()
-            sampler.nqueue = -1
 
             # Create random number generator and restore state
             # from file, then remove it from kwargs because it
