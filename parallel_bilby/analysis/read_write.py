@@ -34,6 +34,10 @@ def write_current_state(sampler, resume_file, sampling_time, rotate=False):
         logger.info(f"Backing up existing checkpoint file to {resume_file_bk}")
         shutil.copyfile(resume_file, resume_file_bk)
     sampler.kwargs["sampling_time"] = sampling_time
+
+    # Get random state and package it into the resume object
+    sampler.kwargs["random_state"] = sampler.rstate.bit_generator.state
+
     if dill.pickles(sampler):
         safe_file_dump(sampler, resume_file, dill)
         logger.info(f"Written checkpoint file {resume_file}")
@@ -97,10 +101,11 @@ def read_saved_state(resume_file, continuing=True):
                 sampler._remove_live_points()
             sampler.nqueue = -1
 
-            # TODO: Seed should be saved into and read from checkpoint file
-            # or passed in as an argument.
-            seed = 42
-            sampler.rstate = np.random.Generator(np.random.PCG64(seed))
+            # Create random number generator and restore state
+            # from file, then remove it from kwargs because it
+            # is not useful after the generator has been cycled
+            sampler.rstate = np.random.Generator(np.random.PCG64())
+            sampler.rstate.bit_generator.state = sampler.kwargs.pop("random_state")
 
             sampling_time = sampler.kwargs.pop("sampling_time")
         return sampler, sampling_time
