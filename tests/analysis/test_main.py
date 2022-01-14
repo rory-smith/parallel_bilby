@@ -79,7 +79,10 @@ class MainTest(unittest.TestCase):
         resume_result = self.read_bilby_result()
 
         if comm.Get_rank() == 0:
-            assert reference_result.log_evidence == resume_result.log_evidence
+            assert (
+                pytest.approx(reference_result.log_evidence)
+                == resume_result.log_evidence
+            )
 
     @mpi_master
     def read_resume_file(self):
