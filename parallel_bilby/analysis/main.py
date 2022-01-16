@@ -90,6 +90,7 @@ def analysis_runner(
         parallel_comms=fast_mpi,
         time_mpi=mpi_timing,
         timing_interval=mpi_timing_interval,
+        use_dill=True,
     ) as pool:
         if pool.is_master():
             POOL_SIZE = pool.size
@@ -123,6 +124,7 @@ def analysis_runner(
                 logger.info(f"Read in resume file with sampling_time = {sampling_time}")
                 sampler.pool = pool
                 sampler.M = pool.map
+                sampler.loglikelihood.pool = pool
 
             logger.info(
                 f"Starting sampling for job {run.label}, with pool size={POOL_SIZE} "
