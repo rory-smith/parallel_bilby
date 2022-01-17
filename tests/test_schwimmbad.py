@@ -62,3 +62,9 @@ def test_timer():
         ]
         for entry in expected_keys:
             assert entry in data[0].keys()
+
+
+@pytest.mark.mpi
+def test_enabled():
+    with MPIPool() as pool:
+        assert pool.enabled()
