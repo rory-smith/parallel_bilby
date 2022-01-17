@@ -152,26 +152,26 @@ def analysis_runner(
                 sampling_time += iteration_time
                 run_time += iteration_time
 
-                # If the criteria for writing a checkpoint is met,
-                # or the run needs to end, then continue is NOT called,
-                # causing the remaining code to run
-                if (
-                    (it == 0 or it % n_check_point != 0)
-                    and it != max_its
-                    and run_time < max_run_time
-                ):
-                    continue
-
                 if os.path.isfile(resume_file):
                     last_checkpoint_s = time.time() - os.path.getmtime(resume_file)
                 else:
                     last_checkpoint_s = np.inf
 
+                """
+                Criteria for writing checkpoints:
+                a) time since last checkpoint > check_point_deltaT
+                b) reached an integer multiple of n_check_point
+                c) reached max iterations
+                d) reached max runtime
+                """
+
                 if (
                     last_checkpoint_s > check_point_deltaT
+                    or (it % n_check_point == 0 and it != 0)
                     or it == max_its
                     or run_time > max_run_time
                 ):
+
                     write_current_state(
                         sampler,
                         resume_file,
