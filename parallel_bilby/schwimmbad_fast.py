@@ -14,22 +14,17 @@ def _dummy_callback(x):
 
 def _import_mpi(quiet=False, use_dill=False):
     global MPI
-    try:
-        import mpi4py
+    import mpi4py
 
-        mpi4py.rc.threads = False
-        mpi4py.rc.recv_mprobe = False
-        from mpi4py import MPI as _MPI
+    mpi4py.rc.threads = False
+    mpi4py.rc.recv_mprobe = False
+    from mpi4py import MPI as _MPI
 
-        if use_dill:
-            import dill
+    if use_dill:
+        import dill
 
-            _MPI.pickle.__init__(dill.dumps, dill.loads, dill.HIGHEST_PROTOCOL)
-        MPI = _MPI
-    except ImportError:
-        if not quiet:
-            # Re-raise with a more user-friendly error:
-            raise ImportError("Please install mpi4py")
+        _MPI.pickle.__init__(dill.dumps, dill.loads, dill.HIGHEST_PROTOCOL)
+    MPI = _MPI
 
     return MPI
 
