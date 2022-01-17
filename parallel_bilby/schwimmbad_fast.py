@@ -73,14 +73,11 @@ class MPIPoolFast(MPIPool):
         else:
             self.timer = NullTimer()
 
-        # Periodically save the timing output (specify in seconds)
-        self.timing_interval = 0
-        if self.comm.size > 32:  # Choose a worker from a different node if possible
-            if self.rank == 32:
-                self.timing_interval = timing_interval
+        # Periodically save the timing output on only the first worker task (specify in seconds)
+        if self.rank == 1:
+            self.timing_interval = timing_interval
         else:
-            if self.rank == 1:
-                self.timing_interval = timing_interval
+            self.timing_interval = 0
 
         if self.timing_interval == 0:
             self.timing_interval = False
