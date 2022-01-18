@@ -8,7 +8,7 @@ import pytest
 from parallel_bilby import generation
 from parallel_bilby.analysis import analysis_run
 from parallel_bilby.schwimmbad_fast import MPIPoolFast as MPIPool
-from utils import mpi_master
+from tests.utils import mpi_master
 
 
 class AnalysisRunTest(unittest.TestCase):

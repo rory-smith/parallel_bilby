@@ -7,7 +7,7 @@ import dill
 import pytest
 from mpi4py import MPI
 from parallel_bilby import analysis, generation
-from utils import mpi_master
+from tests.utils import mpi_master
 
 OUTDIR = "tests/test_files/out_main_test/"
 

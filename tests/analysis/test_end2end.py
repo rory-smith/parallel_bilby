@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 from mpi4py import MPI
 from parallel_bilby import analysis, generation
-from utils import mpi_master
+from tests.utils import mpi_master
 
 
 class AnalysisTest(unittest.TestCase):
