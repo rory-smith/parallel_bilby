@@ -77,7 +77,7 @@ def test_timer(enabled):
                 assert entry in data[0].keys()
 
             assert sum(step["master_serial"] for step in data) == pytest.approx(
-                sleep_time, abs=1.0e-2
+                sleep_time, abs=0.1
             )
 
 
