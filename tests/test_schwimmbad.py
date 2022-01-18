@@ -92,6 +92,10 @@ def test_without_context():
     # Open the pool manually
     pool = MPIPool()
 
+    # Break workers out of first wait loop
+    if pool.is_master():
+        pool.kill_workers()
+
     results = _pool_test(pool)
     if pool.is_master():
         assert all(0 <= x <= 2 for x in results)
