@@ -1,6 +1,7 @@
 import json
 import os
 import random
+import time
 
 import pytest
 from mpi4py import MPI
@@ -31,8 +32,12 @@ def test_dill():
 
 @pytest.mark.mpi
 def test_timer():
-    with MPIPool(time_mpi=True, timing_interval=0.001) as pool:
+    sleep_time = 1.0
+    with MPIPool(time_mpi=True, timing_interval=1.0e-3) as pool:
         if pool.is_master():
+            results = _pool_test(pool)
+            # Trigger the "master_serial" timer
+            time.sleep(sleep_time)
             results = _pool_test(pool)
             assert all(0 <= x <= 2 for x in results)
 
@@ -62,6 +67,10 @@ def test_timer():
         ]
         for entry in expected_keys:
             assert entry in data[0].keys()
+
+        assert sum(step["master_serial"] for step in data) == pytest.approx(
+            sleep_time, abs=1.0e-2
+        )
 
 
 @pytest.mark.mpi
