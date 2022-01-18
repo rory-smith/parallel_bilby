@@ -1,32 +1,16 @@
-import os
-import shutil
-import unittest
-
 import numpy as np
 import pandas as pd
 import pytest
 from deepdiff import DeepDiff
-from parallel_bilby import generation
 from parallel_bilby.analysis import analysis_run
 from parallel_bilby.analysis.sample_space import fill_sample
+from tests.cases import FastRun
 
 
-class SampleSpaceTest(unittest.TestCase):
+class SampleSpaceTest(FastRun):
     def setUp(self):
-        self.outdir = "tests/test_files/out_sample_space_test/"
-
-        # Use same ini file as fast e2e test
-        generation.generate_runner(
-            ["tests/test_files/fast_test.ini", "--outdir", self.outdir]
-        )
-
-        self.run = analysis_run.AnalysisRun(
-            data_dump=os.path.join(self.outdir, "data/fast_injection_data_dump.pickle"),
-            outdir=self.outdir,
-        )
-
-    def tearDown(self):
-        shutil.rmtree(self.outdir)
+        super().setUp()
+        self.run = analysis_run.AnalysisRun(**self.analysis_args)
 
     @pytest.mark.mpi_skip
     def test_fill_sample(self):
@@ -62,13 +46,13 @@ class SampleSpaceTest(unittest.TestCase):
             "tilt_2": 0.0,
             "phi_12": 0.0,
             "phi_jl": 0.0,
-            "luminosity_distance": 800.0,
+            "luminosity_distance": 800,
             "dec": 0.1,
             "ra": 0.1,
             "theta_jn": 0.1,
             "psi": 0.1,
             "phase": 0.1,
-            "geocent_time": 0.0,
+            "geocent_time": 0,
             "chirp_mass": 28.005627999999994,
             "log_likelihood": 878.837994,
             "log_prior": 0.0,

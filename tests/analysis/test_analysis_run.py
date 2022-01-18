@@ -1,37 +1,17 @@
-import os
-import shutil
-import unittest
-
 import dynesty
 import numpy as np
 import pytest
-from parallel_bilby import generation
 from parallel_bilby.analysis import analysis_run
 from parallel_bilby.schwimmbad_fast import MPIPoolFast as MPIPool
-from tests.utils import mpi_master
+from tests.cases import FastRun
 
 
-class AnalysisRunTest(unittest.TestCase):
-    @mpi_master
+class AnalysisRunTest(FastRun):
     def setUp(self):
-        self.outdir = "tests/test_files/out_analysis_run_test/"
-
-        # Use same ini file as fast e2e test
-        generation.generate_runner(
-            ["tests/test_files/fast_test.ini", "--outdir", self.outdir]
-        )
-
-        self.run = analysis_run.AnalysisRun(
-            data_dump=os.path.join(self.outdir, "data/fast_injection_data_dump.pickle"),
-            outdir=self.outdir,
-        )
-
+        super().setUp()
+        self.run = analysis_run.AnalysisRun(**self.analysis_args)
         self.min_chirp_mass = self.run.priors["chirp_mass"].minimum
         self.max_chirp_mass = self.run.priors["chirp_mass"].maximum
-
-    @mpi_master
-    def tearDown(self):
-        shutil.rmtree(self.outdir)
 
     @pytest.mark.mpi_skip
     def test_prior_transform_function(self):

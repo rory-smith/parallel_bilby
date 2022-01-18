@@ -292,7 +292,7 @@ def _create_reduced_bilby_pipe_parser():
     return bilby_pipe_parser
 
 
-def create_generation_parser():
+def create_generation_parser(slurm=True):
     """Parser for parallel_bilby_generation"""
     parser = _create_base_parser(sampler="all")
     bilby_pipe_parser = _create_reduced_bilby_pipe_parser()
@@ -304,7 +304,8 @@ def create_generation_parser():
         parents=[parser, bilby_pipe_parser],
         add_help=False,
     )
-    generation_parser = _add_slurm_settings_to_parser(generation_parser)
+    if slurm:
+        generation_parser = _add_slurm_settings_to_parser(generation_parser)
     return generation_parser
 
 

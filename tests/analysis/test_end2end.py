@@ -1,35 +1,16 @@
-import os
-import shutil
-import unittest
-
-import bilby
 import numpy as np
 import pytest
 from mpi4py import MPI
-from parallel_bilby import analysis, generation
+from parallel_bilby import analysis
+from tests.cases import FastRun
 from tests.utils import mpi_master
 
 
-class AnalysisTest(unittest.TestCase):
-    @mpi_master
-    def setUp(self):
-        self.outdir = "tests/test_files/out_fast/"
-        generation.generate_runner(
-            ["tests/test_files/fast_test.ini", "--outdir", self.outdir]
-        )
-
-    @mpi_master
-    def tearDown(self):
-        shutil.rmtree(self.outdir)
-
+class End2EndTest(FastRun):
     @pytest.mark.mpi
     def test_analysis(self):
         # Run analysis
-        analysis.analysis_runner(
-            data_dump="tests/test_files/out_fast/data/fast_injection_data_dump.pickle",
-            outdir="tests/test_files/out_fast/result",
-            label="fast_injection_0",
-        )
+        analysis.analysis_runner(**self.analysis_args)
 
         # Check result in master task only
         self.check_result()
@@ -37,9 +18,7 @@ class AnalysisTest(unittest.TestCase):
     @mpi_master
     def check_result(self):
         # Read file and check result
-        b = bilby.gw.result.CBCResult.from_json(
-            os.path.join(self.outdir, "result/fast_injection_0_result.json")
-        )
+        b = self.read_bilby_result()
 
         # The answer will vary with the number of MPI tasks
         answer = {

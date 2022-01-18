@@ -1,33 +1,16 @@
-import shutil
-import unittest
-
-import dill
 import pytest
 from mpi4py import MPI
-from parallel_bilby import analysis, generation
+from parallel_bilby import analysis
+from tests.cases import ROQRun
 from tests.utils import mpi_master
 
 
-class ROQTest(unittest.TestCase):
-    @mpi_master
-    def setUp(self):
-        self.outdir = "tests/test_files/roq/out_roq/"
-        generation.generate_runner(
-            ["tests/test_files/roq/pbilby_roq_4s_test.ini", "--outdir", self.outdir]
-        )
-
-    @mpi_master
-    def tearDown(self):
-        pass
-        shutil.rmtree(self.outdir)
-
+class ROQTest(ROQRun):
     @pytest.mark.mpi
     def test_analysis(self):
         # Run analysis
         analysis.analysis_runner(
-            data_dump="tests/test_files/roq/out_roq/data/roq_4s_test_data_dump.pickle",
-            outdir="tests/test_files/roq/out_roq/result",
-            label="roq_4s_test",
+            **self.analysis_args,
             nlive=20,
             max_its=5,
         )
@@ -37,13 +20,7 @@ class ROQTest(unittest.TestCase):
 
     @mpi_master
     def check_result(self):
-        with open(
-            "tests/test_files/roq/out_roq/result/roq_4s_test_checkpoint_resume.pickle",
-            "rb",
-        ) as f:
-            resume_file = dill.load(f)
-
-        print(resume_file.live_logl)
+        resume_file = self.read_resume_file()
 
         # The answer will vary with the number of MPI tasks
         answer = {
