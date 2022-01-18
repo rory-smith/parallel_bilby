@@ -63,9 +63,8 @@ class ROQRun(_Run):
         "nact": 50,
         "min_eff": 3.0,
         "calibration_model": "CubicSpline",
-        "spline_calibration_envelope_dict": f"""
-          {{H1:{_roq_path}/GWTC1_GW150914_H_CalEnv.txt,L1:{_roq_path}/GWTC1_GW150914_L_CalEnv.txt}}
-        """,
+        "spline_calibration_envelope_dict": f"{{H1:{_roq_path}/GWTC1_GW150914_H_CalEnv.txt,"
+        + f"L1:{_roq_path}/GWTC1_GW150914_L_CalEnv.txt}}",
         "spline_calibration_nodes": 10,
         "trigger_time": "1126259462.3910",
         "data_dict": f"{{H1:{_roq_path}/dataH1.gwf, L1:{_roq_path}/dataL1.gwf}}",
