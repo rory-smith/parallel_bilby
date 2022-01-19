@@ -11,6 +11,12 @@ from .likelihood import setup_likelihood
 
 
 class AnalysisRun(object):
+    """
+    An object with methods for driving the sampling run.
+
+    Parameters: arguments to set the output path and control the dynesty sampler.
+    """
+
     def __init__(
         self,
         data_dump,
@@ -31,7 +37,7 @@ class AnalysisRun(object):
         bilby_zero_likelihood_mode=False,
     ):
 
-        # Get data_dump
+        # Read data dump from the pickle file
         with open(data_dump, "rb") as file:
             data_dump = pickle.load(file)
 
@@ -43,12 +49,14 @@ class AnalysisRun(object):
 
         args.weight_file = data_dump["meta_data"].get("weight_file", None)
 
-        # Create run dir if it does not exist
+        # If the run dir has not been specified, get it from the args
         if outdir is None:
             outdir = args.outdir
         else:
+            # Create the run dir
             os.makedirs(outdir, exist_ok=True)
 
+        # If the label has not been specified, get it from the args
         if label is None:
             label = args.label
 
@@ -114,6 +122,9 @@ class AnalysisRun(object):
             save_bounds=False,
         )
 
+        # Create a random generator, which is saved across restarts
+        # This ensures that runs are fully deterministic, which is important
+        # for testing
         self.sampling_seed = sampling_seed
         self.rstate = np.random.Generator(np.random.PCG64(self.sampling_seed))
         logger.debug(
@@ -134,9 +145,37 @@ class AnalysisRun(object):
         self.nlive = nlive
 
     def prior_transform_function(self, u_array):
+        """
+        Calls the bilby rescaling function on an array of values
+
+        Parameters
+        ----------
+        u_array: (float, array-like)
+            The values to rescale
+
+        Returns
+        -------
+        (float, array-like)
+            The rescaled values
+
+        """
         return self.priors.rescale(self.sampling_keys, u_array)
 
     def log_likelihood_function(self, v_array):
+        """
+        Calculates the log(likelihood)
+
+        Parameters
+        ----------
+        u_array: (float, array-like)
+            The values to rescale
+
+        Returns
+        -------
+        (float, array-like)
+            The rescaled values
+
+        """
         if self.zero_likelihood_mode:
             return 0
         parameters = {key: v for key, v in zip(self.sampling_keys, v_array)}
@@ -150,13 +189,51 @@ class AnalysisRun(object):
             return np.nan_to_num(-np.inf)
 
     def log_prior_function(self, v_array):
+        """
+        Calculates the log of the prior
+
+        Parameters
+        ----------
+        v_array: (float, array-like)
+            The prior values
+
+        Returns
+        -------
+        (float, array-like)
+            The log probability of the values
+
+        """
         params = {key: t for key, t in zip(self.sampling_keys, v_array)}
         return self.priors.ln_prob(params)
 
     def get_initial_points_from_prior(self, pool, calculate_likelihood=True):
+        """
+        Generates a set of initial points, drawn from the prior
 
+        Parameters
+        ----------
+        pool: schwimmbad.MPIPool
+            Schwimmbad pool for MPI parallelisation
+            (pbilby implements a modified version: MPIPoolFast)
+
+        calculate_likeliihood: bool
+            Option to calculate the likelihood for the generated points
+            (default: True)
+
+        Returns
+        -------
+        (numpy.ndarraym, numpy.ndarray, numpy.ndarray)
+            Returns a tuple (unit, theta, logl)
+            unit: point in the unit cube
+            theta: scaled value
+            logl: log(likelihood)
+
+        """
         # Create a new rstate for each point, otherwise each task will generate
-        # the same random number, and the rstate on master will not be incremented
+        # the same random number, and the rstate on master will not be incremented.
+        # The argument to self.rstate.integers() is a very large integer.
+        # These rstates aren't used after this map, but each time they are created,
+        # a different (but deterministic) seed is used.
         sg = np.random.SeedSequence(self.rstate.integers(9223372036854775807))
         map_rstates = [
             np.random.Generator(np.random.PCG64(n)) for n in sg.spawn(self.nlive)
@@ -214,6 +291,28 @@ class AnalysisRun(object):
                     return unit, theta, np.nan
 
     def get_nested_sampler(self, live_points, pool, pool_size):
+        """
+        Returns the dynested nested sampler, getting most arguments
+        from the object's attributes
+
+        Parameters
+        ----------
+        live_points: (numpy.ndarraym, numpy.ndarray, numpy.ndarray)
+            The set of live points, in the same format as returned by
+            get_initial_points_from_prior
+
+        pool: schwimmbad.MPIPool
+            Schwimmbad pool for MPI parallelisation
+            (pbilby implements a modified version: MPIPoolFast)
+
+        pool_size: int
+            Number of workers in the pool
+
+        Returns
+        -------
+        dynesty.NestedSampler
+
+        """
         ndim = len(self.sampling_keys)
         sampler = dynesty.NestedSampler(
             self.log_likelihood_function,
