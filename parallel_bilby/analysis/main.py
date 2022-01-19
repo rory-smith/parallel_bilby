@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Module to run parallel bilby using MPI
 """
@@ -64,7 +63,22 @@ def analysis_runner(
     nestcheck=False,
     **kwargs,
 ):
+    """
+    API for running the analysis from Python instead of the command line.
+    It takes all the same options as the CLI, specified as keyword arguments.
 
+    Returns
+    -------
+    exit_reason: integer u
+        Used during testing, to determine the reason the code halted:
+            0 = run completed normally, based on convergence criteria
+            1 = reached max iterations
+            2 = reached max runtime
+        MPI worker tasks always return -1
+
+    """
+
+    # Initialise a run
     run = AnalysisRun(
         data_dump,
         outdir,
@@ -292,6 +306,12 @@ def analysis_runner(
 
 
 def main():
+    """
+    paralell_bilby_analysis entrypoint.
+
+    This function is a wrapper around analysis_runner(),
+    giving it a command line interface.
+    """
     cli_args = get_cli_args()
 
     # Parse command line arguments
