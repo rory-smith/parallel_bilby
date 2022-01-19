@@ -139,6 +139,15 @@ def get_default_args(parser):
     Returns dictionary of default arguments, as specified in the
     parser. It does this by running the parser with no ini file
     and no CLI arguments.
+
+    Parameters
+    ----------
+    parser: generation-parser
+
+    Returns
+    -------
+    args: dict
+
     """
 
     args = parser.parse_args(args=[""])
@@ -147,6 +156,23 @@ def get_default_args(parser):
 
 
 def generate_runner(parser=None, **kwargs):
+    """
+    API for running the generation from Python instead of the command line.
+    It takes all the same options as the CLI, specified as keyword arguments,
+    and combines them with the defaults in the parser.
+
+    Parameters
+    ----------
+    parser: generation-parser
+    **kwargs:
+        Any keyword arguments that can be specified via the CLI
+
+    Returns
+    -------
+    inputs: ParallelBilbyDataGenerationInput
+    logger: bilby.core.utils.logger
+
+    """
 
     # Create a dummy parser if necessary
     if parser is None:
@@ -183,6 +209,13 @@ def generate_runner(parser=None, **kwargs):
 
 
 def main():
+    """
+    paralell_bilby_generation entrypoint.
+
+    This function is a wrapper around generate_runner(),
+    providing it a command line interface.
+    """
+
     # Parse command line arguments
     cli_args = get_cli_args()
     generation_parser = create_generation_parser()
