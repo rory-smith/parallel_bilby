@@ -2,6 +2,21 @@ from bilby.gw import conversion
 
 
 def fill_sample(args):
+    """Fill the sample for a particular row in the posterior data frame.
+
+    This function is used inside a pool.map(), so its interface needs
+    to be a single argument that is then manually unpacked.
+
+    Parameters
+    ----------
+    args: tuple
+        (row number, row, likelihood)
+
+    Returns
+    -------
+    sample: array-like
+
+    """
     ii, sample, likelihood = args
     sample = dict(sample).copy()
     marg_params = likelihood.parameters.copy()
