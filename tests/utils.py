@@ -32,7 +32,7 @@ class _Run(unittest.TestCase):
 
     @property
     def test_dir(self):
-        return f"/tmp/pbilby_test/{self.test_label}/"
+        return os.path.join("/tmp/pbilby_test", self.test_label)
 
     @property
     def analysis_args(self):
