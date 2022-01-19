@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Module to generate/prepare data, likelihood, and priors for parallel runs.
 

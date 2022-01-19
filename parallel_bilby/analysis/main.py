@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Module to run parallel bilby using MPI
 """
