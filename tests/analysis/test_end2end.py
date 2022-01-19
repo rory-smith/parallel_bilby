@@ -9,6 +9,9 @@ from tests.utils import mpi_master
 class End2EndTest(FastRun):
     @pytest.mark.mpi
     def test_analysis(self):
+        """
+        Run a short problem in full and check that the answer has not changed.
+        """
         # Run analysis
         analysis.analysis_runner(**self.analysis_args)
 

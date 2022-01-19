@@ -14,6 +14,10 @@ class SampleSpaceTest(FastRun):
 
     @pytest.mark.mpi_skip
     def test_fill_sample(self):
+        """
+        Generate a sample using the fill_sample function, and compare to
+        reference values.
+        """
         ii = 0
         row = pd.Series(
             dict(

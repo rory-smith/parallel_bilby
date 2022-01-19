@@ -8,6 +8,10 @@ from tests.utils import mpi_master
 class MainTest(FastRun):
     @pytest.mark.mpi
     def test_max_its(self):
+        """
+        Test that the code halts and writes a checkpoint correctly once the
+        maximum number of iterations has been reached.
+        """
         its = 5
         # Run analysis
         exit_reason = analysis.analysis_runner(max_its=its, **self.analysis_args)
@@ -25,6 +29,10 @@ class MainTest(FastRun):
 
     @pytest.mark.mpi
     def test_max_time(self):
+        """
+        Test that the code halts and writes a checkpoint correctly once the
+        maximum wall time has been reached.
+        """
         time = 0.1
         # Run analysis
         exit_reason = analysis.analysis_runner(max_run_time=time, **self.analysis_args)
@@ -33,6 +41,10 @@ class MainTest(FastRun):
 
     @pytest.mark.mpi
     def test_resume(self):
+        """
+        Test that the code writes and reads from a checkpoint, and produces the
+        same result as if it had run from beginning to end without stopping.
+        """
         comm = MPI.COMM_WORLD
         # Run in full to get the reference answer
         exit_reason = analysis.analysis_runner(**self.analysis_args)
@@ -64,4 +76,8 @@ class MainTest(FastRun):
 
 @mpi_master
 def check_master_value(test_value, expected_value):
+    """
+    Function with the @mpi_master decorator applied so that
+    the value is only checked on the master task
+    """
     assert test_value == expected_value

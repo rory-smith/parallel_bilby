@@ -8,6 +8,10 @@ from tests.utils import mpi_master
 class ROQTest(ROQRun):
     @pytest.mark.mpi
     def test_analysis(self):
+        """
+        Run a problem using ROQ for 5 iterations, and test that
+        the first live point matches the reference value.
+        """
         # Run analysis
         analysis.analysis_runner(
             **self.analysis_args,

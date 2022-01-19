@@ -46,6 +46,11 @@ def create_test_data():
 
 @pytest.mark.mpi_skip
 def test_readwrite():
+    """
+    Read a reference file into an object (1), write it into another file,
+    read that file into a new object (2), and then test that both objects (1, 2)
+    are the same.
+    """
     # Read reference data
     with open(reference_file, "rb") as dill_file:
         sampler_ref = dill.load(dill_file)
