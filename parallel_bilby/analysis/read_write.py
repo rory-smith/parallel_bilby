@@ -119,6 +119,31 @@ def read_saved_state(resume_file, continuing=True):
 def format_result(
     run, data_dump, out, weights, nested_samples, sampler_kwargs, sampling_time
 ):
+    """
+    Packs the variables from the run into a bilby result object
+
+    Parameters
+    ----------
+    run: AnalysisRun
+        Parallel Bilby run object
+    data_dump: str
+        Path to the *_data_dump.pickle file
+    out: dynesty.results.Results
+        Results from the dynesty sampler
+    weights: numpy.ndarray
+        Array of weights for the points
+    nested_samples: pandas.core.frame.DataFrame
+        DataFrame of the weights and likelihoods
+    sampler_kwargs: dict
+        Dictionary of keyword arguments for the sampler
+    sampling_time: float
+        Time in seconds spent sampling
+
+    Returns
+    -------
+    result: bilby.core.result.Result
+        result object with values written into its attributes
+    """
 
     result = bilby.core.result.Result(
         label=run.label, outdir=run.outdir, search_parameter_keys=run.sampling_keys
