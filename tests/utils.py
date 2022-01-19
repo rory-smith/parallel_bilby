@@ -10,6 +10,10 @@ from parallel_bilby import generation
 
 
 def mpi_master(func):
+    """
+    Custom decorator for running functions/methods on the master MPI task only.
+    """
+
     def wrapper(*args, **kwargs):
         comm = MPI.COMM_WORLD
         if comm.Get_rank() == 0:
@@ -24,11 +28,23 @@ def mpi_master(func):
 
 class _Run(unittest.TestCase):
     """
-    Base test run object.
-    Cannot be instantiated on its own.
+    Base test run object. Runs the generation during setup,
+    and tears down the directory tree created by generation
+    at the end of testing.
+
+    Also provides methods for reading the resume file and
+    reading the results.
+
+    Note: it CANNOT be instantiated on its own!
     Requires the following class attributes:
-        test_label
-        generation_args
+        test_label: str
+            A simple label for the test (with no spaces).
+            This will also be used to create the test directory.
+        generation_args: dict
+            Dictionary of options to be used for generation.
+            These options can be anything you would normally
+            specify via the CLI or in the generation ini file.
+
     """
 
     @property
@@ -85,6 +101,10 @@ class _Run(unittest.TestCase):
 
 
 class timeout:
+    """
+    Custom context for handling MPI tasks that might hang during testing.
+    """
+
     def __init__(self, seconds=1, error_message="Timeout"):
         self.seconds = seconds
         self.error_message = error_message
