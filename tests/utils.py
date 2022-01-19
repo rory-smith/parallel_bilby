@@ -1,5 +1,6 @@
 import os.path
 import shutil
+import signal
 import unittest
 
 import bilby
@@ -52,9 +53,16 @@ class _Run(unittest.TestCase):
             **self.generation_args,
         )
 
-    @mpi_master
     def tearDown(self):
-        shutil.rmtree(self.test_dir)
+        # Make sure all MPI tasks are here
+        # If any are stuck, fail the test and kill the test
+        comm = MPI.COMM_WORLD
+        with timeout(seconds=10):
+            comm.Barrier()
+
+        # Delete test directory
+        if comm.Get_rank() == 0:
+            shutil.rmtree(self.test_dir)
 
     def read_resume_file(self):
         with open(
@@ -74,3 +82,22 @@ class _Run(unittest.TestCase):
                 f"{self.analysis_args['label']}_result.json",
             )
         )
+
+
+class timeout:
+    def __init__(self, seconds=1, error_message="Timeout"):
+        self.seconds = seconds
+        self.error_message = error_message
+
+    def handle_timeout(self, signum, frame):
+        print(
+            f"Calling MPI_Abort to end test early because a task is stuck (timeout={self.seconds})"
+        )
+        MPI.COMM_WORLD.Abort()
+
+    def __enter__(self):
+        signal.signal(signal.SIGALRM, self.handle_timeout)
+        signal.alarm(self.seconds)
+
+    def __exit__(self, type, value, traceback):
+        signal.alarm(0)
