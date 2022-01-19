@@ -150,7 +150,7 @@ def generate_runner(parser=None, **kwargs):
 
     # Create a dummy parser if necessary
     if parser is None:
-        parser = create_generation_parser(slurm=False)
+        parser = create_generation_parser()
 
     # Get default arguments from the parser
     default_args = get_default_args(parser)

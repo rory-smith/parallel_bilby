@@ -214,16 +214,18 @@ def _add_misc_settings_to_parser(parser):
 def _add_slurm_settings_to_parser(parser):
     slurm_group = parser.add_argument_group(title="Slurm Settings")
     slurm_group.add_argument(
-        "--nodes", type=int, required=True, help="Number of nodes to use"
+        "--nodes", type=int, default=1, help="Number of nodes to use (default 1)"
     )
     slurm_group.add_argument(
-        "--ntasks-per-node", type=int, required=True, help="Number of tasks per node"
+        "--ntasks-per-node",
+        type=int,
+        default=2,
+        help="Number of tasks per node (default 2)",
     )
     slurm_group.add_argument(
         "--time",
         type=str,
         default="24:00:00",
-        required=True,
         help="Maximum wall time (defaults to 24:00:00)",
     )
     slurm_group.add_argument(
@@ -292,7 +294,7 @@ def _create_reduced_bilby_pipe_parser():
     return bilby_pipe_parser
 
 
-def create_generation_parser(slurm=True):
+def create_generation_parser():
     """Parser for parallel_bilby_generation"""
     parser = _create_base_parser(sampler="all")
     bilby_pipe_parser = _create_reduced_bilby_pipe_parser()
@@ -304,8 +306,7 @@ def create_generation_parser(slurm=True):
         parents=[parser, bilby_pipe_parser],
         add_help=False,
     )
-    if slurm:
-        generation_parser = _add_slurm_settings_to_parser(generation_parser)
+    generation_parser = _add_slurm_settings_to_parser(generation_parser)
     return generation_parser
 
 
