@@ -213,7 +213,7 @@ def main():
     paralell_bilby_generation entrypoint.
 
     This function is a wrapper around generate_runner(),
-    providing it a command line interface.
+    giving it a command line interface.
     """
 
     # Parse command line arguments
