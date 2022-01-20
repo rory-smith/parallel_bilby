@@ -5,12 +5,15 @@ gw150914_analysis:
   tags:
     - openstack
   when: manual
+  timeout: 6 hours
 
   image: bilbydev/bilby_pipe-test-suite-python37
   script:
     - source activate python37
     - mkdir -p .pip37
     - pip --cache-dir=.pip37 install .
+    # Install a functioning version of dynesty
+    - pip --cache-dir=.pip37 install git+https://github.com/joshspeagle/dynesty.git@d16e716e1791efab859349d0363aff9fd8af88fa
     - cd examples/GW150914_IMRPhenomPv2
     - parallel_bilby_generation GW150914.ini
     - mpirun -n 16 parallel_bilby_analysis outdir/data/GW150914_data_dump.pickle --label GW150914_0 --outdir outdir/result --sampling-seed 0
@@ -27,6 +30,8 @@ fast_injection:
     - source activate python37
     - mkdir -p .pip37
     - pip --cache-dir=.pip37 install .
+    # Install a functioning version of dynesty
+    - pip --cache-dir=.pip37 install git+https://github.com/joshspeagle/dynesty.git@d16e716e1791efab859349d0363aff9fd8af88fa
     - cd examples/fast_injection
     - parallel_bilby_generation fast_injection.ini
     - mpirun -n 16 parallel_bilby_analysis outdir/data/fast_injection_data_dump.pickle --label fast_injection --outdir outdir/result --sampling-seed 0

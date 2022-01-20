@@ -1,60 +1,19 @@
-import os
-import shutil
-import unittest
-
-import bilby
+import numpy as np
 import pytest
 from mpi4py import MPI
-from parallel_bilby import analysis, generation
+from parallel_bilby import analysis
+from tests.cases import FastRun
+from tests.utils import mpi_master
 
 
-def mpi_master(func):
-    def wrapper(*args, **kwargs):
-        comm = MPI.COMM_WORLD
-        if comm.Get_rank() == 0:
-            f = func(*args, **kwargs)
-        else:
-            f = None
-        comm.Barrier()
-        return f
-
-    return wrapper
-
-
-class AnalysisTest(unittest.TestCase):
-    @mpi_master
-    def setUp(self):
-        self.outdir = "tests/test_files/out_fast/"
-        generation.generate_runner(
-            ["tests/test_files/fast_test.ini", "--outdir", self.outdir]
-        )
-
-    @mpi_master
-    def tearDown(self):
-        shutil.rmtree(self.outdir)
-
+class End2EndTest(FastRun):
     @pytest.mark.mpi
     def test_analysis(self):
+        """
+        Run a short problem in full and check that the answer has not changed.
+        """
         # Run analysis
-        analysis.analysis_runner(
-            [
-                "tests/test_files/out_fast/data/fast_injection_data_dump.pickle",
-                "--nlive",
-                "5",
-                "--dlogz",
-                "10.0",
-                "--nact",
-                "1",
-                "--n-check-point",
-                "10000",
-                "--label",
-                "fast_injection_0",
-                "--outdir",
-                "tests/test_files/out_fast/result",
-                "--sampling-seed",
-                "0",
-            ]
-        )
+        analysis.analysis_runner(**self.analysis_args)
 
         # Check result in master task only
         self.check_result()
@@ -62,10 +21,34 @@ class AnalysisTest(unittest.TestCase):
     @mpi_master
     def check_result(self):
         # Read file and check result
-        b = bilby.gw.result.CBCResult.from_json(
-            os.path.join(self.outdir, "result/fast_injection_0_result.json")
-        )
+        b = self.read_bilby_result()
 
-        # Does not currently work because pbilby gives different results each time
-        # Adjust this once the seed problem has been fixed
-        assert b.log_evidence == pytest.approx(-5.481032741270155, abs=1e-12)
+        # The answer will vary with the number of MPI tasks
+        answer = {
+            2: -4.323050871371379,
+            3: -4.858974047162405,
+            4: -5.658712591755034,
+            5: -4.263809701732271,
+            6: -4.855465339795728,
+            7: -4.78252357558722,
+            8: -5.4694055472964465,
+            9: -4.21178229675354,
+        }
+
+        values = list(answer.values())
+        avg = np.mean(values)
+        std = np.std(values)
+
+        comm = MPI.COMM_WORLD
+        if comm.size not in answer:
+            msg = f"""
+                Calculated evidence = {b.log_evidence}
+                Answer has not been pre-calculated for {comm.size} MPI tasks
+                """
+            diff = abs(b.log_evidence - avg)
+            if diff > std:
+                msg += "Calculated evidence lies outside of 1 standard deviation of known reference values"
+
+            raise KeyError(msg)
+
+        assert b.log_evidence == pytest.approx(answer[comm.size], abs=1e-12)
