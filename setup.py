@@ -7,12 +7,12 @@ from pathlib import Path
 
 from setuptools import find_packages, setup
 
-# check that python version is 3.5 or above
+# check that python version is 3.8 or above
 python_version = sys.version_info
 print("Running Python version %s.%s.%s" % python_version[:3])
-if python_version < (3, 7):
-    sys.exit("Python < 3.7 is not supported, aborting setup")
-print("Confirmed Python version 3.7.0 or above")
+if python_version < (3, 8):
+    sys.exit("Python < 3.8 is not supported, aborting setup")
+print("Confirmed Python version 3.8.0 or above")
 
 
 def write_version_file(version):
@@ -68,7 +68,7 @@ def get_long_description():
     return long_description
 
 
-VERSION = "1.0.1"
+VERSION = "1.1.0"
 version_file = write_version_file(VERSION)
 long_description = get_long_description()
 
@@ -85,8 +85,8 @@ setup(
     package_data={"parallel_bilby": [version_file, "slurm/template_slurm.sh"]},
     install_requires=[
         "future",
-        "bilby>=1.1.4",
-        "bilby_pipe>=1.0.3",
+        "bilby>=1.1.5",
+        "bilby_pipe>=1.0.6",
         "scipy>=1.2.0",
         "gwpy",
         "matplotlib",
@@ -107,7 +107,7 @@ setup(
         ]
     },
     classifiers=[
-        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "License :: OSI Approved :: MIT License",
         "Operating System :: MacOS :: MacOS X",
         "Operating System :: POSIX",
