@@ -81,6 +81,7 @@ class ParallelBilbyDataGenerationInput(bilby_pipe.data_generation.DataGeneration
     def __init__(self, args, unknown_args):
         super().__init__(args, unknown_args)
         self.args = args
+        self.sampler = "dynesty"
         self.sampling_seed = args.sampling_seed
         self.data_dump_file = f"{self.data_directory}/{self.label}_data_dump.pickle"
         self.setup_inputs()
