@@ -17,7 +17,7 @@ install-on-python-3.8:
   stage: install
   tags:
     - cit
-  image: bilbydev/bilby_pipe-test-suite-python38
+  image: containers.ligo.org/lscsoft/bilby_pipe/v3-bilby_pipe-python38
   script:
     - conda install -c conda-forge schwimmbad
     - mkdir -p .pip38
