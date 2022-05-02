@@ -14,22 +14,17 @@ def _dummy_callback(x):
 
 def _import_mpi(quiet=False, use_dill=False):
     global MPI
-    try:
-        import mpi4py
+    import mpi4py
 
-        mpi4py.rc.threads = False
-        mpi4py.rc.recv_mprobe = False
-        from mpi4py import MPI as _MPI
+    mpi4py.rc.threads = False
+    mpi4py.rc.recv_mprobe = False
+    from mpi4py import MPI as _MPI
 
-        if use_dill:
-            import dill
+    if use_dill:
+        import dill
 
-            _MPI.pickle.__init__(dill.dumps, dill.loads, dill.HIGHEST_PROTOCOL)
-        MPI = _MPI
-    except ImportError:
-        if not quiet:
-            # Re-raise with a more user-friendly error:
-            raise ImportError("Please install mpi4py")
+        _MPI.pickle.__init__(dill.dumps, dill.loads, dill.HIGHEST_PROTOCOL)
+    MPI = _MPI
 
     return MPI
 
@@ -65,6 +60,7 @@ class MPIPoolFast(MPIPool):
         self.master = 0
         self.rank = self.comm.Get_rank()
 
+        self.pool_open = True
         atexit.register(lambda: MPIPool.close(self))
 
         # Option to enable parallel communication
@@ -77,14 +73,11 @@ class MPIPoolFast(MPIPool):
         else:
             self.timer = NullTimer()
 
-        # Periodically save the timing output (specify in seconds)
-        self.timing_interval = 0
-        if self.comm.size > 32:  # Choose a worker from a different node if possible
-            if self.rank == 32:
-                self.timing_interval = timing_interval
+        # Periodically save the timing output on only the first worker task (specify in seconds)
+        if self.rank == 1:
+            self.timing_interval = timing_interval
         else:
-            if self.rank == 1:
-                self.timing_interval = timing_interval
+            self.timing_interval = 0
 
         if self.timing_interval == 0:
             self.timing_interval = False
@@ -189,7 +182,8 @@ class MPIPoolFast(MPIPool):
                 self.timer.start("compute")
                 func, arg = task
                 log.log(
-                    _VERBOSE, f"Worker {worker} got task {arg} with tag {status.tag}",
+                    _VERBOSE,
+                    f"Worker {worker} got task {arg} with tag {status.tag}",
                 )
 
                 result = func(arg)
@@ -316,7 +310,14 @@ class MPIPoolFast(MPIPool):
 
     def close(self):
         """When master task is done, tidy up."""
+        # Only kill workers if pool is open, otherwise a leftover
+        # MPI message will remain and kill the next pool that opens
+        if not self.pool_open:
+            raise RuntimeError(
+                "Attempting to close schwimmbad pool that has already been closed"
+            )
 
+        self.pool_open = False
         if self.is_master():
             self.kill_workers()
 

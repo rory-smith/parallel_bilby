@@ -48,8 +48,6 @@ def _create_base_parser(sampler="dynesty"):
     )
     if sampler in ["all", "dynesty"]:
         base_parser = _add_dynesty_settings_to_parser(base_parser)
-    if sampler in ["all", "ptemcee"]:
-        base_parser = _add_ptemcee_settings_to_parser(base_parser)
     base_parser = _add_misc_settings_to_parser(base_parser)
     return base_parser
 
@@ -171,97 +169,6 @@ def _add_dynesty_settings_to_parser(parser):
     return parser
 
 
-def _add_ptemcee_settings_to_parser(parser):
-    ptemcee_group = parser.add_argument_group(title="PTEmcee Settings")
-    ptemcee_group.add_argument(
-        "--nsamples", default=10000, type=int, help="Number of samples to draw"
-    )
-    ptemcee_group.add_argument(
-        "--ntemps", default=20, type=int, help="Number of temperatures"
-    )
-    ptemcee_group.add_argument(
-        "--nwalkers", default=100, type=int, help="Number of walkers"
-    )
-    ptemcee_group.add_argument(
-        "--max-iterations",
-        default=100000,
-        type=int,
-        help="Maximum number of iterations",
-    )
-    ptemcee_group.add_argument(
-        "--ncheck", default=500, type=int, help="Period with which to check convergence"
-    )
-    ptemcee_group.add_argument(
-        "--burn-in-nact",
-        default=50.0,
-        type=float,
-        help="Number of autocorrelation times to discard for burn-in",
-    )
-    ptemcee_group.add_argument(
-        "--thin-by-nact",
-        default=1.0,
-        type=float,
-        help="Thin-by number of autocorrelation times",
-    )
-    ptemcee_group.add_argument(
-        "--frac-threshold",
-        default=0.01,
-        type=float,
-        help="Threshold on the fractional change in ACT required for convergence",
-    )
-    ptemcee_group.add_argument(
-        "--nfrac",
-        default=5,
-        type=int,
-        help="The number of checks passing the frac-threshold for convergence",
-    )
-    ptemcee_group.add_argument(
-        "--min-tau",
-        default=30,
-        type=int,
-        help="The minimum tau to accept: used to prevent early convergence",
-    )
-    ptemcee_group.add_argument(
-        "--Tmax",
-        default=10000,
-        type=float,
-        help="The maximum temperature to use, default=10000",
-    )
-    ptemcee_group.add_argument(
-        "--safety",
-        default=1.0,
-        type=float,
-        help="Multiplicitive safety factor on the estimated tau",
-    )
-    ptemcee_group.add_argument(
-        "--autocorr-c",
-        default=5.0,
-        type=float,
-        help="The step size for the window search when calculating tau. Default: 5",
-    )
-    ptemcee_group.add_argument(
-        "--autocorr-tol",
-        default=50.0,
-        type=float,
-        help=(
-            "The minimum number of autocorrelations needs to trust the"
-            " autocorrelation estimate. Default: 0 (always return a result)"
-        ),
-    )
-    ptemcee_group.add_argument(
-        "--adapt",
-        default=False,
-        action="store_true",
-        help=(
-            "If ``True``, the temperature ladder is dynamically adapted as "
-            "the sampler runs to achieve uniform swap acceptance ratios "
-            "between adjacent chains.  See `arXiv:1501.05823 "
-            "<http://arxiv.org/abs/1501.05823>`_ for details."
-        ),
-    )
-    return parser
-
-
 def _add_misc_settings_to_parser(parser):
     misc_group = parser.add_argument_group(title="Misc. Settings")
     misc_group.add_argument(
@@ -307,16 +214,18 @@ def _add_misc_settings_to_parser(parser):
 def _add_slurm_settings_to_parser(parser):
     slurm_group = parser.add_argument_group(title="Slurm Settings")
     slurm_group.add_argument(
-        "--nodes", type=int, required=True, help="Number of nodes to use"
+        "--nodes", type=int, default=1, help="Number of nodes to use (default 1)"
     )
     slurm_group.add_argument(
-        "--ntasks-per-node", type=int, required=True, help="Number of tasks per node"
+        "--ntasks-per-node",
+        type=int,
+        default=2,
+        help="Number of tasks per node (default 2)",
     )
     slurm_group.add_argument(
         "--time",
         type=str,
         default="24:00:00",
-        required=True,
         help="Maximum wall time (defaults to 24:00:00)",
     )
     slurm_group.add_argument(
@@ -377,7 +286,7 @@ def _create_reduced_bilby_pipe_parser():
 
     bilby_pipe_parser.add_argument(
         "--sampler",
-        choices=["dynesty", "ptemcee"],
+        choices=["dynesty"],
         default="dynesty",
         type=str,
         help="The parallelised sampler to use, defaults to dynesty",
