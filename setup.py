@@ -93,7 +93,7 @@ setup(
         "numpy",
         "tqdm",
         "corner",
-        "dynesty>=1.0.0",
+        "dynesty>=1.2",
         "schwimmbad",
         "pandas",
         "nestcheck",
