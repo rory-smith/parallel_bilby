@@ -91,6 +91,11 @@ class AnalysisRun(object):
                 logger.debug(f"Setting reflective boundary for {key}")
                 reflective.append(ii)
 
+        if len(periodic) == 0:
+            periodic = None
+        if len(reflective) == 0:
+            reflective = None
+
         if dynesty_sample == "rwalk":
             logger.debug("Using the bilby-implemented rwalk sample method")
             dynesty.dynesty._SAMPLING[
@@ -112,14 +117,14 @@ class AnalysisRun(object):
             sample=dynesty_sample,
             bound=dynesty_bound,
             walks=walks,
-            maxmcmc=maxmcmc,
-            nact=nact,
+            # maxmcmc=maxmcmc,
+            # nact=nact,
             facc=facc,
             first_update=dict(min_eff=min_eff, min_ncall=2 * nlive),
-            vol_dec=vol_dec,
-            vol_check=vol_check,
+            # vol_dec=vol_dec,
+            # vol_check=vol_check,
             enlarge=enlarge,
-            save_bounds=False,
+            # save_bounds=False,
         )
 
         # Create a random generator, which is saved across restarts
@@ -320,8 +325,6 @@ class AnalysisRun(object):
             ndim,
             pool=pool,
             queue_size=pool_size,
-            # print_func=dynesty.results.print_fn_fallback,
-            print_progress=True,
             periodic=self.periodic,
             reflective=self.reflective,
             live_points=live_points,

@@ -9,10 +9,11 @@ from setuptools import find_packages, setup
 
 # check that python version is 3.8 or above
 python_version = sys.version_info
+python_requirement = "3.8"
 print("Running Python version %s.%s.%s" % python_version[:3])
 if python_version < (3, 8):
-    sys.exit("Python < 3.8 is not supported, aborting setup")
-print("Confirmed Python version 3.8.0 or above")
+    sys.exit(f"Python < {python_requirement} is not supported, aborting setup")
+print(f"Confirmed Python version {python_requirement} or above")
 
 
 def write_version_file(version):
@@ -112,4 +113,5 @@ setup(
         "Operating System :: MacOS :: MacOS X",
         "Operating System :: POSIX",
     ],
+    python_requires=f">={python_requirement}",
 )

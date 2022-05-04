@@ -110,12 +110,14 @@ def analysis_runner(
             POOL_SIZE = pool.size
 
             logger.info(f"sampling_keys={run.sampling_keys}")
-            logger.info(
-                f"Periodic keys: {[run.sampling_keys[ii] for ii in run.periodic]}"
-            )
-            logger.info(
-                f"Reflective keys: {[run.sampling_keys[ii] for ii in run.reflective]}"
-            )
+            if run.periodic:
+                logger.info(
+                    f"Periodic keys: {[run.sampling_keys[ii] for ii in run.periodic]}"
+                )
+            if run.reflective:
+                logger.info(
+                    f"Reflective keys: {[run.sampling_keys[ii] for ii in run.reflective]}"
+                )
             logger.info("Using priors:")
             for key in run.priors:
                 logger.info(f"{key}: {run.priors[key]}")
@@ -283,16 +285,6 @@ def analysis_runner(
                     if getattr(run.likelihood, f"{par}_marginalization", False):
                         run.priors[name] = run.likelihood.priors[name]
                 result.priors = run.priors
-
-                if run.args.convert_to_flat_in_component_mass:
-                    try:
-                        result = bilby.gw.prior.convert_to_flat_in_component_mass_prior(
-                            result
-                        )
-                    except Exception as e:
-                        logger.warning(
-                            f"Unable to convert to the LALInference prior: {e}"
-                        )
 
                 logger.info(f"Saving result to {run.outdir}/{run.label}_result.json")
                 result.save_to_file(extension="json")
