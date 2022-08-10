@@ -36,6 +36,7 @@ from .utils import (
     get_initial_points_from_prior,
     safe_file_dump,
     stopwatch,
+    dynesty_print_fn_fallback
 )
 
 matplotlib.use("Agg")
@@ -552,8 +553,12 @@ with MPIPool(
             ) = res
 
             i = it - 1
-            dynesty.results.print_fn_fallback(
-                res, i, sampler.ncall, dlogz=input_args.dlogz
+
+            dynesty_print_fn_fallback(
+                results=res,
+                niter=i,
+                ncall=sampler.ncall,
+                dlogz=input_args.dlogz
             )
 
             if (
