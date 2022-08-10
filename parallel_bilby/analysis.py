@@ -31,12 +31,12 @@ from pandas import DataFrame
 from .parser import create_analysis_parser
 from .schwimmbad_fast import MPIPoolFast as MPIPool
 from .utils import (
+    dynesty_print_fn_fallback,
     fill_sample,
     get_cli_args,
     get_initial_points_from_prior,
     safe_file_dump,
     stopwatch,
-    dynesty_print_fn_fallback
 )
 
 matplotlib.use("Agg")
@@ -555,10 +555,7 @@ with MPIPool(
             i = it - 1
 
             dynesty_print_fn_fallback(
-                results=res,
-                niter=i,
-                ncall=sampler.ncall,
-                dlogz=input_args.dlogz
+                results=res, niter=i, ncall=sampler.ncall, dlogz=input_args.dlogz
             )
 
             if (

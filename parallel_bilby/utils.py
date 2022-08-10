@@ -1,5 +1,6 @@
 import datetime
 import os
+import shutil
 import sys
 import timeit
 
@@ -135,29 +136,28 @@ def stopwatch(method):
     return timed
 
 
-
 def dynesty_print_fn_fallback(**kwargs):
     # copied from dynesty
     # https://github.com/joshspeagle/dynesty/blob/master/py/dynesty/results.py
     niter, short_str, mid_str, long_str = get_print_fn_args(**kwargs)
 
-    long_str = ["iter: {:d}".format(niter)] + long_str
+    long_str = [f"iter: {niter:d}"] + long_str
 
     # Printing.
-    long_str = '|'.join(long_str)
-    mid_str = '|'.join(mid_str)
-    short_str = '|'.join(short_str)
-    print_str = ''
-    if sys.stderr.isatty() and hasattr(shutil, 'get_terminal_size'):
+    long_str = "|".join(long_str)
+    mid_str = "|".join(mid_str)
+    short_str = "|".join(short_str)
+    print_str = ""
+    if sys.stderr.isatty() and hasattr(shutil, "get_terminal_size"):
         columns = shutil.get_terminal_size(fallback=(80, 25))[0]
     else:
         columns = 200
     if columns > len(long_str):
-        print_str = long_str + ' ' * (columns - len(long_str) - 2)
+        print_str = long_str + " " * (columns - len(long_str) - 2)
     elif columns > len(mid_str):
-        print_str =  mid_str + ' ' * (columns - len(mid_str) - 2)
+        print_str = mid_str + " " * (columns - len(mid_str) - 2)
     else:
-        print_str =  short_str + ' ' * (columns - len(short_str) - 2)
+        print_str = short_str + " " * (columns - len(short_str) - 2)
 
-    sys.stdout.write("\033[K"+ print_str.expandtabs(2).strip() + '\r')
+    sys.stdout.write("\033[K" + print_str.expandtabs(2).strip() + "\r")
     sys.stdout.flush()
