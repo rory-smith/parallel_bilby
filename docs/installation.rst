@@ -14,7 +14,7 @@ Alternatively, you can install :code:`Parallel Bilby` with :code:`conda`
 
 .. code-block:: console
 
-    $ conda install -c conda-forge parallel_bilby
+    $ conda install -c conda-forge parallel-bilby
 
 
 Dependencies
