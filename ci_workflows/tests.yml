@@ -4,14 +4,14 @@ precommits:
   stage: test
   tags:
     - cit
-  image: bilbydev/bilby_pipe-test-suite-python37
+  image: containers.ligo.org/lscsoft/bilby/v2-bilby-python38
   script:
-    - source activate python37
-    - mkdir -p .pip37
+    - source activate python38
+    - mkdir -p .pip38
     - pip install --upgrade pip
-    - pip --cache-dir=.pip37 install --upgrade bilby
-    - pip --cache-dir=.pip37 install .
-    - pip --cache-dir=.pip37 install pre-commit
+    - pip --cache-dir=.pip38 install --upgrade bilby
+    - pip --cache-dir=.pip38 install .
+    - pip --cache-dir=.pip38 install pre-commit
     # Run precommits (black, flake8, spellcheck, isort, no merge conflicts, etc)
     - pre-commit run --all-files --verbose --show-diff-on-failure
 
@@ -20,11 +20,11 @@ pytest:
   stage: test
   tags:
     - cit
-  image: bilbydev/bilby_pipe-test-suite-python37
+  image: containers.ligo.org/lscsoft/bilby/v2-bilby-python38
   script:
-    - source activate python37
-    - mkdir -p .pip37
-    - pip --cache-dir=.pip37 install .
+    - source activate python38
+    - mkdir -p .pip38
+    - pip --cache-dir=.pip38 install .
     # Run tests and collect coverage data
     - pytest --cov parallel_bilby
     - coverage html

@@ -7,12 +7,10 @@ from pathlib import Path
 
 from setuptools import setup
 
-# check that python version is 3.5 or above
 python_version = sys.version_info
-print("Running Python version %s.%s.%s" % python_version[:3])
-if python_version < (3, 5):
-    sys.exit("Python < 3.5 is not supported, aborting setup")
-print("Confirmed Python version 3.5.0 or above")
+if python_version < (3, 8):
+    sys.exit("Python < 3.8 is not supported, aborting setup")
+
 
 
 def write_version_file(version):
@@ -86,15 +84,15 @@ setup(
     package_data={"parallel_bilby": [version_file]},
     install_requires=[
         "future",
-        "bilby>=1.1.1",
-        "bilby_pipe>=1.0.3",
+        "bilby>=1.1.5",
+        "bilby_pipe>=1.0.6",
         "scipy>=1.2.0",
         "gwpy",
         "matplotlib",
         "numpy",
         "tqdm",
         "corner",
-        "dynesty>=1.0.0",
+        "dynesty>=1.0.0,<1.1",
         "schwimmbad",
         "pandas",
         "nestcheck",
