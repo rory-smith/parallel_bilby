@@ -118,7 +118,7 @@ class ParserTest(unittest.TestCase):
             facc=0.5,
             fast_mpi=False,
             label=None,
-            max_its=10 ** 10,
+            max_its=10**10,
             max_run_time=1.0e10,
             maxmcmc=5000,
             min_eff=10,

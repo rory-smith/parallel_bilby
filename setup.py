@@ -12,7 +12,6 @@ if python_version < (3, 8):
     sys.exit("Python < 3.8 is not supported, aborting setup")
 
 
-
 def write_version_file(version):
     """Writes a file with version information to be used at run time
 

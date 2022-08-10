@@ -38,8 +38,6 @@ class AnalysisTest(unittest.TestCase):
         get_args.return_value = [DATA_DUMP]
         pickle_load.return_value = self.data_dump
 
-        print(self.data_dump["args"].outdir)
-
         with self.assertRaises(ValueError):
             # ValueError: Tried to create an MPI pool,
             # but there was only one MPI process available.

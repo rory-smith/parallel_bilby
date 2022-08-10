@@ -128,7 +128,7 @@ def _add_dynesty_settings_to_parser(parser):
     )
     dynesty_group.add_argument(
         "--max-its",
-        default=10 ** 10,
+        default=10**10,
         type=int,
         help="Maximum number of iterations to sample for (default=1.e10)",
     )
