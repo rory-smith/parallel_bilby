@@ -16,7 +16,7 @@ class ParserTest(unittest.TestCase):
     @staticmethod
     def get_generation_expected_args():
         return Namespace(
-            catch_waveform_errors=False,
+            catch_waveform_errors=True,
             bilby_zero_likelihood_mode=False,
             calibration_model=None,
             channel_dict="{H1:GWOSC, L1:GWOSC}",
