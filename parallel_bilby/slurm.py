@@ -98,8 +98,6 @@ class AnalysisNode(BaseNode):
     def executable(self):
         if self.args.sampler == "dynesty":
             return "parallel_bilby_analysis"
-        elif self.args.sampler == "ptemcee":
-            return "parallel_bilby_ptemcee_analysis"
         else:
             raise ValueError(
                 f"Unable to determine sampler to use from {self.args.sampler}"
