@@ -8,6 +8,7 @@ stages:
   - deploy
 
 
+
 cache:
   paths:
     - .pip38
@@ -20,7 +21,7 @@ install-on-python-3.8:
   image: containers.ligo.org/lscsoft/bilby/v2-bilby-python38
   script:
     - conda install -c conda-forge schwimmbad
-    - mkdir -p .pip36
+    - mkdir -p .pip38
     - pip install --upgrade pip
     - pip --cache-dir=.pip38 install --upgrade bilby
     - pip --cache-dir=.pip38 install .
