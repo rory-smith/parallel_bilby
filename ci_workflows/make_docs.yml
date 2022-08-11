@@ -4,14 +4,14 @@ docs:
   stage: docs
   tags:
     - cit
+  dependencies:
+    - pytest
   image: containers.ligo.org/lscsoft/bilby/v2-bilby-python38
   script:
     - source activate python38
     - mkdir -p .pip38
     - pip --cache-dir=.pip38 install .
     # Make the documentation
-    - apt-get update
-    - apt-get -y install graphviz
     - cd docs
     - pip install -r requirements.txt
     - make clean
@@ -26,7 +26,6 @@ pages:
     - cit
   dependencies:
     - docs
-    - pytest
   script:
     - ls
     - mkdir public/
