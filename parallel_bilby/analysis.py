@@ -682,12 +682,6 @@ with MPIPool(
                 priors[name] = likelihood.priors[name]
         result.priors = priors
 
-        if args.convert_to_flat_in_component_mass:
-            try:
-                result = bilby.gw.prior.convert_to_flat_in_component_mass_prior(result)
-            except Exception as e:
-                logger.warning(f"Unable to convert to the LALInference prior: {e}")
-
         logger.info(f"Saving result to {outdir}/{label}_result.json")
         result.save_to_file(extension="json")
         print(f"Sampling time = {datetime.timedelta(seconds=result.sampling_time)}s")
