@@ -25,6 +25,7 @@ pages:
   tags:
     - cit
   dependencies:
+    - pytest
     - docs
   script:
     - ls
