@@ -4,8 +4,6 @@ docs:
   stage: docs
   tags:
     - cit
-  dependencies:
-    - pytest
   image: containers.ligo.org/lscsoft/bilby/v2-bilby-python38
   script:
     - source activate python38
@@ -26,6 +24,7 @@ pages:
     - cit
   dependencies:
     - docs
+    - pytest
   script:
     - ls
     - mkdir public/
