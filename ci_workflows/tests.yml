@@ -24,7 +24,7 @@ pytest:
   script:
     - source activate python38
     - mkdir -p .pip38
-    - pip --cache-dir=.pip38 install .
+    - pip --cache-dir=.pip38 install .[test]
     # Run tests and collect coverage data
     - pytest --cov parallel_bilby
     - coverage html
