@@ -75,6 +75,7 @@ To analyse GW170817 with Parallel Bilby you may use the following :code:`ini` fi
     :code: INI
 
 In this example we require the user to manually download the data for analysis.
+
 The priors are contained in a separate :code:`prior` file for this analysis:
 
 .. include:: ../examples/GW170817_IMRPhenomPv2_NRTidal/GW170817.prior
