@@ -65,7 +65,7 @@ def get_long_description():
     return long_description
 
 
-VERSION = "1.0.1"
+VERSION = "1.1.0"
 version_file = write_version_file(VERSION)
 long_description = get_long_description()
 
