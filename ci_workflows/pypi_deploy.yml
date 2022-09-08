@@ -4,7 +4,7 @@ deploy_release:
   stage: deploy
   tags:
     - cit
-  image: bilbydev/bilby_pipe-test-suite-python37
+  image: containers.ligo.org/lscsoft/bilby/v2-bilby-python38
   variables:
     TWINE_USERNAME: $PYPI_USERNAME
     TWINE_PASSWORD: $PYPI_PASSWORD

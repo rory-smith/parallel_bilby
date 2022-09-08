@@ -9,7 +9,7 @@
       "name": "mass_ratio",
       "latex_label": "$q$",
       "unit": null,
-      "boundary": "reflective"
+      "boundary": null
     }
   },
   "chirp_mass": {
@@ -21,8 +21,8 @@
       "maximum": 31,
       "name": "chirp_mass",
       "latex_label": "$\\mathcal{M}$",
-      "unit": "$M_{\\odot}$",
-      "boundary": "reflective"
+      "unit": null,
+      "boundary": null
     }
   },
   "mass_1": {
@@ -59,7 +59,7 @@
       "name": "a_1",
       "latex_label": "$a_1$",
       "unit": null,
-      "boundary": "reflective"
+      "boundary": null
     }
   },
   "a_2": {
@@ -72,7 +72,7 @@
       "name": "a_2",
       "latex_label": "$a_2$",
       "unit": null,
-      "boundary": "reflective"
+      "boundary": null
     }
   },
   "tilt_1": {
@@ -80,12 +80,12 @@
     "__module__": "bilby.core.prior.analytical",
     "__name__": "Sine",
     "kwargs": {
+      "minimum": 0,
+      "maximum": 3.141592653589793,
       "name": "tilt_1",
       "latex_label": "$\\theta_1$",
       "unit": null,
-      "minimum": 0,
-      "maximum": 3.141592653589793,
-      "boundary": "reflective"
+      "boundary": null
     }
   },
   "tilt_2": {
@@ -93,12 +93,12 @@
     "__module__": "bilby.core.prior.analytical",
     "__name__": "Sine",
     "kwargs": {
+      "minimum": 0,
+      "maximum": 3.141592653589793,
       "name": "tilt_2",
       "latex_label": "$\\theta_2$",
       "unit": null,
-      "minimum": 0,
-      "maximum": 3.141592653589793,
-      "boundary": "reflective"
+      "boundary": null
     }
   },
   "phi_12": {
@@ -137,7 +137,7 @@
       "maximum": 2000,
       "name": "luminosity_distance",
       "latex_label": "$d_L$",
-      "unit": "Mpc",
+      "unit": null,
       "boundary": null
     }
   },
@@ -146,12 +146,12 @@
     "__module__": "bilby.core.prior.analytical",
     "__name__": "Cosine",
     "kwargs": {
+      "minimum": -1.5707963267948966,
+      "maximum": 1.5707963267948966,
       "name": "dec",
       "latex_label": "$\\mathrm{DEC}$",
       "unit": null,
-      "minimum": -1.5707963267948966,
-      "maximum": 1.5707963267948966,
-      "boundary": "reflective"
+      "boundary": null
     }
   },
   "ra": {
@@ -172,12 +172,12 @@
     "__module__": "bilby.core.prior.analytical",
     "__name__": "Sine",
     "kwargs": {
+      "minimum": 0,
+      "maximum": 3.141592653589793,
       "name": "theta_jn",
       "latex_label": "$\\theta_{JN}$",
       "unit": null,
-      "minimum": 0,
-      "maximum": 3.141592653589793,
-      "boundary": "reflective"
+      "boundary": null
     }
   },
   "psi": {

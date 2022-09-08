@@ -6,6 +6,7 @@ import timeit
 import bilby
 import numpy as np
 from bilby.gw import conversion
+from dynesty.results import get_print_fn_args
 
 logger = bilby.core.utils.logger
 
@@ -132,3 +133,16 @@ def stopwatch(method):
         return result
 
     return timed
+
+
+def dynesty_print_fn_fallback(**kwargs):
+    """Logs will look like:
+    #:282|eff(%):26.406|logl*:-inf<-160.2<inf|logz:-165.5+/-0.1|dlogz:1038.1>0.1
+    """
+    # copied from dynesty
+    # https://github.com/joshspeagle/dynesty/blob/master/py/dynesty/results.py
+    niter, short_str, mid_str, long_str = get_print_fn_args(**kwargs)
+    custom_str = [f"#: {niter:d}"] + mid_str
+    custom_str = "|".join(custom_str).replace(" ", "")
+    sys.stdout.write("\033[K" + custom_str + "\r")
+    sys.stdout.flush()

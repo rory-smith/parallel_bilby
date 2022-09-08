@@ -8,36 +8,23 @@ stages:
   - deploy
 
 
+
 cache:
   paths:
-    - .pip37
-    - .pip36
+    - .pip38
 
-# test install on python 3.6
-install-on-python-3.6:
+# test install on python 3.8
+install-on-python-3.8:
   stage: install
   tags:
     - cit
-  image: bilbydev/bilby_pipe-test-suite-python36
+  image: containers.ligo.org/lscsoft/bilby/v2-bilby-python38
   script:
     - conda install -c conda-forge schwimmbad
-    - mkdir -p .pip36
+    - mkdir -p .pip38
     - pip install --upgrade pip
-    - pip --cache-dir=.pip36 install --upgrade bilby
-    - pip --cache-dir=.pip36 install .
-
-# test install on python 3.7
-install-on-python-3.7:
-  stage: install
-  tags:
-    - cit
-  image: bilbydev/bilby_pipe-test-suite-python37
-  script:
-    - conda install -c conda-forge schwimmbad
-    - mkdir -p .pip37
-    - pip install --upgrade pip
-    - pip --cache-dir=.pip37 install --upgrade bilby
-    - pip --cache-dir=.pip37 install .
+    - pip --cache-dir=.pip38 install --upgrade bilby
+    - pip --cache-dir=.pip38 install .
 
 
 # Include the additional CI tasks

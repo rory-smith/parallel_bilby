@@ -31,6 +31,7 @@ from pandas import DataFrame
 from .parser import create_analysis_parser
 from .schwimmbad_fast import MPIPoolFast as MPIPool
 from .utils import (
+    dynesty_print_fn_fallback,
     fill_sample,
     get_cli_args,
     get_initial_points_from_prior,
@@ -552,8 +553,9 @@ with MPIPool(
             ) = res
 
             i = it - 1
-            dynesty.results.print_fn_fallback(
-                res, i, sampler.ncall, dlogz=input_args.dlogz
+
+            dynesty_print_fn_fallback(
+                results=res, niter=i, ncall=sampler.ncall, dlogz=input_args.dlogz
             )
 
             if (
@@ -654,7 +656,7 @@ with MPIPool(
         result.log_bayes_factor = result.log_evidence - result.log_noise_evidence
         result.sampling_time = sampling_time
 
-        result.samples_to_posterior()
+        result.samples_to_posterior(likelihood=likelihood, priors=result.priors)
 
         posterior = result.posterior
 
@@ -679,12 +681,6 @@ with MPIPool(
             if getattr(likelihood, f"{par}_marginalization", False):
                 priors[name] = likelihood.priors[name]
         result.priors = priors
-
-        if args.convert_to_flat_in_component_mass:
-            try:
-                result = bilby.gw.prior.convert_to_flat_in_component_mass_prior(result)
-            except Exception as e:
-                logger.warning(f"Unable to convert to the LALInference prior: {e}")
 
         logger.info(f"Saving result to {outdir}/{label}_result.json")
         result.save_to_file(extension="json")

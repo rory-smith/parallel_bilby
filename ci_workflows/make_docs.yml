@@ -4,14 +4,12 @@ docs:
   stage: docs
   tags:
     - cit
-  image: bilbydev/bilby_pipe-test-suite-python37
+  image: containers.ligo.org/lscsoft/bilby/v2-bilby-python38
   script:
-    - source activate python37
-    - mkdir -p .pip37
-    - pip --cache-dir=.pip37 install .
+    - source activate python38
+    - mkdir -p .pip38
+    - pip --cache-dir=.pip38 install .
     # Make the documentation
-    - apt-get update
-    - apt-get -y install graphviz
     - cd docs
     - pip install -r requirements.txt
     - make clean

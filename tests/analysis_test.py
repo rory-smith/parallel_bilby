@@ -29,6 +29,7 @@ class AnalysisTest(unittest.TestCase):
         data_dump["args"].distance_marginalization_lookup_table = GW150914_TABLE
         data_dump["args"].reference_frame = "sky"
         data_dump["args"].time_reference = "geocent"
+        data_dump["prior_file"] = os.path.join(self.outdir, "data/GW150914_prior.json")
         return data_dump
 
     @mock.patch("pickle.load")

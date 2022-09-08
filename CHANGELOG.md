@@ -1,5 +1,11 @@
 # All notable changes will be documented in this file
 
+## v1.1.0 : 2022-09-07
+- remove convert_to_flat_in_component_mass (!118)
+-  make compatible with bilby==1.1.5 (!112)
+-  Calculate `log_prior` when constructing result posterior (!111)
+-  refactor CI workflows (!107)
+
 ## v1.0.1 : 2021-05-24
 - Adjust input parsing to handle sampling seed (!102)
 - Normalise string-formats to f-strings (!101)
@@ -13,7 +19,7 @@
 - Resolve "Matplotlib use 'agg' backend" (!89)
 - Make checkpoint backup before overwriting (!90)
 - Update docs with new install instructions and citations (1709d04d)
-- Add Conda badge (!87) 
+- Add Conda badge (!87)
 
 ## v1.0.0 : 2020-11-25
 - Update GW examples + add tutorial notebooks (e59e7068)
