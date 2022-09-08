@@ -13,7 +13,6 @@
 
 import os
 import sys
-import parallel_bilby
 
 sys.path.insert(0, os.path.abspath("../parallel_bilby/"))
 sys.path.insert(0, os.path.abspath("../examples/"))
@@ -67,14 +66,6 @@ html_logo = "_static/logo.png"
 html_favicon = "_static/favicon.ico"
 
 html_theme_options = {
-<<<<<<< HEAD
-    'logo_only': True,
-    'display_version': True,
-    'vcs_pageview_mode': 'display_gitlab',
-    'style_nav_header_background': '#343131'
-}
-=======
     "logo_only": True,
     "style_nav_header_background": "#343131",
 }
->>>>>>> lscsoft/master
