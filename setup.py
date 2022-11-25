@@ -86,7 +86,7 @@ setup(
     package_data={"parallel_bilby": [version_file, "slurm/template_slurm.sh"]},
     install_requires=[
         "future",
-        "bilby>=1.1.5",
+        "bilby>=1.4.0",
         "bilby_pipe>=1.0.6",
         "scipy>=1.2.0",
         "gwpy",
@@ -94,7 +94,7 @@ setup(
         "numpy",
         "tqdm",
         "corner",
-        "dynesty>=1.2",
+        "dynesty>=2",
         "schwimmbad",
         "pandas",
         "nestcheck",
