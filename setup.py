@@ -101,6 +101,7 @@ setup(
         "mpi4py>3.0.0",
         "jinja2",
     ],
+    extras_require={"test": ["mock", "pytest-cov"]},
     entry_points={
         "console_scripts": [
             "parallel_bilby_generation=parallel_bilby.generation:main",
