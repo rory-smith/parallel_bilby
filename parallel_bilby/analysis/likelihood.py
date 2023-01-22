@@ -80,7 +80,7 @@ def setup_likelihood(interferometers, waveform_generator, priors, args):
     ----------
     interferometers: bilby.gw.detectors.InterferometerList
         The pre-loaded bilby IFO
-    waveform_generator: bilby.gw.waveform_generator.WaveformGenerator
+    waveform_generator: bilby.gw.waveform_generator.LALCBCWaveformGenerator
         The waveform generation
     priors: dict
         The priors, used for setting up marginalization

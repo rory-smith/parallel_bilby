@@ -68,7 +68,7 @@ class ParserTest(unittest.TestCase):
             vol_dec=0.5,
             walks=100,
             waveform_approximant="IMRPhenomPv2",
-            waveform_generator="bilby.gw.waveform_generator.WaveformGenerator",
+            waveform_generator="bilby.gw.waveform_generator.LALCBCWaveformGenerator",
             check_point_deltaT=3600,
             sampler="dynesty",
         )
@@ -81,8 +81,20 @@ class ParserTest(unittest.TestCase):
         args_dict = vars(args)
         expected_args_dict = vars(expected_args)
 
+        print()
+        print(f"Expected args: {expected_args}")
+
         for arg_key in expected_args_dict.keys():
-            self.assertEqual(args_dict[arg_key], expected_args_dict[arg_key], arg_key)
+            self.assertEqual(
+                first=args_dict[arg_key],
+                second=expected_args_dict[arg_key],
+                msg=(
+                    f"Parsed args and expected args do not match on {arg_key}.\n"
+                    "FULL ARG LIST:\n"
+                    f"Parsed args: {args_dict}\n"
+                    f"Expected args: {expected_args_dict}"
+                ),
+            )
 
     def test_generation_parser_for_bilby_pipe_args(self):
         parser = create_generation_parser()
