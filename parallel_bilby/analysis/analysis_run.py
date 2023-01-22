@@ -227,11 +227,12 @@ class AnalysisRun(object):
 
         Returns
         -------
-        (numpy.ndarraym, numpy.ndarray, numpy.ndarray)
-            Returns a tuple (unit, theta, logl)
+        (numpy.ndarraym, numpy.ndarray, numpy.ndarray, None)
+            Returns a tuple (unit, theta, logl, blob)
             unit: point in the unit cube
             theta: scaled value
             logl: log(likelihood)
+            blob: None
 
         """
         # Create a new rstate for each point, otherwise each task will generate
@@ -260,8 +261,9 @@ class AnalysisRun(object):
         u_list = [point[0] for point in initial_points]
         v_list = [point[1] for point in initial_points]
         l_list = [point[2] for point in initial_points]
+        blobs = None
 
-        return np.array(u_list), np.array(v_list), np.array(l_list)
+        return np.array(u_list), np.array(v_list), np.array(l_list), blobs
 
     @staticmethod
     def get_initial_point_from_prior(args):

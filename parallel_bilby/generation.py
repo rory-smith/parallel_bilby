@@ -134,24 +134,32 @@ class ParallelBilbyDataGenerationInput(bilby_pipe.data_generation.DataGeneration
         self.save_data_dump()
 
 
-def get_default_args(parser):
+def get_parsed_args(parser, cli_args=[""], as_namespace=False):
     """
-    Returns dictionary of default arguments, as specified in the
-    parser. It does this by running the parser with no ini file
-    and no CLI arguments.
+    Returns dictionary of arguments, as specified in the
+    parser.
+
+    If no cli_args arguments are specified, returns the default arguments
+    (by running the parser with no ini file and no CLI arguments)
 
     Parameters
     ----------
     parser: generation-parser
+    cli_args: list of strings (default: [""])
+        List of arguments to be parsed. If empty, returns default arguments
+    as_namespace: bool (default False)
+        If True, returns the arguments as a Namespace object. If False, returns a dict
 
     Returns
     -------
-    args: dict
+    args: dict or Namespace
 
     """
 
-    args = parser.parse_args(args=[""])
-    args = add_extra_args_from_bilby_pipe_namespace([""], args)
+    args = parser.parse_args(args=cli_args)
+    args = add_extra_args_from_bilby_pipe_namespace(cli_args, args)
+    if as_namespace:
+        return args
     return vars(args)
 
 
@@ -179,7 +187,7 @@ def generate_runner(parser=None, **kwargs):
         parser = create_generation_parser()
 
     # Get default arguments from the parser
-    default_args = get_default_args(parser)
+    default_args = get_parsed_args(parser)
 
     # Take the union of default_args and any input arguments,
     # and turn it into a Namespace
@@ -219,8 +227,7 @@ def main():
     # Parse command line arguments
     cli_args = get_cli_args()
     generation_parser = create_generation_parser()
-    args = generation_parser.parse_args(args=cli_args)
-    args = add_extra_args_from_bilby_pipe_namespace(cli_args, args)
+    args = get_parsed_args(generation_parser, cli_args, as_namespace=True)
 
     # Initialise run
     inputs, logger = generate_runner(parser=generation_parser, **vars(args))

@@ -12,13 +12,20 @@ from parallel_bilby.analysis import analysis_run, read_write
 outdir = "tests/test_files/out_readwrite_test/"
 reference_file = "tests/test_files/test_readwrite_sampler_reference.dill"
 
+RECREATE_TEST_DATA = False
+
 
 def create_test_data():
-    """Only needs to be run once to generate reference data.
-    This is not run during the test - it has to be done manually."""
+    """Needs to be run once manually to generate tests/test_files/test_readwrite_sampler_reference.dill
+    IMPORTANT: This is not run during the test - it has to be done manually.
+    """
 
     # Use same ini file as fast e2e test
-    generation.generate_runner(["tests/test_files/fast_test.ini", "--outdir", outdir])
+    parser = generation.create_generation_parser()
+    parsed_args_dict = generation.get_parsed_args(
+        parser=parser, cli_args=["tests/test_files/fast_test.ini", "--outdir", outdir]
+    )
+    generation.generate_runner(parser, **parsed_args_dict)
 
     run = analysis_run.AnalysisRun(
         data_dump=os.path.join(outdir, "data/fast_injection_data_dump.pickle"),
@@ -42,6 +49,7 @@ def create_test_data():
 
     # Clean up
     shutil.rmtree(outdir)
+    pool.close()
 
 
 @pytest.mark.mpi_skip
@@ -51,6 +59,10 @@ def test_readwrite():
     read that file into a new object (2), and then test that both objects (1, 2)
     are the same.
     """
+
+    if RECREATE_TEST_DATA:
+        create_test_data()
+
     # Read reference data
     with open(reference_file, "rb") as dill_file:
         sampler_ref = dill.load(dill_file)
