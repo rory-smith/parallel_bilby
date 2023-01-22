@@ -86,9 +86,10 @@ setup(
     package_data={"parallel_bilby": [version_file, "slurm/template_slurm.sh"]},
     install_requires=[
         "future",
-        "bilby>=1.4.0",
-        "bilby_pipe>=1.0.6",
+        "bilby>=1.4.1",
+        "bilby_pipe>=1.0.7",
         "scipy>=1.2.0",
+        "deepdiff",
         "gwpy",
         "matplotlib",
         "numpy",
@@ -101,7 +102,12 @@ setup(
         "mpi4py>3.0.0",
         "jinja2",
     ],
-    extras_require={"test": ["mock", "pytest-cov"]},
+    extras_require={
+        "test": [
+            "mock",
+            "pytest-cov",
+        ]
+    },
     entry_points={
         "console_scripts": [
             "parallel_bilby_generation=parallel_bilby.generation:main",
