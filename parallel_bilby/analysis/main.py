@@ -51,7 +51,7 @@ def analysis_runner(
     check_point_deltaT=3600,
     n_effective=np.inf,
     dlogz=10,
-    do_not_save_bounds_in_resume=False,
+    do_not_save_bounds_in_resume=True,
     n_check_point=1e4,
     max_its=1e10,
     max_run_time=1e10,
