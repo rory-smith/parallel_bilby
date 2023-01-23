@@ -15,7 +15,7 @@ from bilby.gw import conversion
 from nestcheck import data_processing
 from pandas import DataFrame
 
-from ..parser import create_analysis_parser
+from ..parser import create_analysis_parser, parse_analysis_args
 from ..schwimmbad_fast import MPIPoolFast as MPIPool
 from ..utils import get_cli_args, stdout_sampling_log
 from .analysis_run import AnalysisRun
@@ -41,8 +41,6 @@ def analysis_runner(
     nact=1,
     facc=0.5,
     min_eff=10,
-    vol_dec=0.5,
-    vol_check=8,
     enlarge=1.5,
     sampling_seed=0,
     bilby_zero_likelihood_mode=False,
@@ -90,8 +88,6 @@ def analysis_runner(
         nact,
         facc,
         min_eff,
-        vol_dec,
-        vol_check,
         enlarge,
         sampling_seed,
         bilby_zero_likelihood_mode,
@@ -307,7 +303,7 @@ def main():
 
     # Parse command line arguments
     analysis_parser = create_analysis_parser(sampler="dynesty")
-    input_args = analysis_parser.parse_args(args=cli_args)
+    input_args = parse_analysis_args(analysis_parser, args=cli_args)
 
     # Run the analysis
     analysis_runner(**vars(input_args))

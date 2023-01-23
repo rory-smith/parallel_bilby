@@ -5,6 +5,7 @@ import pickle
 import bilby
 import dynesty
 import numpy as np
+from bilby.core.sampler.base_sampler import _SamplingContainer
 from bilby.core.utils import logger
 
 from .likelihood import setup_likelihood
@@ -30,12 +31,12 @@ class AnalysisRun(object):
         nact=1,
         facc=0.5,
         min_eff=10,
-        vol_dec=0.5,
-        vol_check=8,
         enlarge=1.5,
         sampling_seed=0,
         bilby_zero_likelihood_mode=False,
     ):
+        _SamplingContainer.maxmcmc = maxmcmc
+        _SamplingContainer.nact = nact
 
         # Read data dump from the pickle file
         with open(data_dump, "rb") as file:
@@ -117,14 +118,9 @@ class AnalysisRun(object):
             sample=dynesty_sample,
             bound=dynesty_bound,
             walks=walks,
-            # maxmcmc=maxmcmc,
-            # nact=nact,
             facc=facc,
             first_update=dict(min_eff=min_eff, min_ncall=2 * nlive),
-            # vol_dec=vol_dec,
-            # vol_check=vol_check,
             enlarge=enlarge,
-            # save_bounds=False,
         )
 
         # Create a random generator, which is saved across restarts
