@@ -48,7 +48,7 @@ class AnalysisRunTest(FastRun):
         # Create a test pool
         with MPIPool() as pool:
             if pool.is_master():
-                unit, theta, loglike = self.run.get_initial_points_from_prior(pool)
+                unit, theta, loglike, _ = self.run.get_initial_points_from_prior(pool)
 
                 # Check arrays have correct length
                 assert len(unit) == self.run.nlive
