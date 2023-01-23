@@ -221,7 +221,7 @@ class AnalysisRun(object):
             Schwimmbad pool for MPI parallelisation
             (pbilby implements a modified version: MPIPoolFast)
 
-        calculate_likeliihood: bool
+        calculate_likelihood: bool
             Option to calculate the likelihood for the generated points
             (default: True)
 
