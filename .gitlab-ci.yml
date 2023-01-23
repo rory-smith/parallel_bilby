@@ -23,7 +23,7 @@ install-on-python-3.8:
     - mkdir -p .pip38
     - pip install --upgrade pip
     - pip --cache-dir=.pip38 install --upgrade bilby
-    - pip --cache-dir=.pip38 install .
+    - pip --cache-dir=.pip38 install .[test]
 
 
 # Include the additional CI tasks
