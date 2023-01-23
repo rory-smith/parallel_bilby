@@ -29,7 +29,7 @@ def plot_current_state(sampler, search_parameter_keys, outdir, label):
         plt.close("all")
     try:
         filename = f"{outdir}/{label}_checkpoint_run.png"
-        fig, axs = dyplot.runplot(sampler.results)
+        fig, axs = dyplot.runplot(sampler.results, mark_final_live=False)
         fig.tight_layout()
         plt.savefig(filename)
     except (RuntimeError, np.linalg.linalg.LinAlgError, ValueError) as e:
