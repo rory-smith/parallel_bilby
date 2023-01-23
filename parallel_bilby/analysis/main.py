@@ -8,7 +8,6 @@ import pickle
 import time
 
 import bilby
-import dynesty
 import numpy as np
 import pandas as pd
 from bilby.core.utils import logger
@@ -18,7 +17,7 @@ from pandas import DataFrame
 
 from ..parser import create_analysis_parser
 from ..schwimmbad_fast import MPIPoolFast as MPIPool
-from ..utils import get_cli_args
+from ..utils import get_cli_args, stdout_sampling_log
 from .analysis_run import AnalysisRun
 from .plotting import plot_current_state
 from .read_write import (
@@ -158,9 +157,9 @@ def analysis_runner(
             early_stop = False
 
             for it, res in enumerate(sampler.sample(**sampler_kwargs)):
-                i = it - 1
-
-                dynesty.results.print_fn(res, i, sampler.ncall, dlogz=dlogz)
+                stdout_sampling_log(
+                    results=res, niter=it, ncall=sampler.ncall, dlogz=dlogz
+                )
 
                 iteration_time = (datetime.datetime.now() - t0).total_seconds()
                 t0 = datetime.datetime.now()
