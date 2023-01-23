@@ -105,7 +105,8 @@ setup(
     extras_require={  # #Test requirements (install with: `pip install .[test]`)
         "test": [
             "mock",
-            "deepdiff" "pytest-cov",
+            "deepdiff",
+            "pytest-cov",
             "pytest-mpi",
         ]
     },
