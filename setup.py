@@ -90,7 +90,7 @@ setup(
         "bilby_pipe>=1.0.7",
         "scipy>=1.2.0",
         "deepdiff",
-        "gwpy",
+        "gwpy>=3.0.2",
         "matplotlib",
         "numpy",
         "tqdm",
@@ -101,6 +101,7 @@ setup(
         "nestcheck",
         "mpi4py>3.0.0",
         "jinja2",
+        "dill==0.3.5",
     ],
     extras_require={  # #Test requirements (install with: `pip install .[test]`)
         "test": [
