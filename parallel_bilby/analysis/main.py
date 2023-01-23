@@ -303,7 +303,7 @@ def main():
 
     # Parse command line arguments
     analysis_parser = create_analysis_parser(sampler="dynesty")
-    input_args = parse_analysis_args(analysis_parser, args=cli_args)
+    input_args = parse_analysis_args(analysis_parser, cli_args=cli_args)
 
     # Run the analysis
     analysis_runner(**vars(input_args))
