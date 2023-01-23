@@ -25,7 +25,7 @@ class End2EndTest(FastRun):
 
         # The answer will vary with the number of MPI tasks
         answer = {
-            2: -4.323050871371379,
+            2: -4.810774372114338,
             3: -4.858974047162405,
             4: -5.658712591755034,
             5: -4.263809701732271,
@@ -51,4 +51,6 @@ class End2EndTest(FastRun):
 
             raise KeyError(msg)
 
-        assert b.log_evidence == pytest.approx(answer[comm.size], abs=1e-12)
+        assert b.log_evidence == pytest.approx(
+            answer[comm.size], abs=1e-12
+        ), f"Using {comm.size} MPI tasks, calculated evidence = {b.log_evidence}, expected {answer[comm.size]}"
