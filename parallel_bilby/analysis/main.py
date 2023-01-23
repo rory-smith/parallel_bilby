@@ -160,7 +160,7 @@ def analysis_runner(
             for it, res in enumerate(sampler.sample(**sampler_kwargs)):
                 i = it - 1
 
-                dynesty.results.print_fn_fallback(res, i, sampler.ncall, dlogz=dlogz)
+                dynesty.results.print_fn(res, i, sampler.ncall, dlogz=dlogz)
 
                 iteration_time = (datetime.datetime.now() - t0).total_seconds()
                 t0 = datetime.datetime.now()
