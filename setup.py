@@ -102,10 +102,11 @@ setup(
         "mpi4py>3.0.0",
         "jinja2",
     ],
-    extras_require={
+    extras_require={  # #Test requirements (install with: `pip install .[test]`)
         "test": [
             "mock",
-            "pytest-cov",
+            "deepdiff" "pytest-cov",
+            "pytest-mpi",
         ]
     },
     entry_points={
