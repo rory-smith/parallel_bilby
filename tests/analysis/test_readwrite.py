@@ -22,7 +22,7 @@ def create_test_data():
 
     # Use same ini file as fast e2e test
     parser = generation.create_generation_parser()
-    parsed_args_dict = generation.get_parsed_args(
+    parsed_args_dict = generation.parse_generation_args(
         parser=parser, cli_args=["tests/test_files/fast_test.ini", "--outdir", outdir]
     )
     generation.generate_runner(parser, **parsed_args_dict)

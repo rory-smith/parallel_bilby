@@ -2,7 +2,12 @@ import unittest
 from argparse import Namespace
 
 import numpy as np
-from parallel_bilby.parser import create_analysis_parser, create_generation_parser
+from parallel_bilby.parser import (
+    create_analysis_parser,
+    create_generation_parser,
+    parse_analysis_args,
+    parse_generation_args,
+)
 
 GW150914_INI = "examples/GW150914_IMRPhenomPv2/GW150914.ini"
 TEST_INI = "tests/test_files/test_bilby_pipe_args.ini"
@@ -64,8 +69,6 @@ class ParserTest(unittest.TestCase):
             time_marginalization=True,
             trigger_time="1126259462.4",
             tukey_roll_off=0.4,
-            vol_check=8,
-            vol_dec=0.5,
             walks=100,
             waveform_approximant="IMRPhenomPv2",
             waveform_generator="bilby.gw.waveform_generator.LALCBCWaveformGenerator",
@@ -75,7 +78,7 @@ class ParserTest(unittest.TestCase):
 
     def test_generation_parser(self):
         parser = create_generation_parser()
-        args = parser.parse_args(args=[GW150914_INI])
+        args = parse_generation_args(parser, cli_args=[GW150914_INI], as_namespace=True)
         expected_args = self.get_generation_expected_args()
 
         args_dict = vars(args)
@@ -103,7 +106,7 @@ class ParserTest(unittest.TestCase):
 
     def test_analysis_parser(self):
         parser = create_analysis_parser()
-        args = parser.parse_args(args=[DATA_DUMP])
+        args = parse_analysis_args(parser, cli_args=[DATA_DUMP])
         expected_args = Namespace(
             bilby_zero_likelihood_mode=False,
             clean=False,
@@ -132,11 +135,16 @@ class ParserTest(unittest.TestCase):
             outdir=None,
             rotate_checkpoints=False,
             sampling_seed=None,
-            vol_check=8,
-            vol_dec=0.5,
             walks=100,
         )
         self.assertDictEqual(vars(args), vars(expected_args))
+
+    def test_analysis_parser_value_raises_error(self):
+        parser = create_analysis_parser()
+        with self.assertRaises(ValueError):
+            parse_analysis_args(parser, cli_args=[DATA_DUMP, "--nact", "0"])
+        with self.assertRaises(ValueError):
+            parse_analysis_args(parser, cli_args=[DATA_DUMP, "--walks", str(int(1e9))])
 
 
 if __name__ == "__main__":

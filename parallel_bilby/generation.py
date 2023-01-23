@@ -18,7 +18,7 @@ import lalsimulation
 import numpy as np
 
 from . import __version__, slurm
-from .parser import create_generation_parser
+from .parser import create_generation_parser, parse_generation_args
 from .utils import get_cli_args
 
 
@@ -30,20 +30,6 @@ def get_version_info():
         dynesty_version=dynesty.__version__,
         lalsimulation_version=lalsimulation.__version__,
     )
-
-
-def add_extra_args_from_bilby_pipe_namespace(cli_args, parallel_bilby_args):
-    """
-    :param args: args from parallel_bilby
-    :return: Namespace argument object
-    """
-    pipe_args, _ = bilby_pipe.data_generation.parse_args(
-        cli_args, bilby_pipe.data_generation.create_generation_parser()
-    )
-    for key, val in vars(pipe_args).items():
-        if key not in parallel_bilby_args:
-            setattr(parallel_bilby_args, key, val)
-    return parallel_bilby_args
 
 
 def write_complete_config_file(parser, args, inputs):
@@ -134,35 +120,6 @@ class ParallelBilbyDataGenerationInput(bilby_pipe.data_generation.DataGeneration
         self.save_data_dump()
 
 
-def get_parsed_args(parser, cli_args=[""], as_namespace=False):
-    """
-    Returns dictionary of arguments, as specified in the
-    parser.
-
-    If no cli_args arguments are specified, returns the default arguments
-    (by running the parser with no ini file and no CLI arguments)
-
-    Parameters
-    ----------
-    parser: generation-parser
-    cli_args: list of strings (default: [""])
-        List of arguments to be parsed. If empty, returns default arguments
-    as_namespace: bool (default False)
-        If True, returns the arguments as a Namespace object. If False, returns a dict
-
-    Returns
-    -------
-    args: dict or Namespace
-
-    """
-
-    args = parser.parse_args(args=cli_args)
-    args = add_extra_args_from_bilby_pipe_namespace(cli_args, args)
-    if as_namespace:
-        return args
-    return vars(args)
-
-
 def generate_runner(parser=None, **kwargs):
     """
     API for running the generation from Python instead of the command line.
@@ -187,7 +144,7 @@ def generate_runner(parser=None, **kwargs):
         parser = create_generation_parser()
 
     # Get default arguments from the parser
-    default_args = get_parsed_args(parser)
+    default_args = parse_generation_args(parser)
 
     # Take the union of default_args and any input arguments,
     # and turn it into a Namespace
@@ -227,7 +184,7 @@ def main():
     # Parse command line arguments
     cli_args = get_cli_args()
     generation_parser = create_generation_parser()
-    args = get_parsed_args(generation_parser, cli_args, as_namespace=True)
+    args = parse_generation_args(generation_parser, cli_args, as_namespace=True)
 
     # Initialise run
     inputs, logger = generate_runner(parser=generation_parser, **vars(args))
