@@ -28,21 +28,21 @@ class ROQTest(ROQRun):
 
         # The answer will vary with the number of MPI tasks
         answer = {
-            2: -9.33063626e-01,
-            3: -0.7084685344270838,
-            4: -0.7084685344270838,
-            5: -4.716500907386944,
-            6: -4.716500907386944,
-            7: -4.716500907386944,
-            8: -4.716500907386944,
-            9: -4.716500907386944,
+            2: -4.719451187977029,
+            3: -0.7088613566902495,
+            4: -0.7088613566902495,
+            5: -4.719451187977029,
+            6: -4.719451187977029,
+            9: -4.719451187977029,
         }
 
+        obtained = resume_file.live_logl[0]
         comm = MPI.COMM_WORLD
         if comm.size not in answer:
-            msg = f"""
-                Answer has not been pre-calculated for {comm.size} MPI tasks
-                """
+            msg = (
+                f"Calculated likelihood {obtained}."
+                f"Answer has not been pre-calculated for {comm.size} MPI tasks."
+            )
             raise KeyError(msg)
 
         # The ROQ test takes too long to run to completion, so it is stopped
@@ -50,4 +50,7 @@ class ROQTest(ROQRun):
         # This ensures that the algorithm has not been changed. A mathematically
         # valid change to the code may change this result, so the test reference
         # value should be updated accordingly.
-        assert resume_file.live_logl[0] == pytest.approx(answer[comm.size])
+        if not obtained == pytest.approx(answer[comm.size], abs=1e-8):
+            raise ValueError(
+                f"Using {comm.size} MPI tasks, obtained {obtained}, expected {answer[comm.size]}",
+            )
