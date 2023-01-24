@@ -52,7 +52,7 @@ def analysis_runner(
     n_effective=np.inf,
     dlogz=10,
     do_not_save_bounds_in_resume=True,
-    n_check_point=1e4,
+    n_check_point=1000,
     max_its=1e10,
     max_run_time=1e10,
     rotate_checkpoints=False,

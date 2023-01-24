@@ -104,7 +104,7 @@ def _add_dynesty_settings_to_parser(parser):
     )
     dynesty_group.add_argument(
         "--n-check-point",
-        default=100,
+        default=1000,
         type=int,
         help="Steps to take before attempting checkpoint",
     )
