@@ -3,7 +3,7 @@ import pickle
 
 import pytest
 from parallel_bilby import generation, slurm
-from parallel_bilby.parser import create_generation_parser
+from parallel_bilby.parser import create_generation_parser, parse_generation_args
 from tests.cases import GW150914Run
 
 
@@ -11,10 +11,9 @@ class GenerationTest(GW150914Run):
     def setUp(self):
 
         # Run the relevant bits of generation.main, with no CLI args
-        parser = create_generation_parser()
         cli_args = [""]
-        args = parser.parse_args(args=cli_args)
-        args = generation.add_extra_args_from_bilby_pipe_namespace(cli_args, args)
+        parser = create_generation_parser()
+        args = parse_generation_args(parser, cli_args=cli_args, as_namespace=True)
 
         # Overwrite defaults with values in test
         args.outdir = self.test_dir

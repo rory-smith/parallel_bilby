@@ -1,5 +1,7 @@
+import logging
 import os
 import shutil
+import time
 
 import bilby
 import dill
@@ -12,7 +14,31 @@ from ..utils import safe_file_dump, stopwatch
 from .likelihood import reorder_loglikelihoods
 
 
-@stopwatch
+def _get_time_since_file_last_modified(file_path):
+    """Returns the time since the file was last modified in human-readable format
+
+    Parameters
+    ----------
+    file_path: str
+        Path to the file
+
+    Returns
+    -------
+    time_since_last_modified: str
+    """
+    if not os.path.exists(file_path):
+        return ""
+    seconds = time.time() - os.path.getmtime(file_path)
+    d, remainder = divmod(seconds, 86400)
+    hr, remainder = divmod(remainder, 3600)
+    m, s = divmod(remainder, 60)
+    strtime = f"{m:02.0f}m {s:02.0f}s"
+    strtime = f"{hr:02.0f}h {strtime}" if hr > 0 else strtime
+    strtime = f"{d:02.0f} days, {strtime}" if d > 0 else strtime
+    return strtime
+
+
+@stopwatch(log_level=logging.INFO)
 def write_current_state(sampler, resume_file, sampling_time, rotate=False):
     """Writes a checkpoint file
 
@@ -28,7 +54,13 @@ def write_current_state(sampler, resume_file, sampling_time, rotate=False):
         If resume_file already exists, first make a backup file (ending in '.bk').
     """
     print("")
-    logger.info("Start checkpoint writing")
+
+    time_since_save = _get_time_since_file_last_modified(resume_file)
+    logger.info(
+        "Start checkpoint writing" + f" (last checkpoint {time_since_save} ago)"
+        if time_since_save
+        else ""
+    )
     if rotate and os.path.isfile(resume_file):
         resume_file_bk = resume_file + ".bk"
         logger.info(f"Backing up existing checkpoint file to {resume_file_bk}")

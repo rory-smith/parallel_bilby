@@ -1,7 +1,8 @@
-import datetime
+import functools
+import logging
 import os
 import sys
-import timeit
+import time
 
 import bilby
 from dynesty.utils import get_print_fn_args
@@ -44,18 +45,22 @@ def safe_file_dump(data, filename, module):
     os.rename(temp_filename, filename)
 
 
-def stopwatch(method):
-    """A decorator that logs the time spent in a function"""
+def stopwatch(_func=None, *, log_level=logging.DEBUG):
+    def decorator_stopwatch(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            t0 = time.time()
+            result = func(*args, **kwargs)
+            dur = time.time() - t0
+            logger.log(log_level, f"{func.__name__} took {dur}s")
+            return result
 
-    def timed(*args, **kw):
-        t_start = timeit.time.perf_counter()
-        result = method(*args, **kw)
-        t_end = timeit.time.perf_counter()
-        duration = datetime.timedelta(seconds=t_end - t_start)
-        logger.info(f"{method.__name__}: {duration}")
-        return result
+        return wrapper
 
-    return timed
+    if _func is None:
+        return decorator_stopwatch
+    else:
+        return decorator_stopwatch(_func)
 
 
 def stdout_sampling_log(**kwargs):

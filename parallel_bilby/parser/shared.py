@@ -185,7 +185,7 @@ def _add_misc_settings_to_parser(parser):
         "--check-point-deltaT",
         default=3600,
         type=float,
-        help="Write a checkpoint resume file and diagnostic plots every deltaT [s].",
+        help="Write a checkpoint resume file and diagnostic plots every deltaT [s]. Default: 1 hour.",
     )
     misc_group.add_argument(
         "--rotate-checkpoints",
