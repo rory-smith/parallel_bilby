@@ -10,10 +10,10 @@ class FastRun(_Run):
         dlogz=10.0,
         nact=1,
         sampling_seed=0,
+        generation_seed=0,
         trigger_time="0",
         zero_noise=True,
         detectors=["H1"],
-        generation_seed=0,
         injection_dict={
             "chirp_mass": 28.0,
             "mass_ratio": 1.0,
@@ -61,6 +61,8 @@ class ROQRun(_Run):
     generation_args = {
         "nlive": 20,
         "nact": 50,
+        "sampling_seed": 0,
+        "generation_seed": 0,
         "min_eff": 3.0,
         "calibration_model": "CubicSpline",
         "spline_calibration_envelope_dict": f"{{H1:{_roq_path}/GWTC1_GW150914_H_CalEnv.txt,"
@@ -89,6 +91,8 @@ class GW150914Run(_Run):
         + "L1=examples/GW150914_IMRPhenomPv2/psd_data/l1_psd.txt}",
         "phase_marginalization": True,
         "time_marginalization": True,
+        "sampling_seed": 0,
+        "generation_seed": 0,
         "prior_dict": dict(
             mass_ratio=Uniform(name="mass_ratio", minimum=0.125, maximum=1),
             chirp_mass=Uniform(name="chirp_mass", minimum=25, maximum=31),
