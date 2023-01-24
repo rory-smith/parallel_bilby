@@ -272,7 +272,9 @@ def analysis_runner(
                 samples = pool.map(fill_sample, fill_args)
                 result.posterior = pd.DataFrame(samples)
 
-                logger.debug("Updating prior to the actual prior")
+                logger.debug(
+                    "Updating prior to the actual prior (undoing marginalization)"
+                )
                 for par, name in zip(
                     ["distance", "phase", "time"],
                     ["luminosity_distance", "phase", "geocent_time"],
@@ -287,6 +289,9 @@ def analysis_runner(
                     f"Sampling time = {datetime.timedelta(seconds=result.sampling_time)}s"
                 )
                 print(result)
+                if no_plot is False:
+                    result.plot_corner()
+
         else:
             exit_reason = -1
         return exit_reason

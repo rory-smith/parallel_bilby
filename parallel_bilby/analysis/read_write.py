@@ -173,5 +173,5 @@ def format_result(
     result.log_bayes_factor = result.log_evidence - result.log_noise_evidence
     result.sampling_time = sampling_time
 
-    result.samples_to_posterior()
+    result.samples_to_posterior(likelihood=run.likelihood, priors=result.priors)
     return result

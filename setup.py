@@ -101,7 +101,7 @@ setup(
         "nestcheck",
         "mpi4py>3.0.0",
         "jinja2",
-        "dill==0.3.5",
+        "dill",
     ],
     extras_require={  # #Test requirements (install with: `pip install .[test]`)
         "test": [

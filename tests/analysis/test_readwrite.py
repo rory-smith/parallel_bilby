@@ -12,7 +12,7 @@ from parallel_bilby.analysis import analysis_run, read_write
 outdir = "tests/test_files/out_readwrite_test/"
 reference_file = "tests/test_files/test_readwrite_sampler_reference.dill"
 
-RECREATE_TEST_DATA = False
+RECREATE_TEST_DATA = True  # dill is giving errors on different machine architectures, so we recreate the test data
 
 
 def create_test_data():
