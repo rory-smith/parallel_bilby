@@ -92,10 +92,10 @@ class _Run(unittest.TestCase):
         return resume_file
 
     def read_bilby_result(self):
-        return bilby.gw.result.CBCResult.from_json(
+        return bilby.gw.result.CBCResult.from_hdf5(
             os.path.join(
                 self.analysis_args["outdir"],
-                f"{self.analysis_args['label']}_result.json",
+                f"{self.analysis_args['label']}_result.hdf5",
             )
         )
 

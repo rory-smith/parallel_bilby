@@ -60,6 +60,7 @@ def analysis_runner(
     rotate_checkpoints=False,
     no_plot=False,
     nestcheck=False,
+    result_format="hdf5",
     **kwargs,
 ):
     """
@@ -287,8 +288,10 @@ def analysis_runner(
                         run.priors[name] = run.likelihood.priors[name]
                 result.priors = run.priors
 
-                logger.info(f"Saving result to {run.outdir}/{run.label}_result.json")
-                result.save_to_file(extension="json")
+                logger.info(
+                    f"Saving result to {run.outdir}/{run.label}_result.{result_format}"
+                )
+                result.save_to_file(extension=result_format)
                 print(
                     f"Sampling time = {datetime.timedelta(seconds=result.sampling_time)}s"
                 )
