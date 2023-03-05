@@ -102,12 +102,22 @@ setup(
         "dill",
     ],
     extras_require={  # #Test requirements (install with: `pip install .[test]`)
+        "docs": [
+            "sphinx",
+            "numpydoc",
+            "nbsphinx",
+            "sphinx_rtd_theme",
+            "sphinx-tabs",
+            "autodoc",
+            "sphinx-argparse",
+            "graphviz",
+        ],
         "test": [
             "mock",
             "deepdiff",
             "pytest-cov",
             "pytest-mpi",
-        ]
+        ],
     },
     entry_points={
         "console_scripts": [

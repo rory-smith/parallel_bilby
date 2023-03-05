@@ -8,10 +8,8 @@ docs:
   script:
     - source activate python38
     - mkdir -p .pip38
-    - pip --cache-dir=.pip38 install .
+    - pip --cache-dir=.pip38 install .[docs]
     # Make the documentation
-    - apt-get --allow-releaseinfo-change update
-    - apt-get -y install graphviz
     - cd docs
     - pip install -r requirements.txt
     - make clean
