@@ -20,6 +20,9 @@ def create_analysis_parser(sampler="dynesty"):
     analysis_parser.add_argument(
         "--label", default=None, type=str, help="Label to overwrite input label"
     )
+    analysis_parser.add_argument(
+        "--result-format", default="hdf5", type=str, help="Format to save the result"
+    )
     return analysis_parser
 
 
