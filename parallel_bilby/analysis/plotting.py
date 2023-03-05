@@ -2,6 +2,7 @@ import dynesty.plotting as dyplot
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from bilby.core.sampler.dynesty import dynesty_stats_plot
 from bilby.core.utils import logger
 
 from ..utils import stopwatch
@@ -39,11 +40,7 @@ def plot_current_state(sampler, search_parameter_keys, outdir, label):
         plt.close("all")
     try:
         filename = f"{outdir}/{label}_checkpoint_stats.png"
-        fig, axs = plt.subplots(nrows=3, sharex=True)
-        for ax, name in zip(axs, ["boundidx", "nc", "scale"]):
-            ax.plot(sampler.saved_run.D[name], color="C0")
-            ax.set_ylabel(name)
-        axs[-1].set_xlabel("iteration")
+        fig, _ = dynesty_stats_plot(sampler)
         fig.tight_layout()
         plt.savefig(filename)
     except (RuntimeError, ValueError) as e:

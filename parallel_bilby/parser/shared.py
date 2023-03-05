@@ -61,14 +61,14 @@ def _add_dynesty_settings_to_parser(parser):
     )
     dynesty_group.add_argument(
         "--dynesty-sample",
-        default="rwalk",
+        default="acceptance-walk",
         type=str,
         help="Dynesty sampling method (default=rwalk). Note, the dynesty rwalk "
         "method is overwritten by parallel bilby for an optimised version ",
     )
     dynesty_group.add_argument(
         "--dynesty-bound",
-        default="multi",
+        default="live",
         type=str,
         help="Dynesty bounding method (default=multi)",
     )
@@ -79,6 +79,13 @@ def _add_dynesty_settings_to_parser(parser):
         help="Minimum number of walks, defaults to 100",
     )
     dynesty_group.add_argument(
+        "--proposals",
+        type=bilby_pipe.utils.nonestr,
+        action="append",
+        default=None,
+        help="The jump proposals to use, the options are 'diff' and 'volumetric'",
+    )
+    dynesty_group.add_argument(
         "--maxmcmc",
         default=5000,
         type=int,
@@ -86,9 +93,15 @@ def _add_dynesty_settings_to_parser(parser):
     )
     dynesty_group.add_argument(
         "--nact",
-        default=5,
+        default=2,
         type=int,
-        help="Number of autocorrelation times to take, defaults to 5",
+        help="Number of autocorrelation times to take, defaults to 2",
+    )
+    dynesty_group.add_argument(
+        "--naccept",
+        default=60,
+        type=int,
+        help="The average number of accepted steps per MCMC chain, defaults to 60",
     )
     dynesty_group.add_argument(
         "--min-eff",

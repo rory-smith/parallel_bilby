@@ -143,11 +143,16 @@ class AnalysisNode(BaseNode):
                 continue
             input_val = getattr(self.args, key)
             if val != input_val:
+                key = key.replace("_", "-")
                 if input_val is True:
                     # For flags only add the flag
-                    run_list.append(f"--{key.replace('_', '-')}")
+                    run_list.append(f"--{key}")
+                elif isinstance(input_val, list):
+                    # For lists add each entry individually
+                    for entry in input_val:
+                        run_list.append(f"--{key} {entry}")
                 else:
-                    run_list.append(f"--{key.replace('_', '-')} {input_val}")
+                    run_list.append(f"--{key} {input_val}")
 
         run_list.append(f"--label {self.label}")
         run_list.append(f"--sampling-seed {self.inputs.sampling_seed + self.idx}")
