@@ -85,11 +85,9 @@ setup(
     packages=find_packages(exclude=["*tests.*", "*tests"]),
     package_data={"parallel_bilby": [version_file, "slurm/template_slurm.sh"]},
     install_requires=[
-        "future",
-        "bilby>=1.4.1",
+        "bilby>=2.0.0",
         "bilby_pipe>=1.0.7",
         "scipy>=1.2.0",
-        "deepdiff",
         "gwpy>=3.0.2",
         "matplotlib",
         "numpy",

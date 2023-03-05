@@ -60,7 +60,7 @@ class SampleSpaceTest(FastRun):
             "chirp_mass": 28.005627999999994,
             "log_likelihood": 878.837994,
             "log_prior": 0.0,
-            "H1_matched_filter_snr": complex(41.924647195266836, -0.2023449501540067),
+            "H1_matched_filter_snr": 41.924647195266836 - 0.2023449501540067j,
             "H1_optimal_snr": 41.93240615236018,
             "reference_frequency": 20.0,
             "waveform_approximant": "IMRPhenomPv2",
@@ -99,13 +99,14 @@ class SampleSpaceTest(FastRun):
             "total_mass_source": 55.37886369174022,
         }
 
+        bad_types = [np.ndarray, np.complex128, complex]
         sample_diff = DeepDiff(
             sample,
             reference_sample,
             number_format_notation="e",
             significant_digits=6,
             ignore_numeric_type_changes=True,
-            exclude_types=[np.ndarray, np.complex128],
+            exclude_types=bad_types,
         )
         self.assertEqual(
             {},
@@ -116,7 +117,5 @@ class SampleSpaceTest(FastRun):
         # Numpy comparison for 0-d arrays/complex numbers does not work with DeepDiff
         # Handle them separately.
         for key in reference_sample:
-            if type(reference_sample[key]) == np.ndarray:
-                assert reference_sample[key] == pytest.approx(sample[key], abs=1e-8)
-            if type(reference_sample[key]) == np.complex128:
+            if type(reference_sample[key]) in bad_types:
                 assert reference_sample[key] == pytest.approx(sample[key], abs=1e-8)

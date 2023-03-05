@@ -6,7 +6,16 @@ import bilby
 import dynesty
 import numpy as np
 from bilby.core.sampler.base_sampler import _SamplingContainer
+from bilby.core.sampler.dynesty import DynestySetupError, _set_sampling_kwargs
+from bilby.core.sampler.dynesty_utils import (
+    AcceptanceTrackingRWalk,
+    ACTTrackingRWalk,
+    FixedRWalk,
+    LivePointSampler,
+    MultiEllipsoidLivePointSampler,
+)
 from bilby.core.utils import logger
+from bilby_pipe.utils import convert_string_to_list
 
 from .likelihood import setup_likelihood
 
@@ -23,20 +32,24 @@ class AnalysisRun(object):
         data_dump,
         outdir=None,
         label=None,
-        dynesty_sample="rwalk",
+        dynesty_sample="acceptance-walk",
         nlive=5,
-        dynesty_bound="multi",
+        dynesty_bound="live",
         walks=100,
         maxmcmc=5000,
-        nact=1,
+        naccept=60,
+        nact=2,
         facc=0.5,
         min_eff=10,
         enlarge=1.5,
         sampling_seed=0,
+        proposals=None,
         bilby_zero_likelihood_mode=False,
     ):
-        _SamplingContainer.maxmcmc = maxmcmc
-        _SamplingContainer.nact = nact
+        self.maxmcmc = maxmcmc
+        self.nact = nact
+        self.naccept = naccept
+        self.proposals = convert_string_to_list(proposals)
 
         # Read data dump from the pickle file
         with open(data_dump, "rb") as file:
@@ -97,22 +110,6 @@ class AnalysisRun(object):
         if len(reflective) == 0:
             reflective = None
 
-        if dynesty_sample == "rwalk":
-            logger.debug("Using the bilby-implemented rwalk sample method")
-            dynesty.dynesty._SAMPLING[
-                "rwalk"
-            ] = bilby.core.sampler.dynesty.sample_rwalk_bilby
-            dynesty.nestedsamplers._SAMPLING[
-                "rwalk"
-            ] = bilby.core.sampler.dynesty.sample_rwalk_bilby
-        elif dynesty_sample == "rwalk_dynesty":
-            logger.debug("Using the dynesty-implemented rwalk sample method")
-            dynesty_sample = "rwalk"
-        else:
-            logger.debug(
-                f"Using the dynesty-implemented {dynesty_sample} sample method"
-            )
-
         self.init_sampler_kwargs = dict(
             nlive=nlive,
             sample=dynesty_sample,
@@ -122,6 +119,8 @@ class AnalysisRun(object):
             first_update=dict(min_eff=min_eff, min_ncall=2 * nlive),
             enlarge=enlarge,
         )
+
+        self._set_sampling_method()
 
         # Create a random generator, which is saved across restarts
         # This ensures that runs are fully deterministic, which is important
@@ -144,6 +143,74 @@ class AnalysisRun(object):
         self.args = args
         self.injection_parameters = injection_parameters
         self.nlive = nlive
+
+    def _set_sampling_method(self):
+
+        sample = self.init_sampler_kwargs["sample"]
+        bound = self.init_sampler_kwargs["bound"]
+
+        _set_sampling_kwargs((self.nact, self.maxmcmc, self.proposals, self.naccept))
+
+        if sample not in ["rwalk", "act-walk", "acceptance-walk"] and bound in [
+            "live",
+            "live-multi",
+        ]:
+            logger.info(
+                "Live-point based bound method requested with dynesty sample "
+                f"'{sample}', overwriting to 'multi'"
+            )
+            self.kwargs["bound"] = "multi"
+        elif bound == "live":
+            dynesty.dynamicsampler._SAMPLERS["live"] = LivePointSampler
+        elif bound == "live-multi":
+            dynesty.dynamicsampler._SAMPLERS[
+                "live-multi"
+            ] = MultiEllipsoidLivePointSampler
+        elif sample == "acceptance-walk":
+            raise DynestySetupError(
+                "bound must be set to live or live-multi for sample=acceptance-walk"
+            )
+        elif self.proposals is None:
+            logger.warning(
+                "No proposals specified using dynesty sampling, defaulting "
+                "to 'volumetric'."
+            )
+            self.proposals = ["volumetric"]
+            _SamplingContainer.proposals = self.proposals
+        elif "diff" in self.proposals:
+            raise DynestySetupError(
+                "bound must be set to live or live-multi to use differential "
+                "evolution proposals"
+            )
+
+        if sample == "rwalk":
+            logger.info(
+                "Using the bilby-implemented rwalk sample method with ACT estimated walks. "
+                f"An average of {2 * self.nact} steps will be accepted up to chain length "
+                f"{self.maxmcmc}."
+            )
+            if self.kwargs["walks"] > self.maxmcmc:
+                raise DynestySetupError("You have maxmcmc < walks (minimum mcmc)")
+            if self.nact < 1:
+                raise DynestySetupError("Unable to run with nact < 1")
+            dynesty.nestedsamplers._SAMPLING["rwalk"] = AcceptanceTrackingRWalk()
+        elif sample == "acceptance-walk":
+            logger.info(
+                "Using the bilby-implemented rwalk sampling with an average of "
+                f"{self.naccept} accepted steps per MCMC and maximum length {self.maxmcmc}"
+            )
+            dynesty.nestedsamplers._SAMPLING["acceptance-walk"] = FixedRWalk()
+        elif sample == "act-walk":
+            logger.info(
+                "Using the bilby-implemented rwalk sampling tracking the "
+                f"autocorrelation function and thinning by "
+                f"{self.nact} with maximum length {self.nact * self.maxmcmc}"
+            )
+            dynesty.nestedsamplers._SAMPLING["act-walk"] = ACTTrackingRWalk()
+        elif sample == "rwalk_dynesty":
+            sample = sample.strip("_dynesty")
+            self.kwargs["sample"] = sample
+            logger.info(f"Using the dynesty-implemented {sample} sample method")
 
     def prior_transform_function(self, u_array):
         """

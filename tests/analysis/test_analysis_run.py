@@ -1,6 +1,6 @@
-import dynesty
 import numpy as np
 import pytest
+from bilby.core.sampler.dynesty_utils import LivePointSampler
 from parallel_bilby.analysis import analysis_run
 from parallel_bilby.schwimmbad_fast import MPIPoolFast as MPIPool
 from tests.cases import FastRun
@@ -95,4 +95,4 @@ class AnalysisRunTest(FastRun):
                 live_points = self.run.get_initial_points_from_prior(pool)
                 sampler = self.run.get_nested_sampler(live_points, pool, pool.size)
 
-                assert type(sampler) == dynesty.nestedsamplers.MultiEllipsoidSampler
+                assert type(sampler) == LivePointSampler
