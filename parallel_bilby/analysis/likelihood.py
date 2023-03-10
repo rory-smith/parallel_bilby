@@ -57,20 +57,31 @@ def roq_likelihood_kwargs(args):
         A dictionary of the required kwargs
 
     """
-    if hasattr(args, "likelihood_roq_params"):
-        params = args.likelihood_roq_params
-    else:
-        params = np.genfromtxt(args.roq_folder + "/params.dat", names=True)
 
-    if hasattr(args, "likelihood_roq_weights"):
-        weights = args.likelihood_roq_weights
-    else:
-        weights = args.weight_file
-        logger.info(f"Loading ROQ weights from {weights}")
-
-    return dict(
-        weights=weights, roq_params=params, roq_scale_factor=args.roq_scale_factor
+    kwargs = dict(
+        weights=None,
+        roq_params=None,
+        linear_matrix=None,
+        quadratic_matrix=None,
+        roq_scale_factor=args.roq_scale_factor,
     )
+    if hasattr(args, "likelihood_roq_params") and hasattr(
+        args, "likelihood_roq_weights"
+    ):
+        kwargs["roq_params"] = args.likelihood_roq_params
+        kwargs["weights"] = args.likelihood_roq_weights
+    elif hasattr(args, "roq_folder") and args.roq_folder is not None:
+        logger.info(f"Loading ROQ weights from {args.roq_folder}, {args.weight_file}")
+        kwargs["roq_params"] = np.genfromtxt(
+            args.roq_folder + "/params.dat", names=True
+        )
+        kwargs["weights"] = args.weight_file
+    elif hasattr(args, "roq_linear_matrix") and args.roq_linear_matrix is not None:
+        logger.info(f"Loading linear_matrix from {args.roq_linear_matrix}")
+        logger.info(f"Loading quadratic_matrix from {args.roq_quadratic_matrix}")
+        kwargs["linear_matrix"] = args.roq_linear_matrix
+        kwargs["quadratic_matrix"] = args.roq_quadratic_matrix
+    return kwargs
 
 
 def setup_likelihood(interferometers, waveform_generator, priors, args):
