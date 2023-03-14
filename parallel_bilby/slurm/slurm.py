@@ -71,7 +71,7 @@ class BaseNode(object):
 
         if self.args.extra_lines:
             bash_extra_lines = self.args.extra_lines.split(";")
-            bash_extra_lines = [line.strip() for line in bash_extra_lines]
+            bash_extra_lines = "".join([line.strip() for line in bash_extra_lines])
         else:
             bash_extra_lines = ""
 
@@ -98,7 +98,6 @@ class BaseNode(object):
 class AnalysisNode(BaseNode):
     def __init__(self, data_dump_file, inputs, idx, args, cli_args):
         super().__init__(inputs, args)
-        print(f"NTASKS PER NODE {self.ntasks_per_node}")
         self.data_dump_file = data_dump_file
 
         self.idx = idx

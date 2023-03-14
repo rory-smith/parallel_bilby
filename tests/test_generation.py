@@ -18,6 +18,7 @@ class GenerationTest(GW150914Run):
         # Overwrite defaults with values in test
         args.outdir = self.test_dir
         args.label = self.test_label
+        args.extra_lines = "conda activate; conda source"
         for key, value in self.generation_args.items():
             args.__setattr__(key, value)
 
@@ -45,3 +46,11 @@ class GenerationTest(GW150914Run):
                 with open(path, "rb") as file:
                     data_dump = pickle.load(file)
                     self.assertTrue(data_dump["args"].n_parallel, 4)
+
+        slurm_fn = os.path.join(self.test_dir, "submit/analysis_GW150914_0.sh")
+        with open(slurm_fn, "r") as file:
+            slurm_script = file.read()
+            self.assertTrue("mem-per-cpu" in slurm_script)
+            self.assertTrue("ntasks-per-node" in slurm_script)
+            self.assertTrue("nodes" in slurm_script)
+            self.assertTrue("conda" in slurm_script)

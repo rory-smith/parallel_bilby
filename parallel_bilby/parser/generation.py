@@ -36,8 +36,8 @@ def _add_slurm_settings_to_parser(parser):
     slurm_group.add_argument(
         "--mem-per-cpu",
         type=str,
-        default=None,
-        help="Memory per CPU (defaults to None, suggested is 2GB)",
+        default="2G",
+        help="Memory per CPU (defaults to 2GB)",
     )
     slurm_group.add_argument(
         "--extra-lines",
