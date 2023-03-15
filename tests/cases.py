@@ -87,8 +87,8 @@ class GW150914Run(_Run):
         "trigger_time": "1126259462.4",
         "gaussian_noise": True,
         "detectors": ["H1", "L1"],
-        "psd_dict": "{H1=examples/GW150914_IMRPhenomPv2/psd_data/h1_psd.txt,"
-        + "L1=examples/GW150914_IMRPhenomPv2/psd_data/l1_psd.txt}",
+        "psd_dict": "{H1=examples/GW150914/psd_data/h1_psd.txt,"
+        + "L1=examples/GW150914/psd_data/l1_psd.txt}",
         "phase_marginalization": True,
         "time_marginalization": True,
         "sampling_seed": 0,

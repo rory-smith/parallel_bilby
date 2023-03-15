@@ -9,7 +9,7 @@ from parallel_bilby.parser import (
     parse_generation_args,
 )
 
-GW150914_INI = "examples/GW150914_IMRPhenomPv2/GW150914.ini"
+GW150914_INI = "examples/GW150914/GW150914.ini"
 TEST_INI = "tests/test_files/test_bilby_pipe_args.ini"
 DATA_DUMP = "data_dump.pickle"
 
@@ -36,7 +36,7 @@ class ParserTest(unittest.TestCase):
             facc=0.5,
             frequency_domain_source_model="lal_binary_black_hole",
             gaussian_noise=False,
-            ini="examples/GW150914_IMRPhenomPv2/GW150914.ini",
+            ini="examples/GW150914/GW150914.ini",
             injection=False,
             injection_file=None,
             injection_numbers=None,
@@ -70,7 +70,7 @@ class ParserTest(unittest.TestCase):
             trigger_time="1126259462.4",
             tukey_roll_off=0.4,
             walks=100,
-            waveform_approximant="IMRPhenomPv2",
+            waveform_approximant="IMRPhenomXPHM",
             waveform_generator="bilby.gw.waveform_generator.LALCBCWaveformGenerator",
             check_point_deltaT=3600,
             sampler="dynesty",

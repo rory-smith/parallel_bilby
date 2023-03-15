@@ -288,6 +288,9 @@ def analysis_runner(
                         run.priors[name] = run.likelihood.priors[name]
                 result.priors = run.priors
 
+                result.posterior = result.posterior.applymap(
+                    lambda x: x[0] if isinstance(x, list) else x
+                )
                 logger.info(
                     f"Saving result to {run.outdir}/{run.label}_result.{result_format}"
                 )
