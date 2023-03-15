@@ -48,7 +48,7 @@ class ParserTest(unittest.TestCase):
             log_directory=None,
             maximum_frequency=None,
             maxmcmc=5000,
-            mem_per_cpu=None,
+            mem_per_cpu="2G",
             min_eff=10,
             minimum_frequency="20",
             n_check_point=10000,
