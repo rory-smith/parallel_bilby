@@ -64,22 +64,22 @@ class ParserTest(unittest.TestCase):
             phase_marginalization=True,
             post_trigger_duration=2.0,
             prior_file=None,
-            prior_dict="{mass-ratio: Uniform(name='mass_ratio', minimum=0.125, maximum=1), "
-            "chirp_mass = Uniform(name='chirp_mass', minimum=25, maximum=35), "
-            "mass_1 = Constraint(name='mass_1', minimum=10, maximum=80), "
-            "mass_2 = Constraint(name='mass_2', minimum=10, maximum=80), "
-            "a_1 = Uniform(name='a_1', minimum=0, maximum=0.99), "
-            "a_2 = Uniform(name='a_2', minimum=0, maximum=0.99), "
-            "tilt_1 = Sine(name='tilt_1'), "
-            "tilt_2 = Sine(name='tilt_2'), "
-            "phi_12 = Uniform(minimum=0, maximum=2 * np.pi, boundary='periodic'), "
-            "phi_jl = Uniform(minimum=0, maximum=2 * np.pi, boundary='periodic'), "
-            "luminosity_distance = PowerLaw(alpha=2, minimum=50, maximum=2000), "
-            "dec =  Cosine(name='dec'), "
-            "ra =  Uniform(minimum=0, maximum=2 * np.pi, boundary='periodic'), "
-            "theta_jn =  Sine(name='theta_jn'), "
-            "psi =  Uniform(name='psi', minimum=0, maximum=np.pi, boundary='periodic'), "
-            "phase =  Uniform(minimum=0, maximum=2 * np.pi, boundary='periodic')}",
+            prior_dict=(
+                "{mass-ratio: Uniform(name='mass_ratio', minimum=0.125, maximum=1), "
+                "chirp_mass = Uniform(name='chirp_mass', minimum=25, maximum=35), mass_1 = "
+                "Constraint(name='mass_1', minimum=10, maximum=80), mass_2 = "
+                "Constraint(name='mass_2', minimum=10, maximum=80), a_1 = Uniform(name='a_1', "
+                "minimum=0, maximum=0.99), a_2 = Uniform(name='a_2', minimum=0, "
+                "maximum=0.99), tilt_1 = Sine(name='tilt_1'), tilt_2 = Sine(name='tilt_2'), "
+                "phi_12 = Uniform(name='phi_12', minimum=0, maximum=2 * np.pi, "
+                "boundary='periodic'), phi_jl = Uniform(name='phi_jl', minimum=0, maximum=2 * "
+                "np.pi, boundary='periodic'), luminosity_distance = PowerLaw(alpha=2, "
+                "name='luminosity_distance', minimum=50, maximum=2000), dec =  "
+                "Cosine(name='dec'), ra =  Uniform(name='ra', minimum=0, maximum=2 * np.pi, "
+                "boundary='periodic'), theta_jn =  Sine(name='theta_jn'), psi =  "
+                "Uniform(name='psi', minimum=0, maximum=np.pi, boundary='periodic'), phase =  "
+                "Uniform(name='phase', minimum=0, maximum=2 * np.pi, boundary='periodic')}"
+            ),
             psd_dict="{H1=psd_data/h1_psd.txt, L1=psd_data/l1_psd.txt}",
             time="24:00:00",
             time_marginalization=True,
