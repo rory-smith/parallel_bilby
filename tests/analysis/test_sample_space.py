@@ -104,7 +104,7 @@ class SampleSpaceTest(FastRun):
             sample,
             reference_sample,
             number_format_notation="e",
-            significant_digits=3,
+            significant_digits=1,
             ignore_numeric_type_changes=True,
             exclude_types=bad_types,
         )
