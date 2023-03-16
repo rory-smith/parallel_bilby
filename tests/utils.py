@@ -1,3 +1,4 @@
+import logging
 import os.path
 import shutil
 import signal
@@ -7,6 +8,10 @@ import bilby
 import dill
 from mpi4py import MPI
 from parallel_bilby import generation
+
+logger = logging.getLogger("pBilbyTesting")
+logger.setLevel(logging.DEBUG)
+logger.addHandler(logging.StreamHandler())
 
 
 def mpi_master(func):
@@ -52,22 +57,66 @@ class _Run(unittest.TestCase):
         return os.path.join("/tmp/pbilby_test", self.test_label)
 
     @property
-    def analysis_args(self):
-        return dict(
-            data_dump=os.path.join(
-                self.test_dir, "data", f"{self.test_label}_data_dump.pickle"
-            ),
-            outdir=os.path.join(self.test_dir, "result"),
-            label=self.test_label,
+    def outdir(self):
+        return self.test_dir
+
+    @property
+    def result_dir(self):
+        return os.path.join(self.test_dir, "result")
+
+    @property
+    def data_dump_path(self):
+        return os.path.join(
+            self.test_dir, "data", f"{self.test_label}_data_dump.pickle"
         )
+
+    @property
+    def analysis_args(self):
+        kwargs = dict(
+            data_dump=self.data_dump_path,
+            outdir=self.result_dir,
+            label=self.test_label,
+            dynesty_sample="acceptance-walk",
+            nlive=5,
+            dynesty_bound="live",
+            walks=100,
+            maxmcmc=5000,
+            naccept=60,
+            nact=2,
+            facc=0.5,
+            min_eff=10,
+            enlarge=1.5,
+            sampling_seed=0,
+            proposals=None,
+            bilby_zero_likelihood_mode=False,
+        )
+        for key in kwargs.keys():
+            if key in self.generation_args:
+                kwargs[key] = self.generation_args[key]
+        kwargs["outdir"] = self.result_dir
+        logger.debug(f"ANALYSIS-RUN kwargs: {kwargs}")
+        return kwargs
+
+    @property
+    def analysis_runner_kwargs(self):
+        kwargs = dict(
+            data_dump=self.data_dump_path,
+            outdir=self.result_dir,
+            label=self.test_label,
+            **self.generation_args,
+        )
+        logger.debug(f"ANALYSIS-RUNNER kwargs: {kwargs}")
+        return kwargs
 
     @mpi_master
     def setUp(self):
-        generation.generate_runner(
+        kwargs = dict(
             outdir=self.test_dir,
             label=self.test_label,
             **self.generation_args,
         )
+        logger.debug(f"Running generation with kwargs: {kwargs}")
+        generation.generate_runner(**kwargs)
 
     def tearDown(self):
         # Make sure all MPI tasks are here
@@ -81,23 +130,28 @@ class _Run(unittest.TestCase):
             shutil.rmtree(self.test_dir)
 
     def read_resume_file(self):
-        with open(
-            os.path.join(
-                self.analysis_args["outdir"],
-                f"{self.analysis_args['label']}_checkpoint_resume.pickle",
-            ),
-            "rb",
-        ) as f:
+        resume_file = os.path.join(
+            self.result_dir, f"{self.test_label}_checkpoint_resume.pickle"
+        )
+        if not os.path.isfile(resume_file):
+            logger.error(
+                f"Resume file {resume_file} does not exist:\n{self.outdir_filetree}"
+            )
+        with open(resume_file, "rb") as f:
             resume_file = dill.load(f)
         return resume_file
 
+    @property
+    def outdir_filetree(self):
+        return dirtree(self.outdir)
+
     def read_bilby_result(self):
-        return bilby.gw.result.CBCResult.from_hdf5(
-            os.path.join(
-                self.analysis_args["outdir"],
-                f"{self.analysis_args['label']}_result.hdf5",
+        result_path = os.path.join(self.result_dir, f"{self.test_label}_result.hdf5")
+        if not os.path.isfile(result_path):
+            logger.error(
+                f"Result file {result_path} does not exist:\n{self.outdir_filetree}"
             )
-        )
+        return bilby.gw.result.CBCResult.from_hdf5(result_path)
 
 
 class timeout:
@@ -121,3 +175,13 @@ class timeout:
 
     def __exit__(self, type, value, traceback):
         signal.alarm(0)
+
+
+def dirtree(root):
+    str = ""
+    for root, dirs, files in os.walk(root):
+        for d in dirs:
+            str += f"{os.path.join(root, d)}\n"
+        for f in files:
+            str += f"{os.path.join(root, f)}\n"
+    return str

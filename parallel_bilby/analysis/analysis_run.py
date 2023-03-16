@@ -124,7 +124,7 @@ class AnalysisRun(object):
 
         # Create a random generator, which is saved across restarts
         # This ensures that runs are fully deterministic, which is important
-        # for testing
+        # for reproducibility
         self.sampling_seed = sampling_seed
         self.rstate = np.random.Generator(np.random.PCG64(self.sampling_seed))
         logger.debug(
@@ -159,7 +159,7 @@ class AnalysisRun(object):
                 "Live-point based bound method requested with dynesty sample "
                 f"'{sample}', overwriting to 'multi'"
             )
-            self.kwargs["bound"] = "multi"
+            self.init_sampler_kwargs["bound"] = "multi"
         elif bound == "live":
             dynesty.dynamicsampler._SAMPLERS["live"] = LivePointSampler
         elif bound == "live-multi":
@@ -189,7 +189,7 @@ class AnalysisRun(object):
                 f"An average of {2 * self.nact} steps will be accepted up to chain length "
                 f"{self.maxmcmc}."
             )
-            if self.kwargs["walks"] > self.maxmcmc:
+            if self.init_sampler_kwargs["walks"] > self.maxmcmc:
                 raise DynestySetupError("You have maxmcmc < walks (minimum mcmc)")
             if self.nact < 1:
                 raise DynestySetupError("Unable to run with nact < 1")
@@ -209,7 +209,7 @@ class AnalysisRun(object):
             dynesty.nestedsamplers._SAMPLING["act-walk"] = ACTTrackingRWalk()
         elif sample == "rwalk_dynesty":
             sample = sample.strip("_dynesty")
-            self.kwargs["sample"] = sample
+            self.init_sampler_kwargs["sample"] = sample
             logger.info(f"Using the dynesty-implemented {sample} sample method")
 
     def prior_transform_function(self, u_array):

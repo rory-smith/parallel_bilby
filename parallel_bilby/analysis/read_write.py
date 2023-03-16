@@ -185,7 +185,6 @@ def format_result(
     result.nested_samples = nested_samples
     result.meta_data = run.data_dump["meta_data"]
     result.meta_data["command_line_args"]["sampler"] = "parallel_bilby"
-    result.meta_data["config_file"] = vars(run.args)
     result.meta_data["data_dump"] = data_dump
     result.meta_data["likelihood"] = run.likelihood.meta_data
     result.meta_data["sampler_kwargs"] = run.init_sampler_kwargs

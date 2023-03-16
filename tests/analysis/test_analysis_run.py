@@ -79,13 +79,14 @@ class AnalysisRunTest(FastRun):
         self._check_point_validity(unit[0], theta[0], loglike)
 
     @pytest.mark.mpi_skip
-    def _check_point_validity(self, unit, theta, loglike):
+    def _check_point_validity(self, unit: float, theta: float, loglike: float):
         # Check that the values are sensible
         assert 0 <= unit <= 1
         assert self.min_chirp_mass <= theta <= self.max_chirp_mass
 
         v_array = self.run.prior_transform_function([unit])
-        assert pytest.approx(loglike) == self.run.log_likelihood_function(v_array)
+        test_loglike = self.run.log_likelihood_function(v_array)
+        self.assertAlmostEqual(loglike, test_loglike, places=5)
 
     @pytest.mark.mpi
     def test_get_nested_sampler(self):

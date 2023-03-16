@@ -6,6 +6,7 @@ from .shared import _create_base_parser
 def create_analysis_parser(sampler="dynesty"):
     """Parser for parallel_bilby_analysis"""
     parser = _create_base_parser(sampler=sampler)
+
     analysis_parser = argparse.ArgumentParser(
         prog="parallel_bilby_analysis", parents=[parser]
     )

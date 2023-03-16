@@ -6,9 +6,10 @@ from tests.utils import _Run
 class FastRun(_Run):
     test_label = "fast"
     generation_args = dict(
-        nlive=5,
-        dlogz=10.0,
+        nlive=10,
+        dlogz=100.0,
         nact=1,
+        walks=1,
         sampling_seed=0,
         generation_seed=0,
         trigger_time="0",
@@ -17,39 +18,27 @@ class FastRun(_Run):
         injection_dict={
             "chirp_mass": 28.0,
             "mass_ratio": 1.0,
-            "a_1": 0.6,
-            "a_2": 0.6,
+            "a_1": 0,
+            "a_2": 0,
             "tilt_1": 0.0,
             "tilt_2": 0.0,
             "phi_12": 0.0,
             "phi_jl": 0.0,
-            "luminosity_distance": 800,
-            "dec": 0.1,
-            "ra": 0.1,
-            "theta_jn": 0.1,
-            "psi": 0.1,
-            "phase": 0.1,
+            "luminosity_distance": 1000,
+            "dec": 0,
+            "ra": 0,
+            "theta_jn": 0,
+            "psi": 0,
+            "phase": 0,
             "geocent_time": 0.0,
         },
-        prior_dict=dict(
-            mass_ratio=1,
-            chirp_mass=Uniform(name="chirp_mass", minimum=25, maximum=31),
-            mass_1=Constraint(name="mass_1", minimum=10, maximum=80),
-            mass_2=Constraint(name="mass_2", minimum=10, maximum=80),
-            a_1=0.6,
-            a_2=0.6,
-            tilt_1=0.0,
-            tilt_2=0.0,
-            phi_12=0.0,
-            phi_jl=0.0,
-            luminosity_distance=800,
-            dec=0.1,
-            ra=0.1,
-            theta_jn=0.1,
-            psi=0.1,
-            phase=0.1,
-            geocent_time=0,
+        prior_dict=(
+            "{chirp_mass = Uniform(name='chirp_mass', minimum=25, maximum=35), "
+            "mass-ratio = 1, a_1 = 0, a_2 = 0, tilt_1 = 0, tilt_2 = 0, "
+            "phi_12 = 0, phi_jl = 0, luminosity_distance = 1000, "
+            "dec =  0, ra =  0, theta_jn = 0, psi = 0, phase = 0, geocent_time=0,}"
         ),
+        no_plot=True,
     )
 
 

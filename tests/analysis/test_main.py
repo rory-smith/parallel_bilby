@@ -2,7 +2,7 @@ import pytest
 from mpi4py import MPI
 from parallel_bilby import analysis
 from tests.cases import FastRun
-from tests.utils import mpi_master
+from tests.utils import logger, mpi_master
 
 
 class MainTest(FastRun):
@@ -12,9 +12,12 @@ class MainTest(FastRun):
         Test that the code halts and writes a checkpoint correctly once the
         maximum number of iterations has been reached.
         """
+        logger.debug(">>> Running test_max_its <<<")
         its = 5
         # Run analysis
-        exit_reason = analysis.analysis_runner(max_its=its, **self.analysis_args)
+        exit_reason = analysis.analysis_runner(
+            max_its=its, **self.analysis_runner_kwargs
+        )
 
         check_master_value(exit_reason, 1)
 
@@ -33,9 +36,12 @@ class MainTest(FastRun):
         Test that the code halts and writes a checkpoint correctly once the
         maximum wall time has been reached.
         """
+        logger.debug(">>> Running test_max_time <<<")
         time = 0.1
         # Run analysis
-        exit_reason = analysis.analysis_runner(max_run_time=time, **self.analysis_args)
+        exit_reason = analysis.analysis_runner(
+            max_run_time=time, **self.analysis_runner_kwargs
+        )
 
         check_master_value(exit_reason, 2)
 
@@ -45,9 +51,10 @@ class MainTest(FastRun):
         Test that the code writes and reads from a checkpoint, and produces the
         same result as if it had run from beginning to end without stopping.
         """
+        logger.debug(">>> Running test_resume <<<")
         comm = MPI.COMM_WORLD
         # Run in full to get the reference answer
-        exit_reason = analysis.analysis_runner(**self.analysis_args)
+        exit_reason = analysis.analysis_runner(**self.analysis_runner_kwargs)
         # Sanity check: make sure the run actually reached the end
         check_master_value(exit_reason, 0)
 
@@ -58,11 +65,11 @@ class MainTest(FastRun):
         self.setUp()
 
         # Run analysis for 5 iterations
-        exit_reason = analysis.analysis_runner(max_its=5, **self.analysis_args)
+        exit_reason = analysis.analysis_runner(max_its=5, **self.analysis_runner_kwargs)
         # Sanity check: make sure the run stopped because of max iterations
         check_master_value(exit_reason, 1)
 
-        exit_reason = analysis.analysis_runner(**self.analysis_args)
+        exit_reason = analysis.analysis_runner(**self.analysis_runner_kwargs)
         check_master_value(exit_reason, 0)
 
         resume_result = self.read_bilby_result()

@@ -63,8 +63,8 @@ def _add_dynesty_settings_to_parser(parser):
         "--dynesty-sample",
         default="acceptance-walk",
         type=str,
-        help="Dynesty sampling method (default=rwalk). Note, the dynesty rwalk "
-        "method is overwritten by parallel bilby for an optimised version ",
+        help="Dynesty sampling method (default=acceptance-walk). "
+        "Note, the dynesty rwalk method is overwritten by parallel bilby for an optimised version ",
     )
     dynesty_group.add_argument(
         "--dynesty-bound",
