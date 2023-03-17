@@ -4,7 +4,7 @@
 - Major refactoring of the codebase (!109)
   - Contributors: Conrad Chan (ADACS), David Liptai (ADACS), Tiger Hu (ADACS), Avi Vajpeyi, Colm Talbot
   - Added unit tests that can run with MPI
-  - Pin bilby>=2, bilby_pipe>=1.0.7, dynesty>=2.0.0, gwpy>=3.0.2 
+  - Pin bilby>=2, bilby_pipe>=1.0.7, dynesty>=2.0.0, gwpy>=3.0.2
 
 
 ## v1.1.0 : 2022-09-07
