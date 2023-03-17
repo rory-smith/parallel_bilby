@@ -7,7 +7,6 @@ from parallel_bilby.parser import create_analysis_parser
 
 DIR = os.path.dirname(__file__)
 TEMPLATE_SLURM = "template_slurm.sh"
-TEMPLATE_SUBMIT = "template_runner.sh"
 
 
 def load_template(template_file: str):
@@ -69,9 +68,12 @@ class BaseNode(object):
         else:
             slurm_extra_lines = ""
 
+        if self.mem_per_cpu is not None:
+            slurm_extra_lines += f"\n#SBATCH --mem-per-cpu={self.mem_per_cpu}"
+
         if self.args.extra_lines:
             bash_extra_lines = self.args.extra_lines.split(";")
-            bash_extra_lines = "".join([line.strip() for line in bash_extra_lines])
+            bash_extra_lines = "\n".join([line.strip() for line in bash_extra_lines])
         else:
             bash_extra_lines = ""
 
@@ -188,4 +190,4 @@ class MergeNodes(BaseNode):
         command.append(f"--label {self.merged_result_label}")
         command.append(f"--outdir {self.inputs.result_directory}")
         command = " ".join(command)
-        return self.get_contents(command=command)
+        return super().get_contents(command=command)

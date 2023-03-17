@@ -79,6 +79,7 @@ def _create_reduced_bilby_pipe_parser():
         "sampler",
         "sampling-seed",
         "sampler-kwargs",
+        "sampler_kwargs",
         "plot-calibration",
         "plot-corner",
         "plot-format",
