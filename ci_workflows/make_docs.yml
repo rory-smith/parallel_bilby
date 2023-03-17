@@ -4,11 +4,11 @@ docs:
   stage: docs
   tags:
     - cit
-  image: containers.ligo.org/lscsoft/bilby/v2-bilby-python38
+  image: containers.ligo.org/lscsoft/bilby_pipe/v3-bilby_pipe-python38
   script:
     - source activate python38
     - mkdir -p .pip38
-    - pip --cache-dir=.pip38 install .
+    - pip --cache-dir=.pip38 install .[docs]
     # Make the documentation
     - cd docs
     - pip install -r requirements.txt

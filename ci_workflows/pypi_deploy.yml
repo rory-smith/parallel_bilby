@@ -4,13 +4,13 @@ deploy_release:
   stage: deploy
   tags:
     - cit
-  image: containers.ligo.org/lscsoft/bilby/v2-bilby-python38
+  image: containers.ligo.org/lscsoft/bilby_pipe/v3-bilby_pipe-python38
   variables:
     TWINE_USERNAME: $PYPI_USERNAME
     TWINE_PASSWORD: $PYPI_PASSWORD
   before_script:
-    - pip install twine
-    - python setup.py sdist
+    - pip install twine build
+    - python -m build --sdist --wheel --outdir dist/ .
   script:
     - twine upload dist/*
   only:

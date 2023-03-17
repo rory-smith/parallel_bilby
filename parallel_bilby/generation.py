@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Module to generate/prepare data, likelihood, and priors for parallel runs.
 
@@ -9,6 +8,7 @@ information on the run settings and data to be analysed.
 import os
 import pickle
 import subprocess
+from argparse import Namespace
 
 import bilby
 import bilby_pipe
@@ -18,7 +18,7 @@ import lalsimulation
 import numpy as np
 
 from . import __version__, slurm
-from .parser import create_generation_parser
+from .parser import create_generation_parser, parse_generation_args
 from .utils import get_cli_args
 
 
@@ -30,20 +30,6 @@ def get_version_info():
         dynesty_version=dynesty.__version__,
         lalsimulation_version=lalsimulation.__version__,
     )
-
-
-def add_extra_args_from_bilby_pipe_namespace(args):
-    """
-    :param args: args from parallel_bilby
-    :return: Namespace argument object
-    """
-    pipe_args, _ = bilby_pipe.data_generation.parse_args(
-        get_cli_args(), bilby_pipe.data_generation.create_generation_parser()
-    )
-    for key, val in vars(pipe_args).items():
-        if key not in args:
-            setattr(args, key, val)
-    return args
 
 
 def write_complete_config_file(parser, args, inputs):
@@ -81,7 +67,7 @@ class ParallelBilbyDataGenerationInput(bilby_pipe.data_generation.DataGeneration
     def __init__(self, args, unknown_args):
         super().__init__(args, unknown_args)
         self.args = args
-        self.sampler = args.sampler
+        self.sampler = "dynesty"
         self.sampling_seed = args.sampling_seed
         self.data_dump_file = f"{self.data_directory}/{self.label}_data_dump.pickle"
         self.setup_inputs()
@@ -134,11 +120,36 @@ class ParallelBilbyDataGenerationInput(bilby_pipe.data_generation.DataGeneration
         self.save_data_dump()
 
 
-def main():
-    cli_args = get_cli_args()
-    generation_parser = create_generation_parser()
-    args = generation_parser.parse_args(args=cli_args)
-    args = add_extra_args_from_bilby_pipe_namespace(args)
+def generate_runner(parser=None, **kwargs):
+    """
+    API for running the generation from Python instead of the command line.
+    It takes all the same options as the CLI, specified as keyword arguments,
+    and combines them with the defaults in the parser.
+
+    Parameters
+    ----------
+    parser: generation-parser
+    **kwargs:
+        Any keyword arguments that can be specified via the CLI
+
+    Returns
+    -------
+    inputs: ParallelBilbyDataGenerationInput
+    logger: bilby.core.utils.logger
+
+    """
+
+    # Create a dummy parser if necessary
+    if parser is None:
+        parser = create_generation_parser()
+
+    # Get default arguments from the parser
+    default_args = parse_generation_args(parser)
+
+    # Take the union of default_args and any input arguments,
+    # and turn it into a Namespace
+    args = Namespace(**{**default_args, **kwargs})
+
     logger = create_generation_logger(outdir=args.outdir, label=args.label)
     for package, version in get_version_info().items():
         logger.info(f"{package} version: {version}")
@@ -156,10 +167,30 @@ def main():
         f"{bilby_pipe.utils.pretty_print_dictionary(inputs.meta_data)}"
     )
 
-    write_complete_config_file(parser=generation_parser, args=args, inputs=inputs)
+    write_complete_config_file(parser=parser, args=args, inputs=inputs)
     logger.info(f"Complete ini written: {inputs.complete_ini_file}")
 
-    bash_file = slurm.setup_submit(inputs.data_dump_file, inputs, args)
+    return inputs, logger
+
+
+def main():
+    """
+    paralell_bilby_generation entrypoint.
+
+    This function is a wrapper around generate_runner(),
+    giving it a command line interface.
+    """
+
+    # Parse command line arguments
+    cli_args = get_cli_args()
+    generation_parser = create_generation_parser()
+    args = parse_generation_args(generation_parser, cli_args, as_namespace=True)
+
+    # Initialise run
+    inputs, logger = generate_runner(parser=generation_parser, **vars(args))
+
+    # Write slurm script
+    bash_file = slurm.setup_submit(inputs.data_dump_file, inputs, args, cli_args)
     if args.submit:
         subprocess.run([f"bash {bash_file}"], shell=True)
     else:

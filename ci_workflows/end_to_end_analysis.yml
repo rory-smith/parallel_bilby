@@ -5,8 +5,9 @@ gw150914_analysis:
   tags:
     - openstack
   when: manual
+  timeout: 6 hours
 
-  image: containers.ligo.org/lscsoft/bilby/v2-bilby-python38
+  image: containers.ligo.org/lscsoft/bilby_pipe/v3-bilby_pipe-python38
   script:
     - source activate python38
     - mkdir -p .pip38
@@ -22,7 +23,7 @@ fast_injection:
     - openstack
   when: manual
 
-  image: containers.ligo.org/lscsoft/bilby/v2-bilby-python38
+  image: containers.ligo.org/lscsoft/bilby_pipe/v3-bilby_pipe-python38
   script:
     - source activate python38
     - mkdir -p .pip38
