@@ -4,7 +4,7 @@ precommits:
   stage: test
   tags:
     - cit
-  image: containers.ligo.org/lscsoft/bilby/v2-bilby-python38
+  image: containers.ligo.org/lscsoft/bilby_pipe/v3-bilby_pipe-python38
   script:
     - source activate python38
     - mkdir -p .pip38
@@ -20,15 +20,18 @@ pytest:
   stage: test
   tags:
     - cit
-  image: containers.ligo.org/lscsoft/bilby/v2-bilby-python38
+  image: containers.ligo.org/lscsoft/bilby_pipe/v3-bilby_pipe-python38
   script:
     - source activate python38
     - mkdir -p .pip38
     - pip --cache-dir=.pip38 install .[test]
     # Run tests and collect coverage data
-    - pytest --cov parallel_bilby
+    - coverage run --rcfile=setup.cfg -m pytest
+    - mpirun -n 4 coverage run --rcfile=setup.cfg -m pytest --with-mpi -s
+    - coverage combine
     - coverage html
     - coverage-badge -o coverage_badge.svg -f
+    - coverage report
 
   artifacts:
     paths:

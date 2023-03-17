@@ -5,11 +5,15 @@ import subprocess
 import sys
 from pathlib import Path
 
-from setuptools import setup
+from setuptools import find_packages, setup
 
+# check that python version is 3.8 or above
 python_version = sys.version_info
+python_requirement = "3.8"
+print("Running Python version %s.%s.%s" % python_version[:3])
 if python_version < (3, 8):
-    sys.exit("Python < 3.8 is not supported, aborting setup")
+    sys.exit(f"Python < {python_requirement} is not supported, aborting setup")
+print(f"Confirmed Python version {python_requirement} or above")
 
 
 def write_version_file(version):
@@ -78,39 +82,54 @@ setup(
     author_email="gregory.ashton@ligo.org",
     license="MIT",
     version=VERSION,
-    packages=["parallel_bilby"],
-    package_dir={"parallel_bilby": "parallel_bilby"},
-    package_data={"parallel_bilby": [version_file]},
+    packages=find_packages(exclude=["*tests.*", "*tests"]),
+    package_data={"parallel_bilby": [version_file, "slurm/template_slurm.sh"]},
     install_requires=[
-        "future",
-        "bilby>=1.1.5",
-        "bilby_pipe>=1.0.6",
+        "bilby>=2.0.0",
+        "bilby_pipe>=1.0.7",
         "scipy>=1.2.0",
-        "gwpy",
+        "gwpy>=3.0.2",
         "matplotlib",
         "numpy",
         "tqdm",
         "corner",
-        "dynesty>=1.0.0,<1.1",
+        "dynesty>=2",
         "schwimmbad",
         "pandas",
         "nestcheck",
         "mpi4py>3.0.0",
+        "jinja2",
+        "dill",
     ],
-    extras_require={"test": ["mock", "pytest-cov"]},
+    extras_require={  # #Test requirements (install with: `pip install .[test]`)
+        "docs": [
+            "sphinx",
+            "numpydoc",
+            "nbsphinx",
+            "sphinx_rtd_theme",
+            "sphinx-tabs",
+            "autodoc",
+            "sphinx-argparse",
+            "graphviz",
+        ],
+        "test": [
+            "mock",
+            "deepdiff",
+            "pytest-cov",
+            "pytest-mpi",
+        ],
+    },
     entry_points={
         "console_scripts": [
             "parallel_bilby_generation=parallel_bilby.generation:main",
             "parallel_bilby_analysis=parallel_bilby.analysis:main",
-            "parallel_bilby_ptemcee_analysis=parallel_bilby.ptemcee_analysis:main",
         ]
     },
     classifiers=[
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "License :: OSI Approved :: MIT License",
         "Operating System :: MacOS :: MacOS X",
         "Operating System :: POSIX",
     ],
+    python_requires=f">={python_requirement}",
 )

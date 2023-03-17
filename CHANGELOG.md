@@ -1,10 +1,17 @@
 # All notable changes will be documented in this file
 
+## v2.0.0 : 2023-01-28
+- Major refactoring of the codebase (!109)
+  - Contributors: Conrad Chan (ADACS), David Liptai (ADACS), Tiger Hu (ADACS), Avi Vajpeyi
+  - Added unit tests that can run with MPI
+  - Pin bilby>=1.4.1, bilby_pipe>=1.0.7, dynesty>=2.0.0, gwpy>=3.0.2 
+
+
 ## v1.1.0 : 2022-09-07
 - remove convert_to_flat_in_component_mass (!118)
--  make compatible with bilby==1.1.5 (!112)
--  Calculate `log_prior` when constructing result posterior (!111)
--  refactor CI workflows (!107)
+- make compatible with bilby==1.1.5 (!112)
+- Calculate `log_prior` when constructing result posterior (!111)
+- refactor CI workflows (!107)
 
 ## v1.0.1 : 2021-05-24
 - Adjust input parsing to handle sampling seed (!102)
@@ -38,7 +45,7 @@
 - Pre-commit issues (!69)
 - Add constructing sky frame parameters (!68)
 - Fix trigger time parser to read strings (!67)
-- Add `schwimmbad_fast.py` allowing MPI worker tasks workers to spawn at the start and persist until the end (no benefit to killing them early) (!65)
+- Add `schwimmbad_fast.py` (Conrad Chan, ADACS) allowing MPI worker tasks workers to spawn at the start and persist until the end (no benefit to killing them early) (!65)
 - Remove mem per cpu default (!64)
 - Add nestcheck file option (!64)
 - Add Max Iterations fix (!62)

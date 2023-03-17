@@ -8,7 +8,6 @@ stages:
   - deploy
 
 
-
 cache:
   paths:
     - .pip38
@@ -18,13 +17,13 @@ install-on-python-3.8:
   stage: install
   tags:
     - cit
-  image: containers.ligo.org/lscsoft/bilby/v2-bilby-python38
+  image: containers.ligo.org/lscsoft/bilby_pipe/v3-bilby_pipe-python38
   script:
     - conda install -c conda-forge schwimmbad
     - mkdir -p .pip38
     - pip install --upgrade pip
     - pip --cache-dir=.pip38 install --upgrade bilby
-    - pip --cache-dir=.pip38 install .
+    - pip --cache-dir=.pip38 install .[test]
 
 
 # Include the additional CI tasks
