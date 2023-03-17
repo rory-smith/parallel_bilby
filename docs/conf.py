@@ -20,8 +20,8 @@ sys.path.insert(0, os.path.abspath("../examples/"))
 # -- Project information -----------------------------------------------------
 
 project = "Parallel Bilby"
-copyright = "2020, Greg Ashton, Rory Smith"
-author = "Greg Ashton, Rory Smith"
+copyright = "2023, pBilby Team"
+author = "pBilby Team"
 
 
 # -- General configuration ---------------------------------------------------
