@@ -163,6 +163,15 @@ def _add_dynesty_settings_to_parser(parser):
             "in “Sampling Errors In Nested Sampling Parameter Estimation”."
         ),
     )
+    dynesty_group.add_argument(
+        "--rejection-sample-posterior",
+        default=True,
+        action=StoreBoolean,
+        help=(
+            "Whether to generate the posterior samples by rejection sampling the "
+            "nested samples or resampling with replacement"
+        ),
+    )
     return parser
 
 

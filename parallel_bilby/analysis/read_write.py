@@ -149,7 +149,14 @@ def read_saved_state(resume_file, continuing=True):
 
 
 def format_result(
-    run, data_dump, out, weights, nested_samples, sampler_kwargs, sampling_time
+    run,
+    data_dump,
+    out,
+    weights,
+    nested_samples,
+    sampler_kwargs,
+    sampling_time,
+    rejection_sample_posterior=True,
 ):
     """
     Packs the variables from the run into a bilby result object
@@ -170,6 +177,9 @@ def format_result(
         Dictionary of keyword arguments for the sampler
     sampling_time: float
         Time in seconds spent sampling
+    rejection_sample_posterior: bool
+        Whether to generate the posterior samples by rejection sampling the
+        nested samples or resampling with replacement
 
     Returns
     -------
@@ -181,7 +191,6 @@ def format_result(
         label=run.label, outdir=run.outdir, search_parameter_keys=run.sampling_keys
     )
     result.priors = run.priors
-    result.samples = dynesty.utils.resample_equal(out.samples, weights)
     result.nested_samples = nested_samples
     result.meta_data = run.data_dump["meta_data"]
     result.meta_data["command_line_args"]["sampler"] = "parallel_bilby"
@@ -192,11 +201,21 @@ def format_result(
     result.meta_data["injection_parameters"] = run.injection_parameters
     result.injection_parameters = run.injection_parameters
 
-    result.log_likelihood_evaluations = reorder_loglikelihoods(
-        unsorted_loglikelihoods=out.logl,
-        unsorted_samples=out.samples,
-        sorted_samples=result.samples,
-    )
+    if rejection_sample_posterior:
+        keep = weights > np.random.uniform(0, max(weights), len(weights))
+        result.samples = out.samples[keep]
+        result.log_likelihood_evaluations = out.logl[keep]
+        logger.info(
+            f"Rejection sampling nested samples to obtain {sum(keep)} posterior samples"
+        )
+    else:
+        result.samples = dynesty.utils.resample_equal(out.samples, weights)
+        result.log_likelihood_evaluations = reorder_loglikelihoods(
+            unsorted_loglikelihoods=out.logl,
+            unsorted_samples=out.samples,
+            sorted_samples=result.samples,
+        )
+        logger.info("Resampling nested samples to posterior samples in place.")
 
     result.log_evidence = out.logz[-1] + run.likelihood.noise_log_likelihood()
     result.log_evidence_err = out.logzerr[-1]
