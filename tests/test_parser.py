@@ -159,6 +159,7 @@ class ParserTest(unittest.TestCase):
             sampling_seed=None,
             walks=100,
             result_format="hdf5",
+            rejection_sample_posterior=True,
         )
         self.assertDictEqual(vars(args), vars(expected_args))
 

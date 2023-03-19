@@ -46,6 +46,7 @@ def analysis_runner(
     enlarge=1.5,
     sampling_seed=0,
     bilby_zero_likelihood_mode=False,
+    rejection_sample_posterior=True,
     #
     fast_mpi=False,
     mpi_timing=False,
