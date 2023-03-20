@@ -1,5 +1,8 @@
 # All notable changes will be documented in this file
 
+## v2.0.1 : 2023-03-20
+- Add 'rejection-sample-posterior' option (!129)
+
 ## v2.0.0 : 2023-03-17
 - Major refactoring of the codebase (!109)
   - Contributors: Conrad Chan (ADACS), David Liptai (ADACS), Tiger Hu (ADACS), Avi Vajpeyi, Colm Talbot
