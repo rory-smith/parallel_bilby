@@ -75,10 +75,10 @@ long_description = get_long_description()
 
 setup(
     name="parallel_bilby",
-    description="Running bilby at scale",
+    description="Running bilby on GW data with MPI",
     long_description=long_description,
-    url="https://git.ligo.org/gregory.ashton/parallel_bilby",
-    author="Gregory Ashton, Rory Smith, Avi Vajpeyi",
+    url="https://git.ligo.org/lscsoft/parallel_bilby",
+    author="pBilby Developers",
     author_email="gregory.ashton@ligo.org",
     license="MIT",
     version=VERSION,
