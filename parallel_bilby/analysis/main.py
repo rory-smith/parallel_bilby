@@ -299,6 +299,7 @@ def analysis_runner(
                 print(
                     f"Sampling time = {datetime.timedelta(seconds=result.sampling_time)}s"
                 )
+                print(f"Number of lnl calls = {result.num_likelihood_evaluations}")
                 print(result)
                 if no_plot is False:
                     result.plot_corner()

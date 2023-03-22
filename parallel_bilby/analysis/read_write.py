@@ -222,6 +222,7 @@ def format_result(
     result.log_noise_evidence = run.likelihood.noise_log_likelihood()
     result.log_bayes_factor = result.log_evidence - result.log_noise_evidence
     result.sampling_time = sampling_time
+    result.num_likelihood_evaluations = np.sum(out.ncall)
 
     result.samples_to_posterior(likelihood=run.likelihood, priors=result.priors)
     return result
