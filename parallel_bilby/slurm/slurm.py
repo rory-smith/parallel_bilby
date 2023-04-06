@@ -189,5 +189,6 @@ class MergeNodes(BaseNode):
         command.append("--merge")
         command.append(f"--label {self.merged_result_label}")
         command.append(f"--outdir {self.inputs.result_directory}")
+        command.append(f"-e {self.args.result_format}")
         command = " ".join(command)
         return super().get_contents(command=command)

@@ -30,39 +30,39 @@ from .sample_space import fill_sample
 
 
 def analysis_runner(
-    data_dump,
-    outdir=None,
-    label=None,
-    dynesty_sample="acceptance-walk",
-    nlive=5,
-    dynesty_bound="live",
-    walks=100,
-    proposals=None,
-    maxmcmc=5000,
-    naccept=60,
-    nact=2,
-    facc=0.5,
-    min_eff=10,
-    enlarge=1.5,
-    sampling_seed=0,
-    bilby_zero_likelihood_mode=False,
-    rejection_sample_posterior=True,
-    #
-    fast_mpi=False,
-    mpi_timing=False,
-    mpi_timing_interval=0,
-    check_point_deltaT=3600,
-    n_effective=np.inf,
-    dlogz=10,
-    do_not_save_bounds_in_resume=True,
-    n_check_point=1000,
-    max_its=1e10,
-    max_run_time=1e10,
-    rotate_checkpoints=False,
-    no_plot=False,
-    nestcheck=False,
-    result_format="hdf5",
-    **kwargs,
+        data_dump,
+        outdir=None,
+        label=None,
+        dynesty_sample="acceptance-walk",
+        nlive=5,
+        dynesty_bound="live",
+        walks=100,
+        proposals=None,
+        maxmcmc=5000,
+        naccept=60,
+        nact=2,
+        facc=0.5,
+        min_eff=10,
+        enlarge=1.5,
+        sampling_seed=0,
+        bilby_zero_likelihood_mode=False,
+        rejection_sample_posterior=True,
+        #
+        fast_mpi=False,
+        mpi_timing=False,
+        mpi_timing_interval=0,
+        check_point_deltaT=3600,
+        n_effective=np.inf,
+        dlogz=10,
+        do_not_save_bounds_in_resume=True,
+        n_check_point=1000,
+        max_its=1e10,
+        max_run_time=1e10,
+        rotate_checkpoints=False,
+        no_plot=False,
+        nestcheck=False,
+        result_format="hdf5",
+        **kwargs,
 ):
     """
     API for running the analysis from Python instead of the command line.
@@ -102,10 +102,10 @@ def analysis_runner(
     t0 = datetime.datetime.now()
     sampling_time = 0
     with MPIPool(
-        parallel_comms=fast_mpi,
-        time_mpi=mpi_timing,
-        timing_interval=mpi_timing_interval,
-        use_dill=True,
+            parallel_comms=fast_mpi,
+            time_mpi=mpi_timing,
+            timing_interval=mpi_timing_interval,
+            use_dill=True,
     ) as pool:
         if pool.is_master():
             POOL_SIZE = pool.size
@@ -183,10 +183,10 @@ def analysis_runner(
                 """
 
                 if (
-                    last_checkpoint_s > check_point_deltaT
-                    or (it % n_check_point == 0 and it != 0)
-                    or it == max_its
-                    or run_time > max_run_time
+                        last_checkpoint_s > check_point_deltaT
+                        or (it % n_check_point == 0 and it != 0)
+                        or it == max_its
+                        or run_time > max_run_time
                 ):
 
                     write_current_state(
@@ -282,8 +282,8 @@ def analysis_runner(
                     "Updating prior to the actual prior (undoing marginalization)"
                 )
                 for par, name in zip(
-                    ["distance", "phase", "time"],
-                    ["luminosity_distance", "phase", "geocent_time"],
+                        ["distance", "phase", "time"],
+                        ["luminosity_distance", "phase", "geocent_time"],
                 ):
                     if getattr(run.likelihood, f"{par}_marginalization", False):
                         run.priors[name] = run.likelihood.priors[name]
@@ -292,9 +292,12 @@ def analysis_runner(
                 result.posterior = result.posterior.applymap(
                     lambda x: x[0] if isinstance(x, list) else x
                 )
+                result.posterior = result.posterior.select_dtypes([np.number])
                 logger.info(
                     f"Saving result to {run.outdir}/{run.label}_result.{result_format}"
                 )
+                if result_format != "json":  # json is saved by default
+                    result.save_to_file(extension='json')
                 result.save_to_file(extension=result_format)
                 print(
                     f"Sampling time = {datetime.timedelta(seconds=result.sampling_time)}s"
