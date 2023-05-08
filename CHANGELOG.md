@@ -1,5 +1,10 @@
 # All notable changes will be documented in this file
 
+## v2.0.2: 2023-05-08
+- Fix docs (!131)
+- Save both JSON and HDF5 result files (d64c391ef9c8b318d0875c84d3bc2bed70bbf5f4)
+- Store 'num_likelihood_calls' in result (a34e1fb9a3695e8741310fa27c0ba98f6aa24dbf)
+
 ## v2.0.1 : 2023-03-20
 - Add 'rejection-sample-posterior' option (!129)
 
