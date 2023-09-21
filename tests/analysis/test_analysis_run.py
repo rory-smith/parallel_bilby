@@ -95,4 +95,4 @@ class AnalysisRunTest(FastRun):
                 live_points = self.run.get_initial_points_from_prior(pool)
                 sampler = self.run.get_nested_sampler(live_points, pool, pool.size)
 
-                assert type(sampler) == LivePointSampler
+                assert isinstance(sampler, LivePointSampler)
