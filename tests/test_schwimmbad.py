@@ -61,9 +61,9 @@ def test_timer(enabled):
             finally:
                 os.remove(timing_file)
 
-            assert type(data) == list
+            assert isinstance(data, list)
             assert len(data) >= 1
-            assert type(data[0]) == dict
+            assert isinstance(data[0], dict)
 
             expected_keys = [
                 "master_serial",
