@@ -131,7 +131,7 @@ class AnalysisNode(BaseNode):
     def output_filename(self):
         return (
             f"{self.inputs.result_directory}/"
-            f"{self.inputs.label}_{self.idx}_result.{self.analysis_args.result_format}"
+            f"{self.inputs.label}_{self.idx}_result.{self.args.result_format}"
         )
 
     def get_contents(self):
