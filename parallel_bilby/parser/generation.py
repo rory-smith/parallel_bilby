@@ -51,6 +51,12 @@ def _add_slurm_settings_to_parser(parser):
         default=None,
         help="additional slurm args (args that need #SBATCH in front) of the form arg=val separated by sapce",
     )
+    slurm_group.add_argument(
+        "--slurm-sleep-between-submit",
+        type=int,
+        default=0,
+        help="time (in seconds) to sleep between submitting parallel jobs (useful for busy file systems)",
+    )
     return parser
 
 

@@ -12,7 +12,6 @@ from tests.utils import dirtree
 
 class GenerationTest(GW150914Run):
     def setUp(self):
-
         # Run the relevant bits of generation.main, with no CLI args
         self.cli_args = [""]
         self.parser = create_generation_parser()
@@ -31,7 +30,6 @@ class GenerationTest(GW150914Run):
 
     @pytest.mark.mpi_skip
     def test_generation(self):
-
         # Run generation
         args = copy.deepcopy(self.args)
         args.ntasks_per_node = 20
@@ -51,19 +49,20 @@ class GenerationTest(GW150914Run):
 
     @pytest.mark.mpi_skip
     def test_generation_merge(self):
-
         # Run generation
         args = copy.deepcopy(self.args)
         args.n_parallel = 4
         args.mem_per_cpu = None
         args.extra_lines = "conda activate; conda source"
         args.slurm_extra_lines = "dependency=singleton partition=sstar"
+        args.slurm_sleep_between_submit = 30
         inputs, _ = generation.generate_runner(parser=self.parser, **vars(args))
         slurm.setup_submit(inputs.data_dump_file, inputs, args, self.cli_args)
         files = [
             "submit/analysis_GW150914_0.sh",
             "submit/analysis_GW150914_3.sh",
             "submit/merge_GW150914.sh",
+            "submit/bash_GW150914.sh",
         ]
         self._check_generation_files(files=files, kwargs=vars(args))
 
@@ -72,9 +71,7 @@ class GenerationTest(GW150914Run):
         return dirtree(self.test_dir)
 
     def _check_generation_files(self, files, kwargs):
-
         for f in files:
-
             path = os.path.join(self.test_dir, f)
             self.assertTrue(
                 os.path.isfile(path), f"File {f} not found. Files:\n{self.testdir_tree}"
@@ -95,6 +92,11 @@ class GenerationTest(GW150914Run):
                     kwargs=kwargs,
                     check_mem_per_cpu=False,
                     command="bilby_result -r",
+                )
+            elif "bash" in f and ".sh" in f:
+                self._check_master_bash_file(
+                    path=path,
+                    kwargs=kwargs,
                 )
 
     def _check_data_dump(self, path, kwargs):
@@ -141,4 +143,22 @@ class GenerationTest(GW150914Run):
             self.assertTrue(
                 command in slurm_script.splitlines()[-1].strip(),
                 "Command not found in slurm script",
+            )
+
+    def _check_master_bash_file(
+        self,
+        path,
+        kwargs,
+    ):
+        with open(path, "r") as file:
+            bash_script = file.read()
+            self.assertEqual(bash_script.count("analysis_"), kwargs["n_parallel"])
+            self.assertEqual(
+                bash_script.count("merge_"), 1 if kwargs["n_parallel"] > 1 else 0
+            )
+            self.assertEqual(
+                bash_script.count(f"sleep {kwargs['slurm_sleep_between_submit']}"),
+                kwargs["n_parallel"] - 1
+                if kwargs["slurm_sleep_between_submit"] > 0
+                else 0,
             )
