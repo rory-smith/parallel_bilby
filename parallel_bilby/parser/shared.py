@@ -136,13 +136,13 @@ def _add_dynesty_settings_to_parser(parser):
     dynesty_group.add_argument(
         "--fast-mpi",
         default=False,
-        type=bool,
+        action="store_true",
         help="Fast MPI communication pattern (default=False)",
     )
     dynesty_group.add_argument(
         "--mpi-timing",
         default=False,
-        type=bool,
+        action="store_true",
         help="Print MPI timing when finished (default=False)",
     )
     dynesty_group.add_argument(
