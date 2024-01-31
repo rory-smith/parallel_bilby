@@ -36,6 +36,15 @@ def setup_submit(data_dump_file, inputs, args, cli_args):
         for ii, node in enumerate(analysis_nodes):
             print(f"jid{ii}=$(sbatch {node.filename})", file=ff)
             dependent_job_ids.append(f"${{jid{ii}##* }}")
+            if args.slurm_sleep_between_submit > 0:
+                if ii < args.n_parallel - 1:
+                    print(
+                        f"echo 'Submitted job jid{ii}, now sleep for {args.slurm_sleep_between_submit} s...'",
+                        file=ff,
+                    )
+                    print(f"sleep {args.slurm_sleep_between_submit}", file=ff)
+                else:
+                    print(f"echo 'Submitted job jid{ii}.'", file=ff)
         if len(analysis_nodes) > 1:
             print(
                 f"sbatch --dependency=afterok:{':'.join(dependent_job_ids)} "
