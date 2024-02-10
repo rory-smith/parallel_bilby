@@ -153,7 +153,13 @@ def generate_runner(parser=None, **kwargs):
     logger = create_generation_logger(outdir=args.outdir, label=args.label)
     for package, version in get_version_info().items():
         logger.info(f"{package} version: {version}")
-    inputs = ParallelBilbyDataGenerationInput(args, [])
+    if args.generation_input_class is not None:
+        from bilby_pipe.utils import get_function_from_string_path
+
+        input_cls = get_function_from_string_path(args.generation_input_class)
+    else:
+        input_cls = ParallelBilbyDataGenerationInput
+    inputs = input_cls(args, [])
     logger.info(
         "Setting up likelihood with marginalizations: "
         f"distance={inputs.distance_marginalization}, "
