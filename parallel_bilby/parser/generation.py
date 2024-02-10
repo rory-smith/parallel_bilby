@@ -157,9 +157,12 @@ def parse_generation_args(parser, cli_args=[""], as_namespace=False):
     args: dict or Namespace
 
     """
-
-    args = parser.parse_args(args=cli_args)
+    args, _ = parser.parse_known_args(args=cli_args)
     args = add_extra_args_from_bilby_pipe_namespace(cli_args, args)
+    if args.generation_executable_parser is not None:
+        from bilby_pipe.utils import get_function_from_string_path
+        parser = get_function_from_string_path(args.generation_executable_parser)()
+        args, _ = parser.parse_known_args(args=cli_args)
     if as_namespace:
         return args
     return vars(args)
